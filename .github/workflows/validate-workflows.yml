@@ -1,0 +1,133 @@
+name: Validate n8n Workflows
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  validate-workflows:
+    name: Validate n8n Workflows
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      working-directory: ./lib
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e .
+    
+    - name: Run workflow validation
+      id: validate
+      working-directory: ./lib
+      run: |
+        # Run the validator on all JSON files in the repository
+        # This will fail if any workflow is invalid
+        echo "Validating all n8n workflows..."
+        if ! n8n-validate ..; then
+          echo "::error::One or more workflow validations failed"
+          exit 1
+        fi
+        echo "All workflows are valid!"
+    
+    - name: Create visualization artifacts
+      if: always()  # Run this step even if validation fails
+      working-directory: ./lib
+      run: |
+        echo "Creating visualizations for all workflows..."
+        mkdir -p ../workflow-visualizations
+        
+        # Find all JSON files that might be n8n workflows
+        find .. -type f -name "*.json" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/workflow-visualizations/*" | while read -r file; do
+          # Try to validate the file first
+          if n8n-validate "$file" 2>/dev/null; then
+            # If validation passes, create a visualization
+            echo "Creating visualization for $file"
+            filename=$(basename "$file" .json)
+            output_file="../workflow-visualizations/${filename}.png"
+            if ! n8n-visualize "$file" -o "$output_file" --no-show 2>/dev/null; then
+              echo "::warning::Failed to create visualization for $file"
+            fi
+          fi
+        done
+        
+        # Count the number of visualizations created
+        VIS_COUNT=$(find ../workflow-visualizations -type f -name "*.png" | wc -l)
+        echo "Created $VIS_COUNT workflow visualizations"
+        
+        # Set an output with the visualization count
+        echo "visualization_count=$VIS_COUNT" >> $GITHUB_OUTPUT
+    
+    - name: Upload workflow visualizations
+      if: always() && steps.validate.outcome == 'success'
+      uses: actions/upload-artifact@v4
+      with:
+        name: workflow-visualizations
+        path: workflow-visualizations/
+        if-no-files-found: ignore
+        retention-days: 7
+    
+    - name: Comment on PR with validation results
+      if: github.event_name == 'pull_request' && steps.validate.outcome == 'success'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          
+          // Get the list of workflow files that were validated
+          const workflowFiles = execSync('find .. -type f -name "*.json" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/workflow-visualizations/*"')
+            .toString()
+            .split('\n')
+            .filter(Boolean);
+          
+          // Count visualizations
+          let visCount = 0;
+          try {
+            visCount = fs.readdirSync('../workflow-visualizations').length;
+          } catch (e) {
+            // Directory might not exist if no visualizations were created
+          }
+          
+          // Create a comment
+          const comment = `✅ All ${workflowFiles.length} n8n workflow files are valid!\n` +
+                         `📊 ${visCount} workflow visualizations were generated and attached as artifacts.`;
+          
+          // Add a comment to the PR
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.login === 'github-actions[bot]' && 
+            comment.body.includes('n8n workflow')
+          );
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: comment,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment,
+            });
+          }

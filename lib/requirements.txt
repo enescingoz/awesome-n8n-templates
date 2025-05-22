@@ -1,0 +1,7 @@
+jsonschema>=4.0.0
+networkx>=2.6.3
+matplotlib>=3.4.3
+pytest>=7.0.0
+pytest-cov>=3.0.0
+click>=8.0.0
+python-dotenv>=0.19.0
