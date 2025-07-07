@@ -40,6 +40,25 @@ Looking to extract and merge entire Twitter (X) threads quickly and affordably?
 Check out my [n8n Twitter Thread Fetcher workflow](https://n8n.io/workflows/4088-extract-and-merge-twitter-x-threads-using-twitterapiio/)-it’s lightning-fast, cost-effective, and perfect for automating Twitter thread extraction for research, content curation, or archiving!
 
 ---
+## 🚀 How to Import a Workflow in n8n
+
+If you have a workflow JSON exported or copied from somewhere (like a template), here’s how to import it:
+
+### 1. Start n8n (e.g., via Docker or npx)
+Go to `http://localhost:5678` in your browser.
+
+### 2. Open the Menu
+Click the ☰ icon in the top-right.
+
+### 3. Choose Import Option
+- **Import from Clipboard**: Paste your copied JSON and hit Import.
+- **Import from File**: Upload the `.json` file directly.
+
+### 4. Validate and Save
+Make sure all credentials and nodes are correctly loaded.
+
+
+---
 ### Gmail & Email Automation
 
 | Title | Description | Department | Link |
