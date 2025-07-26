@@ -333,3 +333,8 @@ If you would like to contribute additional templates or suggest new categories, 
 <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
   <img src="/img/n8n.png" alt="n8n" style="max-height: 300px;">
 </a>
+
+---
+
+### **Sponsors**
+- [mahezsh](https://github.com/mahezsh)
