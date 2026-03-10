@@ -27,7 +27,7 @@ All automation templates in this repository were found online and are uploaded h
 
 ## Categories & Template List
 
-### Gmail & Email Automation
+### Gmail Automation
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
