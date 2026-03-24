@@ -123,6 +123,7 @@ This collection includes 9 email automation templates for n8n covering Gmail, Ou
 | Auto Categorise Outlook Emails with AI | Automatically categorizes Outlook emails using AI models. Moves messages to folders and assigns categories based on content, reducing manual sorting. | Ops | [Link to Template](Gmail_and_Email_Automation/Auto%20Categorise%20Outlook%20Emails%20with%20AI.json) |
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | An AI-powered assistant for Outlook that processes emails, sanitizes content, and assigns categories using rules from Airtable. Integrates with Monday.com for contact support. | Ops | [Link to Template](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | Extracts financial news from FT.com and delivers daily updates to your Outlook inbox. Automates content extraction and email delivery for timely market insights. | Executive | [Link to Template](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
+| AI Email Auto-Responder with Ollama | Monitors incoming emails via IMAP and uses a local Ollama LLM to generate context-aware reply drafts automatically. Runs entirely self-hosted with no external API costs. | Support | [Link to Template](Gmail_and_Email_Automation/AI%20Email%20Auto-Responder%20with%20Ollama.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
@@ -321,6 +322,7 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 | AI-Powered YouTube Video Summarization & Analysis | Summarizes and analyzes YouTube videos using AI. | Content Creation/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/%E2%9A%A1AI-Powered%20YouTube%20Video%20Summarization%20&%20Analysis.json) |
 | AI: Ask questions about any data source (using the n8n workflow retriever) | Allows users to ask questions about various data sources using an n8n workflow retriever. | AI/Data Analysis/Workflow Automation | [Link to Template](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Summarizes podcast episodes and enhances the summary with information from Wikipedia using AI. | Content Creation/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
+| AI Blog Writer Pipeline with Ollama | Generates full blog posts using a local Ollama LLM. Takes a topic, tone, and word count as input, produces an outline, writes the draft, and formats the final article. Fully self-hosted. | Marketing/Content Creation | [Link to Template](OpenAI_and_LLMs/AI%20Blog%20Writer%20Pipeline%20with%20Ollama.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
@@ -353,6 +355,7 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 | Speed Up Social Media Banners With BannerBear.com | Automates the creation of social media banners using BannerBear.com. | Marketing/Design | [Link to Template](Instagram_Twitter_Social_Media/Speed%20Up%20Social%20Media%20Banners%20With%20BannerBear.com.json) |
 | Twitter Virtual AI Influencer | Manages a virtual AI influencer's Twitter account. | Marketing/AI | [Link to Template](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | Updates a Twitter banner using HTTP requests. | Marketing/Development | [Link to Template](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
+| AI Social Media Content Generator with Ollama | Generates platform-specific social media posts (Twitter, LinkedIn, Instagram, Facebook) from a single topic using a local Ollama LLM. Adapts tone and format per platform. Fully self-hosted. | Marketing/Content/AI | [Link to Template](Instagram_Twitter_Social_Media/AI%20Social%20Media%20Content%20Generator%20with%20Ollama.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
