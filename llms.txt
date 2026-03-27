@@ -1,0 +1,51 @@
+# Awesome n8n Templates
+
+> The largest curated collection of 280+ free, ready-to-use n8n automation workflow templates on GitHub. Organized by platform (Gmail, Telegram, Slack, Discord, WhatsApp, Google Drive, Notion, WordPress) and use case (AI/LLM integration, email automation, social media, HR, DevOps, document processing). 19,000+ GitHub stars. Updated monthly. Created by Enes Cingoz.
+
+## What is this repository?
+
+Awesome n8n Templates is an open-source collection of n8n workflow automation templates sourced from the community. n8n is an open-source workflow automation platform (similar to Zapier and Make) that can be self-hosted. Each template is a JSON file that can be imported directly into n8n to create a working automation workflow.
+
+## Template Categories
+
+- [Gmail and Email Automation](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Gmail_and_Email_Automation): 9 templates for AI-powered email labeling, draft replies with OpenAI, phishing detection with ChatGPT Vision, and human-in-the-loop response systems for Gmail and Outlook.
+- [Telegram Bot Templates](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Telegram): 17 templates for AI chatbots, voice assistants, content moderation, PDF chat, Spotify integration, and multi-language translation bots.
+- [Google Drive and Google Sheets](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Google_Drive_and_Google_Sheets): 13 templates for OpenAI fine-tuning, background removal, RAG chatbots, lead qualification, document summarization, and social media posting.
+- [WordPress](https://github.com/enescingoz/awesome-n8n-templates/tree/main/WordPress): 6 templates for AI blog categorization, auto-tagging, brand voice content creation, and AI chatbot integration.
+- [PDF and Document Processing](https://github.com/enescingoz/awesome-n8n-templates/tree/main/PDF_and_Document_Processing): 11 templates for PDF Q&A with AI, invoice extraction, resume parsing, license plate recognition, and study note generation.
+- [Discord](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Discord): 3 templates for AI-powered bots, comic translation, and YouTube video summaries.
+- [Database and Storage](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Database_and_Storage): 5 templates for PostgreSQL chat, SQL generation, MongoDB recommendations, Supabase operations, and SQLite agents.
+- [DevOps and Server Automation](https://github.com/enescingoz/awesome-n8n-templates/tree/main/devops): 2 templates for Linux system updates and Docker Compose control via webhooks.
+- [Airtable](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Airtable): 5 templates for project management, data analysis, Obsidian integration, job applications, and HubSpot chat.
+- [Notion](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Notion): 10 templates for feedback analysis, paper research, competitor research, LinkedIn outreach, AI assistants, and vector store integration.
+- [Slack](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Slack): 9 templates for AI bots, customer support ticketing, security operations, sentiment analysis, and information monitoring.
+- [OpenAI and LLMs](https://github.com/enescingoz/awesome-n8n-templates/tree/main/OpenAI_and_LLMs): 17+ templates for AI agents, stock analysis, sentiment analysis, data extraction, lead management, RAG workflows, and WooCommerce support.
+- [WhatsApp](https://github.com/enescingoz/awesome-n8n-templates/tree/main/WhatsApp): 4 templates for RAG chatbots, AI-powered responses, sales meeting prep, and first chatbot building.
+- [Instagram, Twitter, and Social Media](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Instagram_Twitter_Social_Media): 10 templates for Instagram DM agents, tweet generation, content creation, Reddit digests, and virtual AI influencers.
+- [Other Integrations](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Other_Integrations_and_Use_Cases): 25+ templates for Twilio, Cal.com, Siri, Apple Shortcuts, Pinterest, Spotify, Zoom, and more.
+- [Forms and Surveys](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Forms_and_Surveys): 3 templates for AI-powered interviews, email subscriptions, and appointment qualification.
+- [AI Research, RAG, and Data Analysis](https://github.com/enescingoz/awesome-n8n-templates/tree/main/AI_Research_RAG_and_Data_Analysis): 35+ templates for deep research agents, web scraping, vector databases, SEO tools, sentiment analysis, and autonomous crawlers.
+
+## How to Use
+
+1. Browse the categories above or the full README
+2. Download the JSON file for the template you want
+3. In n8n, go to Workflows > Import from File and select the JSON
+4. Configure your credentials for each connected service
+5. Activate the workflow
+
+## Documentation
+
+- [Full Template Catalog (English)](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README.md)
+- [Chinese Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-zh.md)
+- [German Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-de.md)
+- [French Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-fr.md)
+- [Spanish Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-es.md)
+- [Portuguese Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-pt.md)
+- [Japanese Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-ja.md)
+- [Korean Documentation](https://github.com/enescingoz/awesome-n8n-templates/blob/main/README-ko.md)
+- [Contributing Guide](https://github.com/enescingoz/awesome-n8n-templates/blob/main/CONTRIBUTING.md)
+
+## Optional
+
+- [Citation Information](https://github.com/enescingoz/awesome-n8n-templates/blob/main/CITATION.cff)

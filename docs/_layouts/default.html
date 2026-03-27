@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  {% seo %}
+  {% include head-custom.html %}
+  <style>
+    :root {
+      --primary: #ff6d00;
+      --primary-dark: #e65100;
+      --bg: #ffffff;
+      --bg-alt: #f8f9fa;
+      --text: #24292e;
+      --text-muted: #586069;
+      --border: #e1e4e8;
+      --link: #0366d6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+      background: var(--bg);
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    /* Header */
+    .site-header {
+      background: var(--text);
+      color: #fff;
+      padding: 12px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .site-header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .site-header a { color: #fff; text-decoration: none; }
+    .site-header .site-title { font-size: 1.1rem; font-weight: 700; }
+    .site-header nav a {
+      margin-left: 16px;
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+    .site-header nav a:hover { opacity: 1; text-decoration: underline; }
+    /* Main content */
+    main {
+      padding: 32px 0 64px;
+    }
+    h1 { font-size: 2rem; margin-bottom: 16px; line-height: 1.25; }
+    h2 { font-size: 1.5rem; margin-top: 40px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.2rem; margin-top: 24px; margin-bottom: 8px; }
+    p { margin-bottom: 16px; }
+    a { color: var(--link); }
+    ul, ol { margin-bottom: 16px; padding-left: 24px; }
+    li { margin-bottom: 4px; }
+    code {
+      background: var(--bg-alt);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    pre { background: var(--bg-alt); padding: 16px; border-radius: 6px; overflow-x: auto; margin-bottom: 16px; }
+    pre code { background: none; padding: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 0.92rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+    }
+    th { background: var(--bg-alt); font-weight: 600; }
+    tr:nth-child(even) { background: var(--bg-alt); }
+    /* CTA Button */
+    .cta-button {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff !important;
+      padding: 12px 28px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: background 0.2s;
+      margin: 8px 0;
+    }
+    .cta-button:hover { background: var(--primary-dark); }
+    /* Stats */
+    .stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 24px 0;
+    }
+    .stat-card {
+      flex: 1;
+      min-width: 140px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: block;
+    }
+    .stat-card .label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    /* Category grid */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .category-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .category-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .category-card h3 { margin-top: 0; }
+    .category-card a { text-decoration: none; }
+    .category-card .count {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .category-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 8px 0;
+    }
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .site-footer a { color: var(--text-muted); }
+    /* Breadcrumb */
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .breadcrumb a { color: var(--text-muted); }
+    /* Responsive */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+      .stats { flex-direction: column; }
+      .category-grid { grid-template-columns: 1fr; }
+      table { font-size: 0.82rem; }
+      th, td { padding: 6px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="{{ site.baseurl }}/" class="site-title">Awesome n8n Templates</a>
+      <nav>
+        <a href="{{ site.baseurl }}/">Home</a>
+        <a href="https://github.com/enescingoz/awesome-n8n-templates">GitHub</a>
+        <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">Try n8n Free</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      {{ content }}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>
+        <a href="https://github.com/enescingoz/awesome-n8n-templates">GitHub Repository</a> &middot;
+        <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">Try n8n Free</a> &middot;
+        CC-BY-4.0 License
+      </p>
+      <p>Curated by <a href="https://github.com/enescingoz">Enes Cingoz</a></p>
+    </div>
+  </footer>
+</body>
+</html>

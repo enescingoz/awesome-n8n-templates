@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you find this collection useful, please cite it as below."
+title: "Awesome n8n Templates"
+abstract: "A curated collection of 280+ ready-to-use n8n automation workflow templates covering Gmail, Telegram, Slack, Discord, OpenAI/LLM, Google Drive, Notion, WordPress, WhatsApp, and more."
+type: dataset
+authors:
+  - family-names: Cingoz
+    given-names: Enes
+    alias: enescingoz
+repository-code: "https://github.com/enescingoz/awesome-n8n-templates"
+keywords:
+  - n8n
+  - automation
+  - workflow-templates
+  - no-code
+  - low-code
+  - ai-automation
+  - openai
+  - chatgpt
+  - telegram-bot
+  - gmail-automation
+  - self-hosted
+  - awesome-list
+license: CC-BY-4.0
+date-released: "2024-01-01"

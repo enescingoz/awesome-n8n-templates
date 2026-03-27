@@ -1,0 +1,118 @@
+<!-- Canonical URL -->
+<link rel="canonical" href="{{ page.url | absolute_url }}" />
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/enescingoz/awesome-n8n-templates/main/img/n8n.png" />
+
+<!-- Open Graph -->
+<meta property="og:title" content="{{ page.title | default: site.title }}" />
+<meta property="og:description" content="{{ page.description | default: site.description }}" />
+<meta property="og:url" content="{{ page.url | absolute_url }}" />
+<meta property="og:site_name" content="{{ site.title }}" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{{ page.title | default: site.title }}" />
+<meta name="twitter:description" content="{{ page.description | default: site.description }}" />
+
+<!-- JSON-LD: SoftwareSourceCode -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "Awesome n8n Templates",
+  "description": "Curated collection of 280+ n8n automation workflow templates",
+  "codeRepository": "https://github.com/enescingoz/awesome-n8n-templates",
+  "programmingLanguage": "JSON",
+  "runtimePlatform": "n8n",
+  "author": {
+    "@type": "Person",
+    "name": "Enes Cingoz"
+  },
+  "dateModified": "2026-03-12",
+  "license": "https://creativecommons.org/licenses/by/4.0/"
+}
+</script>
+
+<!-- JSON-LD: FAQPage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I import an n8n template?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Download the JSON file, then in n8n go to Workflows > Import from File and select the JSON. Configure your credentials and activate."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is n8n?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "n8n is an open-source workflow automation platform similar to Zapier and Make, but self-hostable and free. It connects 400+ apps through a visual node-based editor."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are these templates free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, all 280+ templates in this repository are free and open-source under the CC-BY-4.0 license."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What platforms are covered?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Gmail, Telegram, Slack, Discord, WhatsApp, Google Drive, Google Sheets, Notion, Airtable, WordPress, Instagram, Twitter, OpenAI, and many more."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What AI integrations are available?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Templates cover OpenAI GPT-4, Claude, Gemini, DeepSeek, LangChain, vector stores (Pinecone, Supabase, Qdrant), and RAG chatbot architectures."
+      }
+    }
+  ]
+}
+</script>
+
+<!-- JSON-LD: ItemList of Categories -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "n8n Template Categories",
+  "description": "Categories of n8n automation workflow templates",
+  "numberOfItems": 18,
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Gmail & Email Automation", "url": "{{ '/categories/gmail-email-automation' | absolute_url }}"},
+    {"@type": "ListItem", "position": 2, "name": "Telegram Bots", "url": "{{ '/categories/telegram-bots' | absolute_url }}"},
+    {"@type": "ListItem", "position": 3, "name": "Google Drive & Sheets", "url": "{{ '/categories/google-drive-sheets' | absolute_url }}"},
+    {"@type": "ListItem", "position": 4, "name": "WordPress", "url": "{{ '/categories/wordpress' | absolute_url }}"},
+    {"@type": "ListItem", "position": 5, "name": "PDF & Document Processing", "url": "{{ '/categories/pdf-document-processing' | absolute_url }}"},
+    {"@type": "ListItem", "position": 6, "name": "Discord", "url": "{{ '/categories/discord' | absolute_url }}"},
+    {"@type": "ListItem", "position": 7, "name": "Database & Storage", "url": "{{ '/categories/database-storage' | absolute_url }}"},
+    {"@type": "ListItem", "position": 8, "name": "DevOps & Server Automation", "url": "{{ '/categories/devops-server-automation' | absolute_url }}"},
+    {"@type": "ListItem", "position": 9, "name": "Airtable", "url": "{{ '/categories/airtable' | absolute_url }}"},
+    {"@type": "ListItem", "position": 10, "name": "Notion", "url": "{{ '/categories/notion' | absolute_url }}"},
+    {"@type": "ListItem", "position": 11, "name": "Slack", "url": "{{ '/categories/slack' | absolute_url }}"},
+    {"@type": "ListItem", "position": 12, "name": "OpenAI & LLMs", "url": "{{ '/categories/openai-llms' | absolute_url }}"},
+    {"@type": "ListItem", "position": 13, "name": "WhatsApp", "url": "{{ '/categories/whatsapp' | absolute_url }}"},
+    {"@type": "ListItem", "position": 14, "name": "Social Media", "url": "{{ '/categories/social-media' | absolute_url }}"},
+    {"@type": "ListItem", "position": 15, "name": "Other Integrations", "url": "{{ '/categories/other-integrations' | absolute_url }}"},
+    {"@type": "ListItem", "position": 16, "name": "Forms & Surveys", "url": "{{ '/categories/forms-surveys' | absolute_url }}"},
+    {"@type": "ListItem", "position": 17, "name": "AI Research, RAG & Data Analysis", "url": "{{ '/categories/ai-research-rag' | absolute_url }}"},
+    {"@type": "ListItem", "position": 18, "name": "HR & Recruitment", "url": "{{ '/categories/hr-recruitment' | absolute_url }}"}
+  ]
+}
+</script>
