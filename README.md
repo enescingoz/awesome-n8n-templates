@@ -318,7 +318,8 @@ All automation templates in this repository were found online and are uploaded h
 
 ---
 
-If you would like to contribute additional templates or suggest new categories, feel free to open an issue or pull request!
+If you would like to contribute additional templates or suggest new categories, open an issue or pull request on GitHub.
+GitHub is the live source of truth for issues, milestones, pull requests, and check status.
 
 ---
 

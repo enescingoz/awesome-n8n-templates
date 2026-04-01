@@ -1,0 +1,44 @@
+name: Template submission
+description: Propose adding a new n8n template to this repository.
+title: "template: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to propose a new template addition.
+  - type: input
+    id: template_name
+    attributes:
+      label: Template name
+      placeholder: AI-powered email triage for Outlook...
+    validations:
+      required: true
+  - type: input
+    id: category
+    attributes:
+      label: Target category folder
+      description: Existing folder preferred.
+      placeholder: Gmail_and_Email_Automation
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source and attribution
+      description: Provide original source URL and attribution details.
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What does this template do?
+    validations:
+      required: true
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone suggestion
+      description: Use Backlog if unsure.
+      placeholder: Backlog

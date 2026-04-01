@@ -1,0 +1,29 @@
+name: Contribution Guardrails
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  validate-contribution-guardrails:
+    name: Validate Contribution Guardrails
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run lightweight guardrail checks
+        run: python .github/scripts/validate_contribution_guardrails.py

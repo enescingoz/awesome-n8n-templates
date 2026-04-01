@@ -311,7 +311,8 @@
 
 ---
 
-如果您想贡献其他模板或建议新类别，请随时提出issue或pull request！
+如果您想贡献其他模板或建议新类别，请在 GitHub 上提交 issue 或 pull request。
+GitHub 是 issues、milestones、pull requests 和检查状态的实时事实来源。
 
 ---
 

@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a broken template link, malformed file, or repo behavior issue.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Keep reports concise and reproducible.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the bug.
+      placeholder: Broken link in README section...
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Where is the problem?
+      description: File path(s), section names, or template names.
+      placeholder: README.md, OpenAI_and_LLMs/...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps for maintainers to reproduce.
+      placeholder: 1. Open... 2. Click... 3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone suggestion
+      description: Use Backlog if unsure.
+      placeholder: Backlog

@@ -1,0 +1,34 @@
+name: Content/category request
+description: Request a new category, rename, or indexing/content improvement.
+title: "content: "
+labels:
+  - enhancement
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Request summary
+      placeholder: Add a new category for CRM automations...
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why is this useful?
+      description: Briefly describe expected value for contributors/users.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: Files/folders likely affected.
+      placeholder: README.md table update + new folder...
+    validations:
+      required: true
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone suggestion
+      description: Use Backlog if unsure.
+      placeholder: Backlog

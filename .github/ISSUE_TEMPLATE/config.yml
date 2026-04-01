@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: General Discussion
+    url: https://github.com/pcoletsos/awesome-n8n-templates/discussions
+    about: Use Discussions for open-ended ideas or questions.
