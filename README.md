@@ -109,6 +109,7 @@ All automation templates in this repository were found online and are uploaded h
 ## Categories & Template List
 
 ### What n8n templates are available for Gmail and email automation?
+- [skill-taxonomy](https://github.com/SeeleAI/skill-taxonomy) - Structured taxonomy for AI agent skills: discovery, classification and routing across multi-agent workflows.
 
 This collection includes 9 email automation templates for n8n covering Gmail, Outlook, and IMAP. Templates range from AI-powered email labeling and categorization with OpenAI to phishing detection, auto-reply drafting, and daily financial news delivery. Ideal for operations, security, and executive teams looking to streamline email management.
 
