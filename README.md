@@ -469,6 +469,13 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
   </a>
 </p>
 
+### External AI Business Template Collections
+
+| Collection | Templates | Focus | Link |
+|---|---|---|---|
+| AI Business Automation Templates | 25 templates | E-commerce, customer service, invoice processing, contract review, voice agents, social media, appointment booking | [GitHub](https://github.com/xmqywx/ai-business-automation-n8n) |
+
+
 ## FAQ
 
 ### How do I import an n8n template from this repository?
