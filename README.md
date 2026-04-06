@@ -301,12 +301,13 @@ Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered 
 
 ### What n8n templates are available for OpenAI, LLMs, and AI agents?
 
-This is the largest category with 17 AI and LLM templates for n8n. Templates include advanced AI agent demos, web scraping agents, stock analysis crews, customer feedback sentiment analysis, AI-powered lead management with ERPNext, fitness coaching via Strava, candidate shortlisting for HR, RAG pipelines for email and stock reports, social media amplification, WooCommerce support agents, YouTube summarization, and podcast enhancement with Wikipedia.
+This is the largest category with 18 AI and LLM templates for n8n. Templates include advanced AI agent demos, web scraping agents, stock analysis crews, customer feedback sentiment analysis, AI-powered lead management with ERPNext, fitness coaching via Strava, candidate shortlisting for HR, RAG pipelines for email and stock reports, social media amplification, WooCommerce support agents, YouTube summarization, and podcast enhancement with Wikipedia.
 
 | Title | Description | Department | Link |
 |---|---|---|---|
 | Advanced AI Demo (Presented at AI Developers #14 meetup) | Advanced AI capabilities demo. | AI/Development | [Link to Template](OpenAI_and_LLMs/Advanced%20AI%20Demo%20(Presented%20at%20AI%20Developers%20%2314%20meetup).json) |
 | AI agent chat | Basic AI chat agent. | AI/Customer Service | [Link to Template](OpenAI_and_LLMs/AI%20agent%20chat.json) |
+| AI Multi-Agent Orchestrator with Anti-Duplication | Routes tasks to 5 specialized AI agents (code, security, research, content, general) with webhook intake and SQLite-based deduplication. Prevents agents from duplicating work. | AI/Automation/DevOps | [Link to Template](OpenAI_and_LLMs/AI_Multi_Agent_Orchestrator_Anti_Duplication.json) |
 | AI agent that can scrape webpages | AI agent for web scraping. | AI/Data Extraction | [Link to Template](OpenAI_and_LLMs/AI%20agent%20that%20can%20scrape%20webpages.json) |
 | AI Crew to Automate Fundamental Stock Analysis - Q&A Workflow | Stock analysis automation. | Finance/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI%20Crew%20to%20Automate%20Fundamental%20Stock%20Analysis%20-%20Q&A%20Workflow.json) |
 | AI Customer feedback sentiment analysis | Sentiment analysis on customer feedback. | Customer Service/Marketing/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI%20Customer%20feedback%20sentiment%20analysis.json) |
