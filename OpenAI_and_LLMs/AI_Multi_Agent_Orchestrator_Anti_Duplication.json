@@ -1,0 +1,458 @@
+{
+  "name": "AI Multi-Agent Orchestrator with Anti-Duplication",
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "nodes": [
+    {
+      "id": "node_sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        220,
+        60
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 860,
+        "height": 200,
+        "content": "## AI Multi-Agent Orchestrator with Anti-Duplication\n\nBuilt on a **production system running 49 AI agents** 24/7.\n\n**How it works:**\n1. Receives tasks via POST webhook\n2. Deduplicates within 30-minute window (no double-assignments)\n3. Classifies task by keyword: code / security / research / content / general\n4. Routes to the right specialist agent via Switch node\n5. Returns structured JSON response\n\n**To customize:**\n- Replace the registry Code node with your database (Postgres/Redis)\n- Add your agent webhook URLs in each Switch output branch\n- Swap keyword classifier with an LLM for smarter routing\n\n**Get the full 49-agent system prompts & architecture:**\nhttps://zoukster4.gumroad.com/l/doxvgi ($29)"
+      }
+    },
+    {
+      "id": "node_webhook",
+      "name": "Task Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        340
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "orchestrator",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "node_set_extract",
+      "name": "Extract and Validate Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        340
+      ],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "fields": {
+          "values": [
+            {
+              "name": "task",
+              "type": "stringValue",
+              "value": "={{ $json.body?.task || $json.body?.description || 'undefined' }}"
+            },
+            {
+              "name": "priority",
+              "type": "stringValue",
+              "value": "={{ $json.body?.priority || 'medium' }}"
+            },
+            {
+              "name": "source",
+              "type": "stringValue",
+              "value": "={{ $json.body?.source || 'manual' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node_registry_check",
+      "name": "Task Registry Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ============================================================\n// TASK REGISTRY -- Anti-Duplication Guard\n// ============================================================\n// Uses $getWorkflowStaticData() to persist task history in\n// memory between executions (survives node restarts).\n//\n// For production scale: replace with Postgres/Supabase/Redis\n// Full architecture: https://zoukster4.gumroad.com/l/doxvgi\n//   '49 AI Agent System Prompts' -- production patterns\n// ============================================================\n\nconst DEDUP_WINDOW_MS = 30 * 60 * 1000; // 30 minutes\n\n// Persistent in-workflow storage (survives across executions)\nconst registry = $getWorkflowStaticData('node');\nif (!registry.tasks) registry.tasks = {};\n\n// Clean up expired entries older than 30 min\nconst now = Date.now();\nfor (const [id, entry] of Object.entries(registry.tasks)) {\n  if (now - entry.timestamp > DEDUP_WINDOW_MS) {\n    delete registry.tasks[id];\n  }\n}\n\nconst task = $json.task || '';\nconst priority = $json.priority || 'medium';\nconst source = $json.source || 'manual';\n\n// Generate unique task ID\nconst taskId = 'TASK-' + now.toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();\n\n// Check for duplicate: same task description in last 30 min\nconst normalizedTask = task.toLowerCase().trim();\nlet duplicate = false;\nlet existingTaskId = null;\n\nfor (const [id, entry] of Object.entries(registry.tasks)) {\n  if (entry.normalizedTask === normalizedTask) {\n    duplicate = true;\n    existingTaskId = id;\n    break;\n  }\n}\n\n// Register if not a duplicate\nif (!duplicate) {\n  registry.tasks[taskId] = {\n    normalizedTask,\n    timestamp: now,\n    priority,\n    source\n  };\n}\n\nreturn {\n  json: {\n    task,\n    priority,\n    source,\n    task_id: duplicate ? existingTaskId : taskId,\n    duplicate,\n    checked_at: new Date(now).toISOString()\n  }\n};\n"
+      }
+    },
+    {
+      "id": "node_if_duplicate",
+      "name": "Duplicate Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond_dup",
+              "leftValue": "={{ $json.duplicate }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node_respond_duplicate",
+      "name": "Respond Already Assigned",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1180,
+        180
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'already_assigned', task_id: $json.task_id, task: $json.task, duplicate: true, message: 'This task was already submitted within the last 30 minutes. Deduplicated by Task Registry.' }) }}",
+        "options": {
+          "responseCode": 409
+        }
+      }
+    },
+    {
+      "id": "node_classify",
+      "name": "Classify Task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        500
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ============================================================\n// TASK CLASSIFIER -- Keyword-based agent routing\n// ============================================================\n// Classifies the task into one of 5 agent categories.\n// Replace with LLM call (OpenAI/Claude/Mistral) for smarter\n// classification at scale.\n//\n// Production 49-agent architecture reference:\n// https://zoukster4.gumroad.com/l/doxvgi\n// ============================================================\n\nconst task = ($json.task || '').toLowerCase();\n\nconst CATEGORIES = {\n  code:     ['code', 'bug', 'fix', 'script', 'api', 'debug', 'implement', 'refactor', 'test', 'function', 'deploy', 'build'],\n  security: ['security', 'audit', 'scan', 'vuln', 'pentest', 'firewall', 'ssl', 'threat', 'breach', 'patch'],\n  research: ['research', 'find', 'search', 'osint', 'investigate', 'report', 'compare', 'analyze', 'data'],\n  content:  ['content', 'write', 'post', 'blog', 'article', 'email', 'marketing', 'social', 'copy', 'draft']\n};\n\nlet category = 'general';\nfor (const [cat, keywords] of Object.entries(CATEGORIES)) {\n  if (keywords.some(kw => task.includes(kw))) {\n    category = cat;\n    break;\n  }\n}\n\nreturn {\n  json: {\n    task: $json.task,\n    priority: $json.priority,\n    source: $json.source,\n    task_id: $json.task_id,\n    duplicate: $json.duplicate,\n    checked_at: $json.checked_at,\n    category,\n    classified_at: new Date().toISOString()\n  }\n};\n"
+      }
+    },
+    {
+      "id": "node_switch_route",
+      "name": "Route to Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1420,
+        500
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "outputKey": "code",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "rule_code",
+                    "leftValue": "={{ $json.category }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "code"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                }
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "security",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "rule_security",
+                    "leftValue": "={{ $json.category }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "security"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                }
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "research",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "rule_research",
+                    "leftValue": "={{ $json.category }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "research"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                }
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "content",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "rule_content",
+                    "leftValue": "={{ $json.category }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "content"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                }
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "node_respond_code",
+      "name": "Respond Code Agent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1660,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'delegated', agent: 'code_agent', task_id: $json.task_id, task: $json.task, priority: $json.priority, source: $json.source, duplicate: false }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "node_respond_security",
+      "name": "Respond Security Agent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1660,
+        420
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'delegated', agent: 'security_agent', task_id: $json.task_id, task: $json.task, priority: $json.priority, source: $json.source, duplicate: false }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "node_respond_research",
+      "name": "Respond Research Agent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1660,
+        540
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'delegated', agent: 'research_agent', task_id: $json.task_id, task: $json.task, priority: $json.priority, source: $json.source, duplicate: false }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "node_respond_content",
+      "name": "Respond Content Agent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1660,
+        660
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'delegated', agent: 'content_agent', task_id: $json.task_id, task: $json.task, priority: $json.priority, source: $json.source, duplicate: false }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "node_respond_general",
+      "name": "Respond General Agent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1660,
+        780
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'delegated', agent: 'general_agent', task_id: $json.task_id, task: $json.task, priority: $json.priority, source: $json.source, duplicate: false }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Task Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract and Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract and Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Task Registry Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Registry Check": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Check": {
+      "main": [
+        [
+          {
+            "node": "Respond Already Assigned",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classify Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Task": {
+      "main": [
+        [
+          {
+            "node": "Route to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond Code Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Security Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Content Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond General Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
