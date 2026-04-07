@@ -460,6 +460,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 ### Other
 
 - `ALL_unique_nodes.txt` -- Complete node reference listing all unique n8n nodes used across these templates.
+- [RemoteOpenClaw](https://remoteopenclaw.com) -- Open marketplace for AI skills and personas built on OpenClaw.
 
 ---
 
