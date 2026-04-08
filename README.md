@@ -359,6 +359,7 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
+- [Gitstar](https://gitstar.ai?utm_medium=github_readme&utm_source=awesome_list&utm_campaign=enescingoz_awesome-n8n-templates) - Follow GitHub developers, see their activity feed, and discover trending repos in your stack.
 ### What other n8n integration templates are available?
 
 This section includes 27 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
