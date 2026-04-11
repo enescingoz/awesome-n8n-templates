@@ -175,6 +175,7 @@ Browse 13 Google Drive and Google Sheets automation templates for n8n. Includes 
 | Qualify new leads in Google Sheets via OpenAI's GPT-4 | Uses OpenAI's GPT-4 to analyze and qualify new leads entered into a Google Sheet, helping sales teams prioritize their outreach. | Sales | [Link to Template](Google_Drive_and_Google_Sheets/Qualify%20new%20leads%20in%20Google%20Sheets%20via%20OpenAI_s%20GPT-4.json) |
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Automates the screening of job applicants using AI, notifies HR of qualified candidates, and saves applicant data into a Google Sheet. | HR | [Link to Template](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Summarizes feedback collected through Google Forms and stored in Google Sheets using OpenAI's GPT-4, providing quick insights from survey responses. | Marketing | [Link to Template](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
+| Airtable to Google Sheets Auto-Sync | Automates bidirectional sync between Airtable and Google Sheets using n8n. Searches Airtable for recently updated records and upserts them into Google Sheets. | Ops | [Link to Template](Google_Drive_and_Google_Sheets/Airtable%20to%20Google%20Sheets%20Auto-Sync.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
