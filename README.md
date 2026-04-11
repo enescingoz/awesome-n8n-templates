@@ -361,6 +361,8 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 | AI Social Media Content Generator with Ollama | Generates optimized posts for Twitter, LinkedIn, Reddit, and Instagram from a single topic using Ollama local AI with built-in quality review. | Marketing/AI/Content | [Link to Template](Instagram_Twitter_Social_Media/AI%20Social%20Media%20Content%20Generator%20with%20Ollama.json) |
 | FlowScribe Lite - AI Content Repurposing (4 Platforms) | Converts one blog post into four optimized social media posts for Twitter, LinkedIn, Instagram, and Facebook using OpenAI. | Marketing/Content | [Link to Template](Instagram_Twitter_Social_Media/FlowScribe%20Lite%20-%20AI%20Content%20Repurposing%204%20Platforms.json) |
 
+**Community Node:** [n8n-nodes-bulkpublish](https://www.npmjs.com/package/n8n-nodes-bulkpublish) -- Community node for [BulkPublish](https://www.bulkpublish.com), a social media scheduling API supporting 11 platforms (Facebook, Instagram, X, TikTok, YouTube, Threads, Bluesky, Pinterest, Google Business, LinkedIn, Mastodon). Install via n8n community nodes to schedule and publish posts across platforms from your workflows.
+
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
 ### What other n8n integration templates are available?
