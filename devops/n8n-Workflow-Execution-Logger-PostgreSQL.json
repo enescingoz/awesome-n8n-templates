@@ -1,0 +1,119 @@
+{
+  "name": "n8n Workflow Execution Logger to PostgreSQL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/rest/executions",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "n8n-api-fetch",
+      "name": "Fetch n8n Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300],
+      "notes": "Fetches recent workflow executions from n8n REST API. Requires Basic Auth or API Key credentials."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract execution data from n8n API response\nconst executions = $input.all();\nconst data = executions[0].json.data || executions[0].json;\n\n// Handle both array and object responses\nconst execList = Array.isArray(data) ? data : (data.data || []);\n\n// Get last 24 hours of executions\nconst dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();\nconst recent = execList.filter(e => e.startedAt && e.startedAt > dayAgo);\n\nconst records = recent.map(e => ({\n  workflow_id: e.workflowId,\n  workflow_name: e.workflowName || 'Unknown',\n  status: e.succeeded ? 'success' : (e.stopped ? 'stopped' : 'running'),\n  started_at: e.startedAt,\n  finished_at: e.finishedAt || null,\n  duration_ms: e.finishedAt && e.startedAt \n    ? new Date(e.finishedAt) - new Date(e.startedAt) \n    : null,\n  error: e.error || null,\n  execution_count: 1\n}));\n\nreturn records.map(r => ({ json: r }));"
+      },
+      "id": "extract-data",
+      "name": "Extract Execution Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "query": "INSERT INTO workflow_executions (workflow_id, workflow_name, status, started_at, finished_at, duration_ms, error)\nVALUES ($1, $2, $3, $4, $5, $6, $7)\nON CONFLICT DO NOTHING",
+        "options": {
+          "splitIntoLines": true
+        }
+      },
+      "id": "postgres-insert",
+      "name": "Insert to PostgreSQL",
+      "type": "postgres",
+      "typeVersion": 2.4,
+      "position": [850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "PostgreSQL"
+        }
+      },
+      "notes": "Requires PostgreSQL credentials. Table: CREATE TABLE IF NOT EXISTS workflow_executions (id SERIAL PRIMARY KEY, workflow_id VARCHAR(255), workflow_name VARCHAR(255), status VARCHAR(50), started_at TIMESTAMP, finished_at TIMESTAMP, duration_ms INTEGER, error TEXT, created_at TIMESTAMP DEFAULT NOW());"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate execution stats for Slack notification\nconst executions = $input.all();\n\nconst stats = {\n  total: executions.length,\n  success: executions.filter(e => e.json.status === 'success').length,\n  failed: executions.filter(e => e.json.status !== 'success').length,\n  avgDuration: executions.length > 0 \n    ? Math.round(executions.reduce((s, e) => s + (e.json.duration_ms || 0), 0) / executions.length)\n    : 0\n};\n\nconst message = `*n8n Workflow Stats (24h)*\\n` +\n  `Total: ${stats.total} | ✅ ${stats.success} | ❌ ${stats.failed}\\n` +\n  `Avg Duration: ${(stats.avgDuration / 1000).toFixed(1)}s`;\n\nreturn [{ json: { text: message } }];"
+      },
+      "id": "slack-format",
+      "name": "Format Slack Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "channel": "n8n-monitoring",
+        "text": "=n8n Workflow Stats"
+      },
+      "id": "slack-notify",
+      "name": "Send to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [1250, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "1",
+          "name": "Slack Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Fetch n8n Executions", "type": "main", "index": 0 }]]
+    },
+    "Fetch n8n Executions": {
+      "main": [[{ "node": "Extract Execution Data", "type": "main", "index": 0 }]]
+    },
+    "Extract Execution Data": {
+      "main": [
+        [{ "node": "Insert to PostgreSQL", "type": "main", "index": 0 }],
+        [{ "node": "Format Slack Message", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Slack Message": {
+      "main": [[{ "node": "Send to Slack", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticCacheData": {}
+}
