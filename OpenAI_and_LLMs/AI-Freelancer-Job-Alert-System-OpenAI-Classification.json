@@ -1,0 +1,173 @@
+{
+  "id": "freelancer-job-alert-001",
+  "meta": {
+    "instanceId": "freelancer-job-alert-v1",
+    "templateCredsSetupCompleted": false
+  },
+  "name": "AI Freelancer Job Alert System - OpenAI Classification",
+  "tags": ["freelancer", "openai", "rss", "automation", "job-alert", "n8n"],
+  "nodes": [
+    {
+      "id": "trigger-rss",
+      "name": "Freelancer RSS Trigger",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "position": [100, 300],
+      "parameters": {
+        "url": "https://www.freelancer.com/rss.xml",
+        "propertyName": "items",
+        "options": {
+          "maxResults": 20
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "filter-n8n",
+      "name": "Filter n8n Jobs",
+      "type": "n8n-nodes-base.filter",
+      "position": [320, 300],
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.title }}",
+        "operation": "contains",
+        "value2": "n8n"
+      }
+    },
+    {
+      "id": "openai-classify",
+      "name": "OpenAI Classify Job",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [540, 300],
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a freelance automation expert. Analyze this job posting and classify it. Respond ONLY with valid JSON: {\"relevant\": true/false, \"budget_estimate\": \"low/medium/high\", \"difficulty\": \"easy/medium/hard\", \"summary\": \"one sentence description\"}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.title }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 200
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAi"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "parse-classification",
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.set",
+      "position": [760, 300],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "jobTitle",
+              "type": "string",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "id": "link",
+              "name": "jobLink",
+              "type": "string",
+              "value": "={{ $json.link }}"
+            },
+            {
+              "id": "summary",
+              "name": "aiSummary",
+              "type": "string",
+              "value": "={{ $json.contentSnippet || $json.description || '' }}"
+            },
+            {
+              "id": "pubdate",
+              "name": "publishedDate",
+              "type": "string",
+              "value": "={{ $json.pubDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "slack-notify",
+      "name": "Notify via Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [980, 300],
+      "parameters": {
+        "channel": "={{ $env.SLACK_CHANNEL || '#freelancer-jobs' }}",
+        "text": "=[[\"n8n Job Alert\"]]\n*Title:* {{ $json.jobTitle }}\n*Link:* {{ $json.jobLink }}\n*AI Summary:* {{ $json.aiSummary }}",
+        "options": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack"
+        }
+      },
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Freelancer RSS Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter n8n Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter n8n Jobs": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Classify Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Classify Job": {
+      "main": [
+        [
+          {
+            "node": "Parse Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Classification": {
+      "main": [
+        [
+          {
+            "node": "Notify via Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
