@@ -1,0 +1,155 @@
+{
+  "name": "Freelancer Time Tracker to Airtable",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtHour": 20
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.airtable.com/v0/{{$env.AIRTABLE_BASE_ID}}/TimeTracker",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "credentials": {
+          "airtableApi": {
+            "id": "airtable-api",
+            "name": "Airtable API"
+          }
+        }
+      },
+      "id": "airtable-get-records",
+      "name": "Get Today's Time Entries",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate total hours per client
+const records = $input.all();
+const timeByClient = {};
+
+for (const record of records) {
+  const fields = record.json.fields || {};
+  const client = fields.Client || 'Unassigned';
+  const hours = parseFloat(fields.Hours) || 0;
+  
+  if (!timeByClient[client]) {
+    timeByClient[client] = { client, totalHours: 0, entries: [] };
+  }
+  timeByClient[client].totalHours += hours;
+  timeByClient[client].entries.push({
+    description: fields.Description || '',
+    hours: hours,
+    date: fields.Date || ''
+  });
+}
+
+const summary = Object.values(timeByClient).map(c => ({
+  client: c.client,
+  totalHours: Math.round(c.totalHours * 100) / 100,
+  rate: 50, // USD/hour - adjust per client
+  amount: Math.round(c.totalHours * 50 * 100) / 100,
+  entries: c.entries
+}));
+
+return summary.map(c => ({ json: c }));"
+      },
+      "id": "calculate-summary",
+      "name": "Calculate Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate invoice text
+const summary = $input.first().json;
+const date = new Date().toISOString().split('T')[0];
+
+let text = `INVOICE - ${date}\n`;
+text += `Freelancer: Wang Zhe\n`;
+text += `Client: ${summary.client}\n\n`;
+text += `Hours Breakdown:\n`;
+
+for (const entry of summary.entries) {
+  text += `- ${entry.date}: ${entry.hours}h - ${entry.description}\n`;
+}
+
+text += `\nTotal Hours: ${summary.totalHours}h\n`;
+text += `Rate: $${summary.rate}/hour\n`;
+text += `Amount Due: $${summary.amount}\n`;
+
+return { json: { text, subject: `Invoice ${date} - ${summary.client}`, amount: summary.amount } };",
+        "functionDependencies": []
+      },
+      "id": "generate-invoice",
+      "name": "Generate Invoice",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.bot/sendMessage",
+        "method": "POST",
+        "data": "={ \"chat_id\": \"{{$env.TELEGRAM_CHAT_ID}}\", \"text\": \"{{ $json.text }}\" }",
+        "options": {}
+      },
+      "id": "telegram-notify",
+      "name": "Send Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Get Today's Time Entries", "type": "main", "index": 0}]]
+    },
+    "Get Today's Time Entries": {
+      "main": [[{"node": "Calculate Summary", "type": "main", "index": 0}]]
+    },
+    "Calculate Summary": {
+      "main": [[{"node": "Generate Invoice", "type": "main", "index": 0}]]
+    },
+    "Generate Invoice": {
+      "main": [[{"node": "Send Telegram", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["freelancer", "time-tracking", "airtable", "invoicing", "automation"],
+  "meta": {
+    "templateId": "freelancer-time-tracker-airtable",
+    "version": "1.0",
+    "category": "Productivity & Business",
+    "description": "Automated time tracking from Airtable with daily summary and invoice generation via Telegram",
+    "useCase": "Freelancers track time in Airtable, receive daily/weekly summaries and generate client invoices automatically",
+    "nodesCount": 5,
+    "difficulty": "intermediate",
+    "tags": ["freelancer", "time-tracking", "airtable", "invoice", "automation"],
+    "author": "Wang Zhe",
+    "authorUrl": "https://github.com/kklt3391057"
+  }
+}
