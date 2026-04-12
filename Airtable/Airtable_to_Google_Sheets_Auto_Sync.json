@@ -1,0 +1,143 @@
+{
+  "name": "Airtable to Google Sheets Auto Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "airst-base-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "baseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_TABLE_NAME"
+        },
+        "additionalFields": {
+          "fields": ["Name", "Email", "Status", "LastUpdated"]
+        }
+      },
+      "id": "airtable-node-list",
+      "name": "Airtable - Get All Records",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "credentials": {
+        "airtableApi": {
+          "id": "AIRTABLE_API_CREDENTIALS_ID",
+          "name": "Airtable API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "YOUR_GOOGLE_SHEET_URL"
+        },
+        "range": "A1",
+        "options": {
+          "valueInputOption": "USER_ENTERED"
+        }
+      },
+      "id": "gsheets-node-append",
+      "name": "Google Sheets - Append Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [650, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_CREDENTIALS_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "sheetId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "YOUR_GOOGLE_SHEET_URL"
+        },
+        "range": "A2:E1000",
+        "options": {}
+      },
+      "id": "gsheets-node-clear",
+      "name": "Google Sheets - Clear Existing Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.2,
+      "position": [450, 500],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_CREDENTIALS_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Get All Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable - Get All Records": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Clear Existing Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Sheets - Append Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "Asia/Shanghai",
+    "callerPolicy": "workflowRunnerFromSameOwner"
+  },
+  "staticData": null,
+  "tags": ["airtable", "google-sheets", "sync", "automation", "data-pipeline"],
+  "meta": {
+    "templateCredsSetup": false,
+    "templateId": "airtable-gsheets-sync",
+    "templateVersion": 1
+  }
+}

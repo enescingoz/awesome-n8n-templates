@@ -252,7 +252,7 @@ This section includes 2 DevOps and server automation templates for n8n. Trigger 
 
 ### How do I automate Airtable with n8n?
 
-Browse 5 Airtable automation templates for n8n. Automate project management and meeting follow-ups with Fireflies transcripts, chat with Airtable data using AI agents, integrate with Obsidian Notes, process job applications with AI-powered resume parsing, or connect HubSpot Chat with OpenAI and Airtable for customer support.
+Browse 6 Airtable automation templates for n8n. Automate project management and meeting follow-ups with Fireflies transcripts, chat with Airtable data using AI agents, integrate with Obsidian Notes, process job applications with AI-powered resume parsing, or connect HubSpot Chat with OpenAI and Airtable for customer support.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -261,6 +261,7 @@ Browse 5 Airtable automation templates for n8n. Automate project management and 
 | Get Airtable data via AI and Obsidian Notes | This workflow retrieves data from Airtable using an AI agent and integrates it with Obsidian Notes, allowing for seamless data access and organization within Obsidian. | Productivity | [Link to Template](Airtable/Get%20Airtable%20data%20via%20AI%20and%20Obsidian%20Notes.json) |
 | Handling Job Application Submissions with AI and n8n Forms | This workflow automates the handling of job application submissions by extracting information from resumes (PDFs) using AI, parsing it into a structured format, and potentially storing it in Airtable. | HR | [Link to Template](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | This workflow integrates an OpenAI assistant with HubSpot Chat and Airtable to provide automated responses and manage customer interactions. It fetches chat messages, processes them with AI, and can store relevant information in Airtable. | Sales | [Link to Template](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
+| Airtable to Google Sheets Auto Sync | Automatically syncs all records from an Airtable base to Google Sheets on a daily schedule. Clears existing data and appends fresh records with fields: Name, Email, Status, LastUpdated. | Operations | [Link to Template](Airtable/Airtable_to_Google_Sheets_Auto_Sync.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
