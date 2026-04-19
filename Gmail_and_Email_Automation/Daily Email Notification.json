@@ -1,0 +1,465 @@
+{
+  "id": "dailyEmailNotificationTemplate",
+  "name": "Daily IMAP Email Summary to Telegram (Local Ollama)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        92
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23,
+              "triggerAtMinute": 59
+            }
+          ]
+        }
+      },
+      "id": "schedule_trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        284
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 - <<'PY'\nimport datetime\nimport email\nimport imaplib\nimport json\nimport re\nfrom collections import OrderedDict\nfrom email.header import decode_header\nfrom email.utils import parsedate_to_datetime\nfrom html.parser import HTMLParser\n\nUSER = 'YOUR_EMAIL@example.com'\nPASSWORD = 'YOUR_APP_PASSWORD'.replace(' ', '')\nHOST = 'YOUR_IMAP_HOST'\nPORT = 993\nSOCKET_TIMEOUT_SECS = 60\nMAX_WARNINGS = 20\nMAX_BODY_CHARS = 2000\nMAX_MESSAGES_PER_THREAD = 6\nMAX_THREAD_TEXT_CHARS = 6000\n\nSUBJECT_PREFIX_RE = re.compile(r'^((re|fw|fwd|aw|sv)\\s*:\\s*)+', re.I)\nURL_RE = re.compile(r'https?://\\S+|www\\.\\S+', re.I)\nWHITESPACE_RE = re.compile(r'\\s+')\nNOISE_RE = re.compile(r'(unsubscribe|manage preferences|view in browser|privacy policy|terms of service)', re.I)\n\n\ndef safe_text(value):\n    if value is None:\n        return ''\n    try:\n        return str(value)\n    except Exception:\n        return ''\n\n\ndef decode_part(part, enc):\n    if isinstance(part, str):\n        return part\n    if not isinstance(part, (bytes, bytearray)):\n        return safe_text(part)\n\n    candidates = []\n    if enc:\n        normalized = safe_text(enc).strip().lower()\n        if normalized in {'unknown-8bit', 'unknown', 'x-unknown'}:\n            candidates.extend(['utf-8', 'latin-1'])\n        else:\n            candidates.append(safe_text(enc))\n\n    candidates.extend(['utf-8', 'latin-1'])\n    seen = set()\n    for candidate in candidates:\n        if not candidate or candidate in seen:\n            continue\n        seen.add(candidate)\n        try:\n            return bytes(part).decode(candidate, 'replace')\n        except Exception:\n            continue\n\n    return bytes(part).decode('utf-8', 'replace')\n\n\ndef decode_value(value):\n    if not value:\n        return ''\n    try:\n        decoded = decode_header(value)\n    except Exception:\n        return safe_text(value)\n\n    parts = []\n    for item in decoded:\n        try:\n            if isinstance(item, tuple) and len(item) == 2:\n                chunk, enc = item\n            else:\n                chunk, enc = item, None\n            parts.append(decode_part(chunk, enc))\n        except Exception:\n            parts.append(safe_text(item))\n    return ''.join(parts).strip()\n\n\ndef record_warning(warnings, stage, exc, context=''):\n    if len(warnings) >= MAX_WARNINGS:\n        return\n    warnings.append({'stage': stage, 'error': safe_text(exc), 'context': safe_text(context)})\n\n\nclass HTMLTextExtractor(HTMLParser):\n    BLOCK_TAGS = {'br', 'p', 'div', 'li', 'tr', 'table', 'section', 'article'}\n    SKIP_TAGS = {'script', 'style', 'head', 'svg', 'noscript'}\n\n    def __init__(self):\n        super().__init__()\n        self.parts = []\n        self.skip_depth = 0\n\n    def handle_starttag(self, tag, attrs):\n        tag = (tag or '').lower()\n        if tag in self.SKIP_TAGS:\n            self.skip_depth += 1\n            return\n        if not self.skip_depth and tag in self.BLOCK_TAGS:\n            self.parts.append('\\n')\n\n    def handle_endtag(self, tag):\n        tag = (tag or '').lower()\n        if tag in self.SKIP_TAGS and self.skip_depth:\n            self.skip_depth -= 1\n            return\n        if not self.skip_depth and tag in self.BLOCK_TAGS:\n            self.parts.append('\\n')\n\n    def handle_data(self, data):\n        if self.skip_depth:\n            return\n        if data:\n            self.parts.append(data)\n\n    def text(self):\n        return ''.join(self.parts)\n\n\ndef collapse_text(text):\n    text = safe_text(text)\n    text = text.replace('\\u00a0', ' ')\n    text = text.replace('\\r', '\\n')\n    text = URL_RE.sub(' ', text)\n    lines = []\n    for raw_line in text.split('\\n'):\n        cleaned = WHITESPACE_RE.sub(' ', raw_line).strip()\n        if not cleaned:\n            continue\n        if NOISE_RE.search(cleaned) and len(cleaned) < 160:\n            continue\n        lines.append(cleaned)\n    collapsed = '\\n'.join(lines).strip()\n    if len(collapsed) > MAX_BODY_CHARS:\n        trimmed = collapsed[:MAX_BODY_CHARS].rstrip()\n        if ' ' in trimmed:\n            trimmed = trimmed.rsplit(' ', 1)[0]\n        collapsed = trimmed.rstrip(' .,;:') + ' ...'\n    return collapsed\n\n\ndef html_to_text(raw_html):\n    parser = HTMLTextExtractor()\n    try:\n        parser.feed(raw_html)\n        parser.close()\n    except Exception:\n        return collapse_text(raw_html)\n    return collapse_text(parser.text())\n\n\ndef extract_body_text(msg):\n    plain_parts = []\n    html_parts = []\n\n    def add_part(content_type, payload, charset):\n        if not payload:\n            return\n        decoded = decode_part(payload, charset)\n        if content_type == 'text/plain':\n            plain_parts.append(decoded)\n        elif content_type == 'text/html':\n            html_parts.append(decoded)\n\n    if msg.is_multipart():\n        for part in msg.walk():\n            disposition = safe_text(part.get('Content-Disposition')).lower()\n            if 'attachment' in disposition:\n                continue\n            content_type = safe_text(part.get_content_type()).lower()\n            if content_type not in {'text/plain', 'text/html'}:\n                continue\n            try:\n                payload = part.get_payload(decode=True)\n            except Exception:\n                payload = None\n            add_part(content_type, payload, part.get_content_charset())\n    else:\n        try:\n            payload = msg.get_payload(decode=True)\n        except Exception:\n            payload = None\n        add_part(safe_text(msg.get_content_type()).lower(), payload, msg.get_content_charset())\n\n    plain_text = collapse_text('\\n\\n'.join(plain_parts)) if plain_parts else ''\n    html_text = html_to_text('\\n\\n'.join(html_parts)) if html_parts else ''\n\n    if len(plain_text) >= 40:\n        return plain_text\n    return html_text or plain_text\n\n\ndef normalize_subject(subject):\n    subject = collapse_text(subject)\n    while True:\n        stripped = SUBJECT_PREFIX_RE.sub('', subject).strip()\n        if stripped == subject:\n            return stripped or '(no subject)'\n        subject = stripped\n\n\ndef parse_date(value, warnings):\n    raw = decode_value(value)\n    if not raw:\n        return None, None\n    try:\n        dt = parsedate_to_datetime(raw)\n        if dt.tzinfo is None:\n            dt = dt.replace(tzinfo=datetime.timezone.utc)\n        dt_utc = dt.astimezone(datetime.timezone.utc)\n        return raw, dt_utc\n    except Exception as exc:\n        record_warning(warnings, 'parse_date', exc, raw)\n        return raw, None\n\n\ndef build_thread_key(msg, normalized_subject, message_id, imap_id):\n    references = decode_value(msg.get('References'))\n    if references:\n        first_ref = references.split()[0].strip('<>')\n        if first_ref:\n            return 'ref:' + first_ref, references, decode_value(msg.get('In-Reply-To'))\n\n    in_reply_to = decode_value(msg.get('In-Reply-To'))\n    if in_reply_to:\n        return 'reply:' + in_reply_to.strip('<>'), references, in_reply_to\n\n    if normalized_subject:\n        return 'subj:' + normalized_subject.lower(), references, in_reply_to\n\n    if message_id:\n        return 'msg:' + message_id.strip('<>'), references, in_reply_to\n\n    return 'imap:' + imap_id, references, in_reply_to\n\n\ncutoff_utc = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)\nsince_date = cutoff_utc.strftime('%d-%b-%Y')\nmail = None\nwarnings = []\nmessages = []\nseen_messages = set()\n\ntry:\n    mail = imaplib.IMAP4_SSL(HOST, PORT, timeout=SOCKET_TIMEOUT_SECS)\n    mail.login(USER, PASSWORD)\n    mail.select('INBOX')\n\n    status, data = mail.search(None, f'(SINCE \"{since_date}\")')\n    message_ids = data[0].split() if status == 'OK' and data and data[0] else []\n\n    for message_id in message_ids:\n        imap_id = message_id.decode(errors='ignore')\n        try:\n            fetch_status, msg_data = mail.fetch(message_id, '(BODY.PEEK[])')\n            if fetch_status != 'OK' or not msg_data:\n                continue\n\n            raw_msg = None\n            for part in msg_data:\n                if isinstance(part, tuple) and len(part) > 1:\n                    raw_msg = part[1]\n                    break\n            if not raw_msg:\n                continue\n\n            try:\n                msg = email.message_from_bytes(raw_msg)\n            except Exception as exc:\n                record_warning(warnings, 'parse_message', exc, imap_id)\n                continue\n\n            raw_date, parsed_dt_utc = parse_date(msg.get('Date'), warnings)\n            if parsed_dt_utc is not None and parsed_dt_utc < cutoff_utc:\n                continue\n\n            subject = decode_value(msg.get('Subject')) or '(no subject)'\n            normalized_subject = normalize_subject(subject)\n            message_id_value = decode_value(msg.get('Message-ID'))\n            from_value = decode_value(msg.get('From'))\n            to_value = decode_value(msg.get('To'))\n            body_text = extract_body_text(msg)\n            thread_key, references_value, in_reply_to = build_thread_key(msg, normalized_subject, message_id_value, imap_id)\n            dedupe_key = (message_id_value or imap_id, thread_key)\n            if dedupe_key in seen_messages:\n                continue\n            seen_messages.add(dedupe_key)\n\n            messages.append({\n                'imapId': imap_id,\n                'messageId': message_id_value,\n                'from': from_value,\n                'to': to_value,\n                'subject': subject,\n                'normalizedSubject': normalized_subject,\n                'date': raw_date,\n                'dateIsoUtc': parsed_dt_utc.isoformat() if parsed_dt_utc else None,\n                'references': references_value,\n                'inReplyTo': in_reply_to,\n                'threadKey': thread_key,\n                'bodyPreview': body_text,\n            })\n        except Exception as exc:\n            record_warning(warnings, 'process_email', exc, imap_id)\n            continue\nfinally:\n    if mail is not None:\n        try:\n            mail.logout()\n        except Exception:\n            pass\n\nmessages.sort(key=lambda item: (item.get('dateIsoUtc') or '', item.get('imapId') or ''))\nthreads_map = OrderedDict()\nfor item in messages:\n    thread = threads_map.setdefault(item['threadKey'], {\n        'threadKey': item['threadKey'],\n        'normalizedSubject': item.get('normalizedSubject') or normalize_subject(item.get('subject')),\n        'messages': [],\n    })\n    thread['messages'].append(item)\n\nthreads = []\nfor thread in threads_map.values():\n    original_messages = list(thread['messages'])\n    trimmed_messages = original_messages[-MAX_MESSAGES_PER_THREAD:]\n    conversation_parts = []\n    total_chars = 0\n    for idx, msg in enumerate(trimmed_messages, start=1):\n        block = [\n            f'Message {idx}',\n            'Date: ' + safe_text(msg.get('dateIsoUtc') or msg.get('date') or '-'),\n            'From: ' + safe_text(msg.get('from') or '-'),\n            'Subject: ' + safe_text(msg.get('subject') or '-'),\n            'Body: ' + safe_text(msg.get('bodyPreview') or '(no readable body)'),\n        ]\n        chunk = '\\n'.join(block)\n        if total_chars and total_chars + len(chunk) + 2 > MAX_THREAD_TEXT_CHARS:\n            break\n        conversation_parts.append(chunk)\n        total_chars += len(chunk) + 2\n\n    latest = original_messages[-1]\n    thread_payload = {\n        'threadKey': thread['threadKey'],\n        'normalizedSubject': thread['normalizedSubject'],\n        'latestSubject': latest.get('subject') or thread['normalizedSubject'],\n        'latestFrom': latest.get('from') or '',\n        'firstDateIsoUtc': original_messages[0].get('dateIsoUtc'),\n        'lastDateIsoUtc': latest.get('dateIsoUtc'),\n        'messageCount': len(original_messages),\n        'messages': trimmed_messages,\n        'conversationText': '\\n\\n'.join(conversation_parts).strip(),\n    }\n    threads.append(thread_payload)\n\nthreads.sort(key=lambda item: item.get('lastDateIsoUtc') or '', reverse=True)\n\nresult = {\n    'generatedAtUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(),\n    'windowHours': 24,\n    'count': len(messages),\n    'threadCount': len(threads),\n    'emails': messages,\n    'threads': threads,\n}\n\nif warnings:\n    result['warningCount'] = len(warnings)\n    result['warnings'] = warnings\n\nprint(json.dumps(result, ensure_ascii=False))\nPY"
+      },
+      "id": "fetch_Email_imap",
+      "name": "Fetch Gmail via IMAP",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        188
+      ],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 5000,
+      "notesInFlow": true,
+      "notes": "Configure USER, PASSWORD, and HOST in this node. For Gmail, use an app password and HOST=imap.gmail.com."
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = ($json.stdout ?? '').trim();\nif (!raw) {\n  return [{ json: { generatedAtUtc: new Date().toISOString(), windowHours: 24, count: 0, emails: [], note: 'No stdout from command', stderr: $json.stderr ?? '' } }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (error) {\n  throw new Error(`Failed to parse command stdout as JSON: ${raw.slice(0, 500)}`);\n}\n\nreturn [{ json: parsed }];"
+      },
+      "id": "parse_output",
+      "name": "Parse JSON Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        188
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json ?? {};\nconst threadsInput = Array.isArray(payload.threads) ? payload.threads : [];\nconst emails = Array.isArray(payload.emails) ? payload.emails : [];\nconst totalEmailCount = Number(payload.count ?? emails.length ?? 0);\nconst totalThreadCount = Number(payload.threadCount ?? threadsInput.length ?? 0);\n\nconst clean = (value) => String(value ?? '').replace(/\\s+/g, ' ').trim();\nconst clip = (value, max) => {\n  const text = clean(value);\n  if (!text || text.length <= max) return text;\n  const trimmed = text.slice(0, max).trim();\n  return trimmed.replace(/[\\s.,;:]+$/g, '') + ' ...';\n};\nconst dedupeBy = (items, keyFn) => {\n  const seen = new Set();\n  return items.filter((item) => {\n    const key = keyFn(item);\n    if (seen.has(key)) return false;\n    seen.add(key);\n    return true;\n  });\n};\n\nconst synthThreads = emails.map((email) => ({\n  threadKey: email.threadKey || email.messageId || email.imapId || clean(email.subject) || 'single',\n  normalizedSubject: clean(email.normalizedSubject || email.subject || '(no subject)'),\n  latestSubject: clean(email.subject || '(no subject)'),\n  latestFrom: clean(email.from || ''),\n  firstDateIsoUtc: email.dateIsoUtc || null,\n  lastDateIsoUtc: email.dateIsoUtc || null,\n  messageCount: 1,\n  messages: [email],\n  conversationText: [\n    `Message 1`,\n    `Date: ${clean(email.dateIsoUtc || email.date || '-')}`,\n    `From: ${clean(email.from || '-')}`,\n    `Subject: ${clean(email.subject || '(no subject)')}`,\n    `Body: ${clean(email.bodyPreview || '(no readable body)')}`,\n  ].join('\\n'),\n}));\n\nconst threads = (threadsInput.length ? threadsInput : synthThreads)\n  .map((thread, index) => ({\n    index,\n    threadKey: clean(thread.threadKey || `thread-${index + 1}`),\n    normalizedSubject: clean(thread.normalizedSubject || thread.latestSubject || '(no subject)'),\n    latestSubject: clean(thread.latestSubject || thread.normalizedSubject || '(no subject)'),\n    latestFrom: clean(thread.latestFrom || thread.messages?.slice(-1)?.[0]?.from || ''),\n    messageCount: Number(thread.messageCount ?? (Array.isArray(thread.messages) ? thread.messages.length : 0) ?? 1),\n    firstDateIsoUtc: clean(thread.firstDateIsoUtc || ''),\n    lastDateIsoUtc: clean(thread.lastDateIsoUtc || ''),\n    conversationText: clip(thread.conversationText || '', 6000),\n  }))\n  .filter((thread) => thread.latestSubject || thread.conversationText);\n\nconst blockedPatterns = [\n  /job alert|jobalerts|recommended jobs?|is hiring|hiring digest|career opportunity|open roles?|bootcamp/i,\n  /newsletter|digest|promo|promotion|offer|discount|deal|sale|coupon|advert|marketing/i,\n  /loan|credit card|pre-?approved|ipo\\b|nfo\\b|mutual fund\\s*nfo|market digest|stock alert|webinar|contest|preorder/i,\n  /people you may know|social update|linkedin (news|update|research|group|notification)/i,\n  /welcome to|product update|release notes|new in|free trial reminder/i,\n];\nconst urgentPatterns = [\n  /security alert|suspicious|verify|verification|otp|2fa|password|breach|sign-?in/i,\n  /action required|urgent|deadline|due today|due tomorrow|expires?|expiry|renew/i,\n  /confirm|approval|approve|reply required|respond by|complete your/i,\n  /payment due|invoice|failed payment|billing issue|statement available/i,\n  /meeting|rescheduled|calendar|client issue|incident|outage|support ending/i,\n];\nconst infoPatterns = [\n  /statement|receipt|transaction confirmed|order shipped|delivery update|storage/i,\n  /notice|policy update|digest|summary|market note|report/i,\n];\n\nconst classifyReason = (thread) => {\n  const text = `${thread.latestSubject} ${thread.latestFrom} ${thread.conversationText}`;\n  if (/security alert|verify|otp|2fa|password|sign-?in/i.test(text)) return 'Security verification or review needed';\n  if (/confirm|approval|approve|reply required|respond by|complete your/i.test(text)) return 'Pending confirmation or reply from you';\n  if (/payment due|invoice|failed payment|billing issue/i.test(text)) return 'Payment or billing action required';\n  if (/meeting|rescheduled|calendar|deadline|due/i.test(text)) return 'Schedule or deadline requires attention';\n  if (/renew|expires?|support ending/i.test(text)) return 'Expiry or renewal needs action';\n  return 'Review and act on this thread';\n};\nconst infoNote = (thread) => {\n  const text = `${thread.latestSubject} ${thread.latestFrom} ${thread.conversationText}`;\n  if (/statement|receipt|transaction confirmed/i.test(text)) return 'Informational financial update';\n  if (/delivery|order shipped/i.test(text)) return 'Delivery or order status update';\n  if (/notice|policy update|report/i.test(text)) return 'Informational notice';\n  return 'Useful for reference';\n};\n\nconst annotated = threads.map((thread) => {\n  const haystack = `${thread.latestSubject} ${thread.latestFrom} ${thread.conversationText}`;\n  const isBlocked = blockedPatterns.some((rx) => rx.test(haystack));\n  const isUrgent = urgentPatterns.some((rx) => rx.test(haystack));\n  const isInfo = !isBlocked && !isUrgent && infoPatterns.some((rx) => rx.test(haystack));\n  return { ...thread, isBlocked, isUrgent, isInfo };\n});\n\nconst blockedThreads = annotated.filter((thread) => thread.isBlocked);\nconst candidateThreads = annotated.filter((thread) => !thread.isBlocked);\nconst urgentThreads = dedupeBy(candidateThreads.filter((thread) => thread.isUrgent), (thread) => thread.normalizedSubject.toLowerCase()).slice(0, 5);\nconst infoThreads = dedupeBy(candidateThreads.filter((thread) => !thread.isUrgent && thread.isInfo), (thread) => thread.normalizedSubject.toLowerCase()).slice(0, 3);\n\nconst maxCandidateThreads = 12;\nconst maxContextChars = 24000;\nlet consumedChars = 0;\nconst candidateThreadContext = [];\nfor (const thread of candidateThreads.slice(0, maxCandidateThreads)) {\n  const block = [\n    `Thread Key: ${thread.threadKey}`,\n    `Normalized Subject: ${thread.normalizedSubject}`,\n    `Latest Subject: ${thread.latestSubject}`,\n    `Latest Sender: ${thread.latestFrom || '-'}`,\n    `Message Count: ${thread.messageCount}`,\n    `Last Email UTC: ${thread.lastDateIsoUtc || '-'}`,\n    `Conversation:\\n${thread.conversationText || '(no readable body)'}`,\n  ].join('\\n');\n  if (consumedChars && consumedChars + block.length + 2 > maxContextChars) break;\n  candidateThreadContext.push(block);\n  consumedChars += block.length + 2;\n}\n\nconst blockedExamples = blockedThreads.slice(0, 4).map((thread) => `${thread.latestSubject} (${thread.latestFrom || 'unknown sender'})`);\nconst urgentItems = urgentThreads.map((thread) => ({\n  subject: thread.latestSubject,\n  sender: thread.latestFrom || 'Unknown sender',\n  reason: classifyReason(thread),\n}));\nconst forInfo = infoThreads.map((thread) => ({\n  subject: thread.latestSubject,\n  sender: thread.latestFrom || 'Unknown sender',\n  note: infoNote(thread),\n}));\n\nconst fallbackSummary = urgentItems.length\n  ? `${urgentItems.length} email thread${urgentItems.length === 1 ? '' : 's'} need action from the last 24 hours.`\n  : 'No actionable email threads in the last 24 hours.';\n\nconst fallbackStructured = {\n  summary: fallbackSummary,\n  urgent_items: urgentItems,\n  for_info: forInfo,\n};\n\nconst dateLocal = new Intl.DateTimeFormat(undefined, {\n  day: '2-digit',\n  month: 'short',\n  year: 'numeric',\n}).format(new Date());\n\nreturn {\n  json: {\n    ...payload,\n    total_thread_count: totalThreadCount || threads.length,\n    email_count_24h: totalEmailCount,\n    blocked_thread_count: blockedThreads.length,\n    candidate_thread_count: candidateThreads.length,\n    blocked_examples_text: blockedExamples.join('; '),\n    candidate_thread_context: candidateThreadContext.join('\\n\\n'),\n    fallback_structured: fallbackStructured,\n    ntfy_title: `Daily Email Summary | ${totalEmailCount} mails | ${dateLocal}`,\n  },\n};",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "5323cfa5-3107-4776-a5de-1ce8c1c36065",
+      "name": "Build Summary Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        188
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const base = $json || {};\nconst structured = base.structured_output || {};\nconst urgentItems = Array.isArray(base.urgent_items) ? base.urgent_items : Array.isArray(structured.urgent_items) ? structured.urgent_items : [];\nconst forInfo = Array.isArray(base.for_info) ? base.for_info : Array.isArray(structured.for_info) ? structured.for_info : [];\nconst summary = String(base.summary || structured.summary || 'Action needed on recent email threads.').trim();\nconst mutedCount = Number(base.blocked_thread_count ?? 0);\nconst mutedExamples = String(base.blocked_examples_text || '').trim();\n\nconst clean = (value) => String(value ?? '').replace(/\\s+/g, ' ').trim();\nconst clip = (value, max) => {\n  const text = clean(value);\n  if (!text || text.length <= max) return text;\n  return text.slice(0, max).replace(/[\\s.,;:]+$/g, '') + ' ...';\n};\nconst escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst wrap = (value, width) => {\n  const text = clean(value);\n  if (!text) return [''];\n  const tokens = text.split(/\\s+/);\n  const lines = [];\n  let current = '';\n  for (const token of tokens) {\n    if (token.length > width) {\n      if (current) {\n        lines.push(current);\n        current = '';\n      }\n      for (let i = 0; i < token.length; i += width) lines.push(token.slice(i, i + width));\n      continue;\n    }\n    if (!current) {\n      current = token;\n      continue;\n    }\n    if ((current + ' ' + token).length <= width) {\n      current += ' ' + token;\n    } else {\n      lines.push(current);\n      current = token;\n    }\n  }\n  if (current) lines.push(current);\n  return lines.length ? lines : [''];\n};\n\nconst columns = [\n  { key: 'subject', width: 26 },\n  { key: 'sender', width: 18 },\n  { key: 'reason', width: 30 },\n];\nconst border = '+' + columns.map((c) => '-'.repeat(c.width + 2)).join('+') + '+';\nconst renderBlock = (row) => {\n  const cellLines = columns.map((column) => wrap(row[column.key] ?? '', column.width));\n  const height = Math.max(...cellLines.map((lines) => lines.length));\n  return Array.from({ length: height }, (_, index) => {\n    const cells = columns.map((column, cellIndex) => ` ${(cellLines[cellIndex][index] || '').padEnd(column.width, ' ')} `);\n    return `|${cells.join('|')}|`;\n  });\n};\nconst buildTable = (rows) => {\n  if (!rows.length) return 'None';\n  const lines = [border, ...renderBlock({ subject: 'Subject', sender: 'Sender', reason: 'Reason' }), border];\n  for (const row of rows.slice(0, 5)) {\n    lines.push(...renderBlock({\n      subject: clip(row.subject, 240),\n      sender: clip(row.sender, 140),\n      reason: clip(row.reason, 220),\n    }));\n    lines.push(border);\n  }\n  return ['```', ...lines, '```'].join('\\n');\n};\n\nconst infoLines = forInfo.slice(0, 3).map((item) => `- ${clip(item.subject, 90)} | ${clip(item.sender, 60)} | ${clip(item.note, 90)}`);\nconst mutedLines = [\n  `- ${mutedCount} thread${mutedCount === 1 ? '' : 's'} muted before analysis.`,\n  mutedExamples ? `- Examples: ${clip(mutedExamples, 240)}` : '- Examples: None',\n];\n\nconst sections = [\n  '📬 Daily Email Summary (Last 24h)',\n  '🧠 Summary',\n  summary,\n  '',\n  '✅ Action Required',\n  buildTable(urgentItems),\n];\nif (infoLines.length) {\n  sections.push('', 'ℹ️ For Info', ...infoLines);\n}\nsections.push('', '🧹 Muted', ...mutedLines);\n\nconst text = sections.join('\\n').trim();\nconst codeBlockRegex = /```(?:[a-zA-Z0-9_-]+)?\\n?([\\s\\S]*?)```/g;\nlet html = '';\nlet lastIndex = 0;\nlet match;\nwhile ((match = codeBlockRegex.exec(text)) !== null) {\n  html += escapeHtml(text.slice(lastIndex, match.index));\n  html += `<pre>${escapeHtml(String(match[1] ?? '').replace(/^\\n+|\\n+$/g, ''))}</pre>`;\n  lastIndex = match.index + match[0].length;\n}\nhtml += escapeHtml(text.slice(lastIndex));\n\nreturn {\n  json: {\n    ...base,\n    text,\n    notify_message: text,\n    telegram_message: html || escapeHtml(text),\n  },\n};"
+      },
+      "id": "94789405-6d69-4b6a-98f3-5ac1bba96e69",
+      "name": "Normalize Summary Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        188
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntfy.sh/YOUR_NTFY_TOPIC",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "={{$('Fix Action Table Layout').first().json.ntfy_title}}"
+            },
+            {
+              "name": "Priority",
+              "value": "high"
+            },
+            {
+              "name": "Tags",
+              "value": "mail"
+            },
+            {
+              "name": "Content-Type",
+              "value": "text/plain; charset=utf-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{$('Fix Action Table Layout').first().json.notify_message}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "cbc60d0a-b446-4a1a-bbfc-113dccb38906",
+      "name": "Send ntfy Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2496,
+        284
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "notesInFlow": true,
+      "notes": "Optional fallback. Replace YOUR_NTFY_TOPIC or remove this node if you do not want ntfy fallback."
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{$json.telegram_message || $json.notify_message}}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "resource": "message",
+        "operation": "sendMessage"
+      },
+      "id": "telegram_send_summary",
+      "name": "Send Telegram Summary",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2048,
+        284
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "continueOnFail": false,
+      "onError": "continueRegularOutput",
+      "notesInFlow": true,
+      "notes": "Set YOUR_TELEGRAM_CHAT_ID and select/create your Telegram credential after import."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "telegram_error_check",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "if_telegram_failed",
+      "name": "Telegram Delivery Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2272,
+        284
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = (() => {\n  try {\n    return $('Prepare Structured Prompt').first().json || {};\n  } catch {\n    return {};\n  }\n})();\nconst payload = $json || {};\nconst fallback = base.fallback_structured || { summary: 'No actionable email threads in the last 24 hours.', urgent_items: [], for_info: [] };\n\nconst clean = (value) => String(value ?? '').replace(/\\s+/g, ' ').trim();\nconst clip = (value, max) => {\n  const text = clean(value);\n  if (!text || text.length <= max) return text;\n  return text.slice(0, max).replace(/[\\s.,;:]+$/g, '') + ' ...';\n};\nconst normalizeItem = (item, noteKey) => ({\n  subject: clip(item?.subject, 180),\n  sender: clip(item?.sender, 140),\n  [noteKey]: clip(item?.[noteKey], 90),\n});\nconst extractJsonObject = (text) => {\n  const source = String(text || '').trim();\n  if (!source) return null;\n  try {\n    return JSON.parse(source);\n  } catch {}\n  let depth = 0;\n  let start = -1;\n  let inString = false;\n  let escaped = false;\n  for (let i = 0; i < source.length; i += 1) {\n    const ch = source[i];\n    if (escaped) {\n      escaped = false;\n      continue;\n    }\n    if (ch === '\\\\' && inString) {\n      escaped = true;\n      continue;\n    }\n    if (ch === '\"') {\n      inString = !inString;\n      continue;\n    }\n    if (inString) continue;\n    if (ch === '{') {\n      if (depth === 0) start = i;\n      depth += 1;\n    } else if (ch === '}') {\n      if (depth > 0) depth -= 1;\n      if (depth === 0 && start !== -1) {\n        const candidate = source.slice(start, i + 1);\n        try {\n          return JSON.parse(candidate);\n        } catch {\n          start = -1;\n        }\n      }\n    }\n  }\n  return null;\n};\n\nconst rawCandidates = [\n  payload?.message?.content,\n  payload?.response?.message?.content,\n  payload?.data?.message?.content,\n  payload?.output,\n  payload?.response,\n  payload?.text,\n  payload,\n];\n\nlet structured = null;\nlet rawModelText = '';\nfor (const candidate of rawCandidates) {\n  if (!candidate) continue;\n  if (typeof candidate === 'string') {\n    rawModelText = rawModelText || candidate;\n    const parsed = extractJsonObject(candidate);\n    if (parsed) {\n      structured = parsed;\n      break;\n    }\n    continue;\n  }\n  if (typeof candidate === 'object') {\n    const direct = candidate.summary || candidate.urgent_items || candidate.for_info ? candidate : null;\n    if (direct) {\n      structured = direct;\n      break;\n    }\n    const nestedText = candidate?.message?.content || candidate?.content || '';\n    if (nestedText && typeof nestedText === 'string') {\n      rawModelText = rawModelText || nestedText;\n      const parsed = extractJsonObject(nestedText);\n      if (parsed) {\n        structured = parsed;\n        break;\n      }\n    }\n  }\n}\n\nif (!structured || typeof structured !== 'object') {\n  const urgentItems = Array.isArray(fallback.urgent_items) ? fallback.urgent_items : [];\n  const forInfo = Array.isArray(fallback.for_info) ? fallback.for_info : [];\n  return {\n    json: {\n      ...base,\n      ...payload,\n      structured_output: fallback,\n      summary: clean(fallback.summary),\n      urgent_items: urgentItems,\n      for_info: forInfo,\n      has_urgent_items: urgentItems.length > 0,\n      summary_source: 'ollama_fallback_invalid_output',\n      ollama_error: 'Model returned invalid JSON; heuristic fallback used.',\n      raw_model_text: clip(rawModelText, 3000),\n    },\n  };\n}\n\nconst summary = clip(structured.summary || fallback.summary, 140);\nconst urgentItems = (Array.isArray(structured.urgent_items) ? structured.urgent_items : [])\n  .map((item) => normalizeItem(item, 'reason'))\n  .filter((item) => item.subject && item.sender && item.reason)\n  .slice(0, 5);\nconst forInfo = (Array.isArray(structured.for_info) ? structured.for_info : [])\n  .map((item) => normalizeItem(item, 'note'))\n  .filter((item) => item.subject && item.sender && item.note)\n  .slice(0, 3);\nconst normalized = {\n  summary: summary || fallback.summary,\n  urgent_items: urgentItems,\n  for_info: forInfo,\n};\n\nreturn {\n  json: {\n    ...base,\n    ...payload,\n    structured_output: normalized,\n    summary: normalized.summary,\n    urgent_items: normalized.urgent_items,\n    for_info: normalized.for_info,\n    has_urgent_items: normalized.urgent_items.length > 0,\n    summary_source: 'ollama_structured',\n    ollama_error: '',\n    raw_model_text: clip(rawModelText, 3000),\n  },\n};",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "parse_ollama_summary",
+      "name": "Parse Ollama Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { ...$json } };",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "978c1978-83d4-4895-b916-08b0ae7bc1c9",
+      "name": "Fix Action Table Layout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        188
+      ]
+    },
+    {
+      "id": "87957953-b1b8-48d5-a41a-902ce9bd9771",
+      "name": "Prepare Structured Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        188
+      ],
+      "parameters": {
+        "jsCode": "const source = $json || {};\nconst fallback = source.fallback_structured || { summary: 'No actionable email threads in the last 24 hours.', urgent_items: [], for_info: [] };\nconst systemPrompt = [\n  'You are an executive email triage assistant.',\n  'Return exactly one valid JSON object and nothing else.',\n  'Do not include markdown, code fences, commentary, or chain-of-thought.',\n  'Classify only real user-specific actions as urgent.',\n  'Promotions, job alerts, newsletters, market alerts, generic offers, social updates, and informational notices are not urgent unless the thread clearly requires a pending action from the user.',\n  'Use this exact schema:',\n  '{',\n  '  \"summary\": \"string\",',\n  '  \"urgent_items\": [{\"subject\":\"string\",\"sender\":\"string\",\"reason\":\"string\"}],',\n  '  \"for_info\": [{\"subject\":\"string\",\"sender\":\"string\",\"note\":\"string\"}]',\n  '}',\n  'Rules:',\n  '- summary must be one sentence under 140 characters',\n  '- urgent_items must contain at most 5 items',\n  '- for_info must contain at most 3 items',\n  '- reason and note must each be under 90 characters',\n  '- if there is no urgent item, return urgent_items as []',\n  '- preserve the real subject and sender text from the input',\n  '',\n  'Few-shot example input:',\n  'Thread Key: subj:google security alert',\n  'Normalized Subject: Google security alert',\n  'Latest Subject: Google security alert',\n  'Latest Sender: Google <no-reply@accounts.google.com>',\n  'Message Count: 1',\n  'Last Email UTC: 2026-04-01T16:00:00+00:00',\n  'Conversation:',\n  'Message 1',\n  'Date: 2026-04-01T16:00:00+00:00',\n  'From: Google <no-reply@accounts.google.com>',\n  'Subject: Google security alert',\n  'Body: New sign-in detected from a new device. Review activity and secure the account if this was not you.',\n  '',\n  'Few-shot example output:',\n  '{',\n  '  \"summary\": \"One security email requires immediate review.\",',\n  '  \"urgent_items\": [',\n  '    {',\n  '      \"subject\": \"Google security alert\",',\n  '      \"sender\": \"Google <no-reply@accounts.google.com>\",',\n  '      \"reason\": \"New sign-in alert requires account verification.\"',\n  '    }',\n  '  ],',\n  '  \"for_info\": []',\n  '}',\n].join('\\n');\n\nconst userPrompt = [\n  'Analyze the following last-24-hour email threads.',\n  `Total emails: ${source.email_count_24h ?? 0}`,\n  `Total threads: ${source.total_thread_count ?? 0}`,\n  `Candidate threads: ${source.candidate_thread_count ?? 0}`,\n  `Muted threads before model: ${source.blocked_thread_count ?? 0}`,\n  source.blocked_examples_text ? `Muted examples: ${source.blocked_examples_text}` : 'Muted examples: None',\n  '',\n  'Return only the JSON object.',\n  '',\n  source.candidate_thread_context || '(no candidate threads)',\n].join('\\n');\n\nreturn {\n  json: {\n    ...source,\n    system_prompt: systemPrompt,\n    user_prompt: userPrompt,\n    prompt_text: `${systemPrompt}\\n\\n${userPrompt}`,\n  },\n};",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "b6ff7d14-3687-4a4c-a854-ac4184c670f6",
+      "name": "Call Ollama Summary API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1024,
+        64
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:11434/api/chat",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ model: 'YOUR_OLLAMA_MODEL', stream: false, think: false, format: 'json', keep_alive: '15m', messages: [{ role: 'system', content: $json.system_prompt }, { role: 'user', content: $json.user_prompt }], options: { temperature: 0, num_ctx: 32768, num_predict: 260 } }) }}",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1500,
+      "notesInFlow": true,
+      "notes": "Set YOUR_OLLAMA_MODEL to a locally available Ollama model and make sure Ollama is reachable at the configured URL."
+    },
+    {
+      "id": "if_has_urgent_items",
+      "name": "Has Urgent Items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1600,
+        64
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has_urgent_items_check",
+              "leftValue": "={{ !!$json.has_urgent_items }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Gmail via IMAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Gmail via IMAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Gmail via IMAP": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Output": {
+      "main": [
+        [
+          {
+            "node": "Build Summary Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary Prompt": {
+      "main": [
+        [
+          {
+            "node": "Prepare Structured Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Structured Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Ollama Summary API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Ollama Summary API": {
+      "main": [
+        [
+          {
+            "node": "Parse Ollama Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Ollama Summary": {
+      "main": [
+        [
+          {
+            "node": "Has Urgent Items?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Urgent Items?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Summary Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Normalize Summary Message": {
+      "main": [
+        [
+          {
+            "node": "Fix Action Table Layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix Action Table Layout": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Summary": {
+      "main": [
+        [
+          {
+            "node": "Telegram Delivery Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Delivery Failed?": {
+      "main": [
+        [
+          {
+            "node": "Send ntfy Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false
+}
