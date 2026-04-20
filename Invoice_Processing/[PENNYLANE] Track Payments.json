@@ -1,0 +1,340 @@
+{
+  "name": "[PENNYLANE] Track Payments",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# [PENNYLANE] Track Payments\n\n**Trigger:** Schedule (every 15 minutes)\n**Source:** Pennylane API v2 - customer invoices\n\n---\n\n### Flow\n\n`Schedule Trigger`\n  → `PL Fetch Invoices`\n  → `Code Filter Status Changes`\n  → `IF Has Updates`\n    → ✅ `Code Build Payment Notification`\n      → `SL Send Notification`\n  → `Set Done`\n\n---\n\n### Services & Credentials\n\n| Service | Credential |\n|---------|-----------|\n| Pennylane API v2 | Pennylane API (HTTP Header Auth) |\n| Slack (optional) | Slack OAuth |\n\n---\n\n### Node refs for $()\n\n- Schedule Trigger\n- PL Fetch Invoices\n- Code Filter Status Changes\n- IF Has Updates\n- Code Build Payment Notification\n- SL Send Notification\n- Set Done",
+        "height": 608,
+        "width": 544
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "6ea2a45d-df0a-4ec7-a38e-740c40782606",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        32
+      ],
+      "id": "d45398dc-a8b8-4c63-a872-ea829ecfc92c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://app.pennylane.com/api/external/v2/customer_invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        32
+      ],
+      "id": "3472cf87-8215-4bd0-9e6d-fa78ecaed39a",
+      "name": "PL Fetch Invoices",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'PL Fetch Invoices'\nconst invoices = $input.first().json.items;\nconst today = new Date().toISOString().split('T')[0];\n\nconst results = {\n  paid: [],\n  overdue: [],\n  upcoming: []\n};\n\nfor (const inv of invoices) {\n  if (inv.draft) continue;\n\n  if (inv.paid) {\n    results.paid.push(inv);\n  } else if (inv.deadline < today) {\n    results.overdue.push(inv);\n  } else {\n    results.upcoming.push(inv);\n  }\n}\n\nreturn [{\n  json: {\n    total_invoices: invoices.length,\n    paid_count: results.paid.length,\n    overdue_count: results.overdue.length,\n    upcoming_count: results.upcoming.length,\n    paid: results.paid,\n    overdue: results.overdue,\n    has_updates: results.paid.length > 0 || results.overdue.length > 0\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        32
+      ],
+      "id": "d2b7e251-96c3-4228-b08c-2c147dcda8b7",
+      "name": "Code Filter Status Changes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f6d3fe78-bb28-4193-b4c0-7d04e963d48f",
+              "leftValue": "={{ $json.has_updates }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        32
+      ],
+      "id": "023f3a34-1a30-4ab2-b8f4-14227dac655c",
+      "name": "IF Has Updates"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aee99e96-e05f-4770-b8c4-53a574358d7b",
+              "name": "Status",
+              "value": "no updates",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        48
+      ],
+      "id": "ac4d9578-3a5b-43cc-ab0a-8673987a377a",
+      "name": "Set Done"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'Code Filter Status Changes'\nconst data = $input.first().json;\nconst lines = ['📊 Pennylane Invoice Status Report', ''];\n\nif (data.paid_count > 0) {\n  lines.push(`✅ ${data.paid_count} invoice(s) paid:`);\n  for (const inv of data.paid) {\n    lines.push(`  - ${inv.invoice_number} | ${inv.currency_amount} ${inv.currency} | ${inv.label}`);\n  }\n  lines.push('');\n}\n\nif (data.overdue_count > 0) {\n  lines.push(`⚠️ ${data.overdue_count} invoice(s) overdue:`);\n  for (const inv of data.overdue) {\n    lines.push(`  - ${inv.invoice_number} | ${inv.currency_amount} ${inv.currency} | Due: ${inv.deadline} | ${inv.label}`);\n  }\n  lines.push('');\n}\n\nlines.push(`📋 ${data.upcoming_count} invoice(s) upcoming`);\nlines.push(`Total tracked: ${data.total_invoices}`);\n\nreturn [{\n  json: {\n    message: lines.join('\\n'),\n    paid_count: data.paid_count,\n    overdue_count: data.overdue_count,\n    upcoming_count: data.upcoming_count\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        -48
+      ],
+      "id": "66da8691-e7a6-4c3d-92f6-701fa2fdcc18",
+      "name": "Code Build Payment Notification"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "text": "={{ $json.message }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1152,
+        -48
+      ],
+      "id": "8284d459-6b14-428c-84c2-208511b97546",
+      "name": "SL Send Notification",
+      "webhookId": "763cb5da-2c6f-4311-9c3c-a652d891af6e",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 1. Trigger\n\nRuns every 15 minutes.\nPolls Pennylane for all customer invoices.\n\nAdjust the schedule interval in the\nSchedule Trigger node to fit your needs.",
+        "height": 560,
+        "width": 272,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -112,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "8110087c-5802-4805-bedb-151a9261bb02",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fetch invoices\n\nRetrieves all customer invoices from Pennylane.\n\nEndpoint: GET /customer_invoices\n\nNote: the Pennylane API does not support\nfiltering by status or paid fields.\nAll filtering is done in the next Code node.",
+        "height": 560,
+        "width": 272,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        160,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "07df7bfc-ded9-4119-b697-706ed1710194",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Classify & filter\n\nClassifies each invoice into 3 categories:\n- paid: invoice has been settled\n- overdue: past deadline and still unpaid\n- upcoming: not yet due\n\nOnly triggers a notification if there are\npaid or overdue invoices (has_updates = true).\n\nIf all invoices are upcoming, the workflow\nends silently via Set Done.",
+        "height": 560,
+        "width": 416,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "f4e10525-59ed-46a2-ad6b-1b2b8e4bb789",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 4. Notify\n\nBuilds a summary message with:\n- List of newly paid invoices\n- List of overdue invoices\n- Count of upcoming invoices\n\nSends to Slack. Replace with your preferred\nnotification channel (Telegram, Email, etc.).",
+        "height": 560,
+        "width": 512,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "ee1f614f-fc39-4d68-b1e6-74dc303b0297",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 5. Done\n\nNo paid or overdue invoices detected.\nWorkflow ends silently.\n\nThis node ensures a clean execution log\nin n8n. No notification is sent.",
+        "height": 560,
+        "width": 368,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1360,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "4f5a9ddb-f537-4282-8c6a-47a3b36f30b5",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "PL Fetch Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Fetch Invoices": {
+      "main": [
+        [
+          {
+            "node": "Code Filter Status Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Filter Status Changes": {
+      "main": [
+        [
+          {
+            "node": "IF Has Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Updates": {
+      "main": [
+        [
+          {
+            "node": "Code Build Payment Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Build Payment Notification": {
+      "main": [
+        [
+          {
+            "node": "SL Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": true
+  },
+  "versionId": "b182dbdb-49af-4e9b-abb5-964fbb5f6171",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "70ec3bed341af97283a0a6dbf0b48c20f5e82d1a117b40451ad8016f7992090c"
+  },
+  "id": "iiAZtgzpKqekwA9W",
+  "tags": []
+}

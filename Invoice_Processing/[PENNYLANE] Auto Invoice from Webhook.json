@@ -1,0 +1,746 @@
+{
+  "name": "[PENNYLANE] Auto Invoice from Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# [PENNYLANE] Auto Invoice from Webhook\n\n**Trigger:** Webhook POST `/pennylane-invoice`\n**Source:** Any CRM, form, or manual call\n\n---\n\n### Flow\n\n`WH Receive Invoice Data`\n  → `Code Validate Payload`\n  → `PL Search Customer`\n  → `IF Customer Exists`\n    → ✅ `Set Customer ID`\n    → ❌ `PL Create Customer` → `Set Customer ID`\n  → `Code Build Invoice Payload`\n  → `PL Create Invoice`\n  → `IF Send Email`\n    → ✅ `Wait PDF Generation` → `PL Send Invoice Email`\n  → `Code Build Notification`\n    → `SL Send Notification`\n    → `IF Has Notification Email`\n      → ✅ `GM Send Notification`\n  → `Set Output Response`\n\n---\n\n### Services & Credentials\n\n| Service | Credential |\n|---------|-----------|\n| Pennylane API v2 | Pennylane API (HTTP Header Auth) |\n| Slack (optional) | Slack OAuth |\n| Gmail (optional) | Gmail OAuth |\n\n---\n\n### Node refs for $()\n\n- WH Receive Invoice Data\n- Code Validate Payload\n- PL Search Customer\n- IF Customer Exists\n- Set Customer ID\n- PL Create Customer\n- Code Build Invoice Payload\n- PL Create Invoice\n- IF Send Email\n- Wait PDF Generation\n- PL Send Invoice Email\n- Code Build Notification\n- SL Send Notification\n- IF Has Notification Email\n- GM Send Notification\n- Set Output Response",
+        "height": 752,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -352,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "2432a919-ea99-4529-969d-2f94a9f44110",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pennylane-invoice",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        32
+      ],
+      "id": "402c4d14-ab30-4baf-85b5-daec4ceb06f4",
+      "name": "WH Receive Invoice Data",
+      "webhookId": "00e37d2c-4cff-46d2-8216-7e2c2006ec47"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'WH Receive Invoice Data'\nconst input = $input.first().json;\n\nconst errors = [];\n\nif (!input.customer_name || input.customer_name.trim() === '') {\n  errors.push('customer_name is required');\n}\n\nif (!input.customer_email || !input.customer_email.includes('@')) {\n  errors.push('customer_email is required and must be valid');\n}\n\nif (!input.items || !Array.isArray(input.items) || input.items.length === 0) {\n  errors.push('items array is required and must contain at least one item');\n} else {\n  input.items.forEach((item, i) => {\n    if (!item.label) errors.push(`items[${i}].label is required`);\n    if (!item.quantity || item.quantity <= 0) errors.push(`items[${i}].quantity must be > 0`);\n    if (!item.unit_price || item.unit_price <= 0) errors.push(`items[${i}].unit_price must be > 0`);\n  });\n}\n\nif (errors.length > 0) {\n  throw new Error('Validation failed: ' + errors.join('; '));\n}\n\nreturn [{\n  json: {\n    customer_name: input.customer_name.trim(),\n    customer_email: input.customer_email.trim().toLowerCase(),\n    customer_address: input.customer_address || '',\n    customer_postal_code: input.customer_postal_code || '00000',\n    customer_city: input.customer_city || 'Non renseigné',\n    customer_country: input.customer_country || 'FR',\n    items: input.items.map(item => ({\n      label: item.label,\n      quantity: item.quantity,\n      unit_price: item.unit_price,\n      vat_rate: item.vat_rate || 'FR_200'\n    })),\n    due_date: input.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],\n    currency: input.currency || 'EUR',\n    payment_conditions: input.payment_conditions || '30_days',\n    reference: input.reference || null,\n    send_email: input.send_email || false,\n    notification_email: input.notification_email || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        32
+      ],
+      "id": "585218e8-449a-40da-8ce7-d8157998c2f7",
+      "name": "Code Validate Payload"
+    },
+    {
+      "parameters": {
+        "url": "https://app.pennylane.com/api/external/v2/customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filter",
+              "value": "=[{\"field\":\"emails\",\"operator\":\"in\",\"value\":\"{{ $json.customer_email }}\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        832,
+        32
+      ],
+      "id": "5440a265-819f-42d4-8c26-d83cb51eb219",
+      "name": "PL Search Customer",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "85be8afd-6833-43ba-bb7b-305dd91e9a73",
+              "leftValue": "={{ $json.items.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        32
+      ],
+      "id": "8e9e52fa-654e-4b14-b72f-8c57b70744f7",
+      "name": "IF Customer Exists"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.pennylane.com/api/external/v2/company_customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('Code Validate Payload').item.json.customer_name }}\",\n  \"emails\": [\"{{ $('Code Validate Payload').item.json.customer_email }}\"],\n  \"billing_address\": {\n    \"address\": \"{{ $('Code Validate Payload').item.json.customer_address }}\",\n    \"postal_code\": \"{{ $('Code Validate Payload').item.json.customer_postal_code }}\",\n    \"city\": \"{{ $('Code Validate Payload').item.json.customer_city }}\",\n    \"country_alpha2\": \"{{ $('Code Validate Payload').item.json.customer_country }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        128
+      ],
+      "id": "106b531c-143f-4de7-ba98-8ede691a0d01",
+      "name": "PL Create Customer",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86d02b7a-27bd-4791-a4aa-02b7429dc7bd",
+              "name": "=customer_id",
+              "value": "={{ $json.id ?? $json.items?.[0]?.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        16
+      ],
+      "id": "49c0e376-9f63-4ded-8d0c-917cc7ddf652",
+      "name": "Set Customer ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.pennylane.com/api/external/v2/customer_invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1824,
+        16
+      ],
+      "id": "c33bd39f-5043-418c-88f9-0aaa8bc25c9d",
+      "name": "PL Create Invoice",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'Set Customer ID', 'Code Validate Payload'\nconst data = $('Code Validate Payload').first().json;\nconst customerId = $('Set Customer ID').first().json.customer_id;\n\nconst invoiceLines = data.items.map(item => ({\n  label: item.label,\n  quantity: item.quantity,\n  unit: 'piece',\n  raw_currency_unit_price: String(item.unit_price.toFixed(2)),\n  vat_rate: item.vat_rate\n}));\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst payload = {\n  customer_id: customerId,\n  date: today,\n  deadline: data.due_date,\n  currency: data.currency,\n  invoice_lines: invoiceLines,\n  draft: false\n};\n\nif (data.reference) {\n  payload.external_reference = data.reference;\n}\n\nreturn [{ json: payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        16
+      ],
+      "id": "964e6cc9-ff3c-49ab-bda0-ca842e6b380e",
+      "name": "Code Build Invoice Payload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "de5a2cc8-def5-4777-8369-51caea43256f",
+              "leftValue": "={{ $('Code Validate Payload').item.json.send_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2064,
+        16
+      ],
+      "id": "041e2680-0585-43e8-8df3-4a04b3c32fc3",
+      "name": "IF Send Email"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'PL Create Invoice', 'Code Validate Payload'\nconst invoice = $('PL Create Invoice').first().json;\nconst data = $('Code Validate Payload').first().json;\n\nconst message = [\n  `New invoice created in Pennylane`,\n  ``,\n  `Customer: ${data.customer_name}`,\n  `Invoice: ${invoice.invoice_number}`,\n  `Amount: ${invoice.currency_amount_before_tax} EUR HT`,\n  `Total TTC: ${invoice.currency_amount} EUR`,\n  `Due date: ${data.due_date}`,\n  `Status: ${invoice.status}`,\n  data.reference ? `Reference: ${data.reference}` : '',\n  ``,\n  `View: ${invoice.public_file_url || 'N/A'}`\n].filter(Boolean).join('\\n');\n\nreturn [{\n  json: {\n    message,\n    invoice_id: invoice.id,\n    invoice_number: invoice.invoice_number,\n    amount: invoice.currency_amount,\n    customer_name: data.customer_name,\n    public_url: invoice.public_file_url || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        32
+      ],
+      "id": "797f431f-2ffd-42fc-afbc-f76b5806af67",
+      "name": "Code Build Notification"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "text": "={{ $json.message }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        3296,
+        -112
+      ],
+      "id": "d5f88019-04c7-43e7-a813-efbb52b954a5",
+      "name": "SL Send Notification",
+      "webhookId": "f2c28848-283c-4ca1-b9c7-e47d6da805c3",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5fe5a2e-f759-4afd-907f-eacb7251481b",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "03e80656-7f61-46cd-98d4-0e7daf6636d3",
+              "name": "invoice_id",
+              "value": "={{ $('Code Build Notification').item.json.invoice_id }}",
+              "type": "string"
+            },
+            {
+              "id": "0f54ae5d-87d0-473f-9076-3b17bc24ec0d",
+              "name": "invoice_number",
+              "value": "={{ $('Code Build Notification').item.json.invoice_number }}",
+              "type": "string"
+            },
+            {
+              "id": "878b0587-95ee-4b69-8853-f51c1c356dfa",
+              "name": "amount",
+              "value": "={{ $('Code Build Notification').item.json.amount }}",
+              "type": "string"
+            },
+            {
+              "id": "ef1c38e7-d845-4604-bb8f-908fcbbe4146",
+              "name": "customer",
+              "value": "={{ $('Code Build Notification').item.json.customer_name }}",
+              "type": "string"
+            },
+            {
+              "id": "93d69fa3-86ca-4f0b-8db3-94d7177c10cf",
+              "name": "public_url",
+              "value": "={{ $('Code Build Notification').item.json.public_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3648,
+        32
+      ],
+      "id": "8d44a126-0a95-4283-ab89-2ebf6e40baa7",
+      "name": "Set Output Response"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        -48
+      ],
+      "id": "f12591be-0ef5-4cc5-8232-a9058b77d8b6",
+      "name": "Wait PDF Generation",
+      "webhookId": "a4b7c8a5-7345-417e-8c05-4519039a97b7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://app.pennylane.com/api/external/v2/customer_invoices/{{ $('PL Create Invoice').item.json.id }}/send_by_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2512,
+        -48
+      ],
+      "id": "892471ed-1b8a-427c-a310-0f40ec49b632",
+      "name": "PL Send Invoice Email",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code Validate Payload').item.json.notification_email }}",
+        "subject": "=[Pennylane] Invoice {{ $('Code Build Notification').item.json.invoice_number }} created for {{ $('Code Build Notification').item.json.customer_name }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n  <div style=\"background-color: #0f172a; padding: 24px; border-radius: 8px 8px 0 0;\">\n    <h1 style=\"color: #ffffff; margin: 0; font-size: 20px;\">New Invoice Created</h1>\n  </div>\n  <div style=\"background-color: #f8fafc; padding: 24px; border: 1px solid #e2e8f0;\">\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      <tr>\n        <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">Customer</td>\n        <td style=\"padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: bold; text-align: right;\">{{ $('Code Build Notification').item.json.customer_name }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">Invoice</td>\n        <td style=\"padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: bold; text-align: right;\">{{ $('Code Build Notification').item.json.invoice_number }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">Amount HT</td>\n        <td style=\"padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: bold; text-align: right;\">{{ $('PL Create Invoice').item.json.currency_amount_before_tax }} EUR</td>\n      </tr>\n      <tr style=\"border-top: 2px solid #e2e8f0;\">\n        <td style=\"padding: 12px 0 8px; color: #64748b; font-size: 14px;\">Total TTC</td>\n        <td style=\"padding: 12px 0 8px; color: #0f172a; font-size: 18px; font-weight: bold; text-align: right;\">{{ $('Code Build Notification').item.json.amount }} EUR</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">Due date</td>\n        <td style=\"padding: 8px 0; color: #0f172a; font-size: 14px; text-align: right;\">{{ $('Code Validate Payload').item.json.due_date }}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">Status</td>\n        <td style=\"padding: 8px 0; color: #0f172a; font-size: 14px; text-align: right;\">{{ $('PL Create Invoice').item.json.status }}</td>\n      </tr>\n    </table>\n  </div>\n  <div style=\"padding: 16px 24px; background-color: #ffffff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; text-align: center;\">\n    <a href=\"{{ $('Code Build Notification').item.json.public_url }}\" style=\"display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; font-weight: bold;\">View Invoice PDF</a>\n  </div>\n  <p style=\"color: #94a3b8; font-size: 12px; text-align: center; margin-top: 16px;\">Sent automatically by n8n-pennylane-auto-invoicing</p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3216,
+        176
+      ],
+      "id": "b73e78af-3604-4d70-a583-f0074877a411",
+      "name": "GM Send Notification",
+      "webhookId": "33b592da-5502-4eb7-ad16-3735811be9dc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "94e188dc-d883-4a77-aac1-06b5bed2dbff",
+              "leftValue": "={{ $('Code Validate Payload').item.json.notification_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2992,
+        96
+      ],
+      "id": "88c6cf59-4ad7-4872-a7b1-116590237115",
+      "name": "IF Has Notification Email"
+    },
+    {
+      "parameters": {
+        "content": "## 1. Input\n\nReceives invoice data via POST webhook.\nAny CRM, form, or script can call this endpoint.\n\nSee `examples/` folder in the GitHub repo\nfor sample payloads.",
+        "height": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "adf964cd-ccdd-44c7-aaa3-4b035df2fa44",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Validation\n\nChecks required fields:\n- customer_name\n- customer_email\n- items[] with label, quantity, unit_price\n\nApplies defaults:\n- country: FR\n- currency: EUR\n- vat_rate: FR_200\n- due_date: +30 days\n- payment_conditions: 30_days",
+        "height": 624,
+        "width": 304,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "50f9b391-c5ba-4b8e-8738-687added6648",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Customer lookup\n\nSearches Pennylane for an existing customer\nby email. Creates one if not found.\n\nEndpoint: GET /customers (filter by emails)\nEndpoint: POST /company_customers\n\nRequired billing_address fields:\naddress, postal_code, city, country_alpha2",
+        "height": 624,
+        "width": 832,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        736,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "6e1dd244-3c60-405c-ae59-f1dc8a60a63c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 4. Invoice creation\n\nBuilds the invoice payload with line items,\nVAT, and deadline, then sends it to Pennylane.\n\nEndpoint: POST /customer_invoices\n\nAmounts must be strings (e.g. \"1500.00\").\nVAT codes: FR_200 (20%), FR_100 (10%),\nFR_055 (5.5%), exempt (0%).\n\nSet draft: true to create without finalizing.",
+        "height": 624,
+        "width": 432,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1568,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "4a4c4708-448f-4b1c-9a21-ba0bcdf1f6ca",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 5. Email sending (optional)\n\nIf send_email is true in the payload,\nwaits 30s for PDF generation, then sends\nthe invoice to the customer via Pennylane.\n\nEndpoint: POST /customer_invoices/{id}/send_by_email\n\nA 409 means the PDF is not ready yet.",
+        "height": 624,
+        "width": 672,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2000,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "53f73bb0-8e6f-4f4d-bf16-89af06cfa1bc",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## 6. Notifications\n\nSlack: always sends a summary to your channel.\nGmail: sends an HTML notification if\nnotification_email is provided in the payload.\n\nBoth are optional. Remove or replace\nwith your preferred channel (Telegram, etc.).",
+        "height": 624,
+        "width": 800,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2672,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "83320de8-8149-4bc1-b58d-c20c20b7b549",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## 7. Webhook response\n\nReturns a JSON response to the caller with:\n- success: true/false\n- invoice_id\n- invoice_number\n- amount\n- customer\n- public_url (link to PDF)\n\nConfigure Error Workflow in Settings\nfor production error handling.",
+        "height": 624,
+        "width": 368,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3472,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "bfbe45e4-cacc-4784-a309-b378ed99a2ce",
+      "name": "Sticky Note7"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WH Receive Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Code Validate Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Validate Payload": {
+      "main": [
+        [
+          {
+            "node": "PL Search Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Search Customer": {
+      "main": [
+        [
+          {
+            "node": "IF Customer Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Customer Exists": {
+      "main": [
+        [
+          {
+            "node": "Set Customer ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PL Create Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Create Customer": {
+      "main": [
+        [
+          {
+            "node": "Set Customer ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Customer ID": {
+      "main": [
+        [
+          {
+            "node": "Code Build Invoice Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Build Invoice Payload": {
+      "main": [
+        [
+          {
+            "node": "PL Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Create Invoice": {
+      "main": [
+        [
+          {
+            "node": "IF Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Send Email": {
+      "main": [
+        [
+          {
+            "node": "Wait PDF Generation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code Build Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Build Notification": {
+      "main": [
+        [
+          {
+            "node": "SL Send Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Has Notification Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SL Send Notification": {
+      "main": [
+        [
+          {
+            "node": "Set Output Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait PDF Generation": {
+      "main": [
+        [
+          {
+            "node": "PL Send Invoice Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Send Invoice Email": {
+      "main": [
+        [
+          {
+            "node": "Code Build Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GM Send Notification": {
+      "main": [
+        [
+          {
+            "node": "Set Output Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Notification Email": {
+      "main": [
+        [
+          {
+            "node": "GM Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Output Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true,
+    "timeSavedPerExecution": 5
+  },
+  "versionId": "91238c54-efda-4f81-b8d0-6b2fee1f78e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "70ec3bed341af97283a0a6dbf0b48c20f5e82d1a117b40451ad8016f7992090c"
+  },
+  "id": "UI00dYBcdYiWLc5Y",
+  "tags": []
+}

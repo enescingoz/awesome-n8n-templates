@@ -1,0 +1,331 @@
+{
+  "name": "[PENNYLANE] Overdue Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# [PENNYLANE] Overdue Reminder\n\n**Trigger:** Schedule (daily at 9:00 AM)\n**Source:** Pennylane API v2 - customer invoices\n\n---\n\n### Flow\n\n`Schedule Trigger`\n  → `PL Fetch Invoices`\n  → `Code Filter Overdue`\n  → `IF Has Overdue`\n    → ✅ `Code Build Reminder`\n      → `SL Send Notification`\n  → `Set Done`\n\n---\n\n### Services & Credentials\n\n| Service | Credential |\n|---------|-----------|\n| Pennylane API v2 | Pennylane API (HTTP Header Auth) |\n| Slack (optional) | Slack OAuth |\n\n---\n\n### Node refs for $()\n\n- Schedule Trigger\n- PL Fetch Invoices\n- Code Filter Overdue\n- IF Has Overdue\n- Code Build Reminder\n- SL Send Notification\n- Set Done",
+        "height": 608,
+        "width": 416
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -448,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "7709720d-5bd0-419b-9a73-d63f4baf97fe",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        224
+      ],
+      "id": "7c7a9506-5ec1-460d-a014-7d6db37c3a35",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://app.pennylane.com/api/external/v2/customer_invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        320,
+        224
+      ],
+      "id": "bf00125c-bc60-4c7e-8649-bf3d9faa2f42",
+      "name": "PL Fetch Invoices",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'PL Fetch Invoices'\nconst invoices = $input.first().json.items;\nconst today = new Date().toISOString().split('T')[0];\nconst THRESHOLD_DAYS = 7;\n\nconst overdue = [];\n\nfor (const inv of invoices) {\n  if (inv.draft || inv.paid) continue;\n  if (inv.deadline >= today) continue;\n\n  const deadlineDate = new Date(inv.deadline);\n  const todayDate = new Date(today);\n  const daysOverdue = Math.floor((todayDate - deadlineDate) / (1000 * 60 * 60 * 24));\n\n  if (daysOverdue >= THRESHOLD_DAYS) {\n    overdue.push({\n      id: inv.id,\n      invoice_number: inv.invoice_number,\n      label: inv.label,\n      currency_amount: inv.currency_amount,\n      currency: inv.currency,\n      deadline: inv.deadline,\n      days_overdue: daysOverdue,\n      customer_id: inv.customer.id,\n      public_file_url: inv.public_file_url\n    });\n  }\n}\n\nreturn [{\n  json: {\n    overdue_count: overdue.length,\n    overdue,\n    has_overdue: overdue.length > 0\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        224
+      ],
+      "id": "d25af660-3af7-4869-b149-7b9909ffbc0f",
+      "name": "Code Filter Overdue"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a032dfe-0694-4d96-8c75-c891a86339b2",
+              "leftValue": "={{ $json.has_overdue }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        224
+      ],
+      "id": "28c82e3c-1d77-4137-8396-3d79ef392cd8",
+      "name": "IF Has Overdue"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c77345e-ab79-4816-aa14-d62c9e9b61a9",
+              "name": "status",
+              "value": "no overdue invoices",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1552,
+        240
+      ],
+      "id": "00fca357-c089-4a78-a7eb-9bbf9a1f76b9",
+      "name": "Set Done"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'Code Filter Overdue'\nconst data = $input.first().json;\nconst lines = ['🚨 Overdue Invoice Reminder', ''];\n\nlines.push(`${data.overdue_count} invoice(s) require attention:`);\nlines.push('');\n\nfor (const inv of data.overdue) {\n  lines.push(`• ${inv.invoice_number} | ${inv.currency_amount} ${inv.currency}`);\n  lines.push(`  Due: ${inv.deadline} (${inv.days_overdue} days overdue)`);\n  lines.push(`  ${inv.public_file_url}`);\n  lines.push('');\n}\n\nreturn [{\n  json: {\n    message: lines.join('\\n'),\n    overdue_count: data.overdue_count\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        144
+      ],
+      "id": "73f0f390-b353-487b-ad7e-98a87ca7d4ca",
+      "name": "Code Build Reminder"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "text": "={{ $json.message }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1168,
+        144
+      ],
+      "id": "04edc672-c812-4b77-8643-d68f58bbc2c1",
+      "name": "SL Send Notification",
+      "webhookId": "6355e179-fd0a-4eed-8311-43954f4330ea",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 1. Trigger\n\nRuns once daily at 9:00 AM.\nChecks for overdue invoices that need\nfollow-up.\n\nAdjust schedule in the Schedule Trigger\nnode to fit your needs.",
+        "height": 480,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "4ca9d854-033b-49bf-bd18-7fac67c6e674",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fetch invoices\n\nRetrieves all customer invoices from Pennylane.\n\nEndpoint: GET /customer_invoices\n\nSame approach as WF2: no server-side\nstatus filtering available, all logic\nis handled in the Code node.",
+        "height": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        256,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "000b18e0-894f-4d7a-aeaa-efd9b9106545",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Filter overdue\n\nIdentifies unpaid invoices past their\ndeadline by at least 7 days (THRESHOLD_DAYS).\n\nAdjust the threshold in Code Filter Overdue\nto change the sensitivity.\n\nSkips draft and paid invoices.\nCalculates exact days overdue for each.",
+        "height": 480,
+        "width": 432,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        496,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "ba078fad-ae3c-4ebb-b045-384adf189fa5",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 4. Notify\n\nBuilds a detailed reminder with:\n- Invoice number and amount\n- Due date and days overdue\n- Direct link to the invoice PDF\n\nSends to Slack. Replace with your preferred\nnotification channel (Telegram, Email, etc.).",
+        "height": 480,
+        "width": 480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        928,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "c4d123ec-9c7d-41de-b22a-e93380e7e64a",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 5. Done\n\nNo overdue invoices detected.\nWorkflow ends silently.\n\nThis node ensures a clean execution log\nin n8n. No notification is sent.",
+        "height": 480,
+        "width": 368,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1408,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "a8a9b804-edbb-4123-beec-1f937e50eee6",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "PL Fetch Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Fetch Invoices": {
+      "main": [
+        [
+          {
+            "node": "Code Filter Overdue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Filter Overdue": {
+      "main": [
+        [
+          {
+            "node": "IF Has Overdue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Overdue": {
+      "main": [
+        [
+          {
+            "node": "Code Build Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Build Reminder": {
+      "main": [
+        [
+          {
+            "node": "SL Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "a2cf0709-0d9b-4746-a6ca-ed2dadb03ada",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "70ec3bed341af97283a0a6dbf0b48c20f5e82d1a117b40451ad8016f7992090c"
+  },
+  "id": "hihBb5dvnUpjT1Ti",
+  "tags": []
+}
