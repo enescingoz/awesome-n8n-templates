@@ -1,0 +1,169 @@
+{
+  "name": "Free Invoice Reminder Workflow \u2014 Google Sheets to Email",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Free sample workflow by Cleo. Replace the Google Sheets document, recipient fields, and email copy before activating. The paid n8n Business Automation Workflow Pack includes 10 more operations workflows."
+      },
+      "id": "setup-note",
+      "name": "Setup notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Invoices",
+        "range": "A:E"
+      },
+      "id": "read-invoices",
+      "name": "Read invoice tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "dateTime": [
+            {
+              "value1": "={{$json.due_date}}",
+              "operation": "before",
+              "value2": "={{$now.plus({days: 3})}}"
+            }
+          ],
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "operation": "notEqual",
+              "value2": "Paid"
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "needs-reminder",
+      "name": "Due soon and unpaid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "billing@yourcompany.com",
+        "toEmail": "={{$json.client_email}}",
+        "subject": "Friendly reminder: invoice {{$json.invoice_number}} is due soon",
+        "text": "Hi {{$json.client_name}},\n\nQuick reminder that invoice {{$json.invoice_number}} for {{$json.amount}} is due on {{$json.due_date}}.\n\nPayment link: {{$json.payment_link}}\n\nThanks!"
+      },
+      "id": "send-reminder",
+      "name": "Send reminder email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Invoices",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_reminder_sent": "={{$now.toISO()}}"
+          }
+        }
+      },
+      "id": "mark-reminded",
+      "name": "Mark reminder sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        460,
+        -80
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read invoice tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read invoice tracker": {
+      "main": [
+        [
+          {
+            "node": "Due soon and unpaid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Due soon and unpaid?": {
+      "main": [
+        [
+          {
+            "node": "Send reminder email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send reminder email": {
+      "main": [
+        [
+          {
+            "node": "Mark reminder sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    "invoice",
+    "reminder",
+    "small-business",
+    "free-template"
+  ]
+}
