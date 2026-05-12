@@ -1,0 +1,241 @@
+{
+  "id": "YNjXTXnvpFdWW1Ao",
+  "name": "PDF invoice data extraction with human-in-the-loop from GMail to Google Sheets",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "9473a15a-fc6f-4df3-978a-4c79612d37c8",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        16
+      ],
+      "parameters": {
+        "width": 416,
+        "height": 784,
+        "content": "### How it works\n1. Invoices are imported from GMail  \n2. Data is extracted with Cradl AI  \n3. The extracted data is then written to Google Sheets  \n\n### Setup\n* **Cradl AI action**. Click [here](https://rc.app.cradl.ai/login?redirect=signup&template=n8n%2Finvoices-gmail-to-sheets.json) to create a free Cradl AI account. Choose _n8n_ when prompted for integrations, then follow the setup instructions in the node.  \n* **GMail trigger**. Connect with GMail and customize email filters. For example, if you have a shared mailbox where you receive inboxes you may want to add `to:invoices@mycompany.com` to the _Search filter_ parameter. \n* **Google Sheets action**. Connect your credentials and map the extracted fields from the Cradl AI output to Google Sheets.  \n\n### Customize\n* The fields that are extracted can be easily customized by logging into your Cradl AI account and updating your agent definition.  \n* Validation rules and reviewers (e.g. from your accounting team) can be added as **human-in-the-loop validators** directly in your Cradl AI account.\n\n### Tutorial\n\n@[youtube](yjVJ8w2U1_M)\n\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e6bfed03-8f7e-445c-957a-15751fd28472",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        448,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 480,
+        "height": 528,
+        "content": "### Pull invoices from GMail\nThis trigger starts the workflow by getting your invoice file. You can easily swap it with other triggers that fetch files (PDFs or images) from sources like Gmail, webhooks, or cloud storage."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9c70a3ee-8624-44a2-af98-357e239ec196",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1392,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 464,
+        "height": 368,
+        "content": "### Export invoice to Google Sheets\nYou can easily swap this out for other destinations, such as accounting tools like Xero or QuickBooks, or a database or data warehouse."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "455675b8-434d-46d7-99a5-f2f022764e3d",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        944,
+        16
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 432,
+        "height": 368,
+        "content": "### Extract and validate invoice\nThis node extracts and validates data from invoices. It also includes built-in human-in-the-loop capabilities, so you can review, approve, or correct the data  through a simple interface. [Read more.](https://docs.cradl.ai)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "4dfaa619-a6f9-4122-ade0-35c83a80994b",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        528,
+        176
+      ],
+      "parameters": {
+        "simple": false,
+        "filters": {
+          "q": "has:attachment subject:invoice",
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": true
+        },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.3
+    },
+    {
+      "id": "06f5c847-bcd8-4e59-8105-8ef52fe8e2b4",
+      "name": "Filter PDF attachments",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        752,
+        176
+      ],
+      "parameters": {
+        "jsCode": "let results = [];\n\nfor (const item of $input.all()) {\n  for (key of Object.keys(item.binary)) {\n     if (item.binary[key].fileExtension === \"pdf\") { \n      results.push({\n            json: {\n                fileName: item.binary[key].fileName,\n            },\n            binary: {\n                data: item.binary[key],\n            }\n        });\n       } \n    }\n  \n}\n\nreturn results;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "1edb5ef8-6d08-42e7-9e5a-04f1ea3e74f5",
+      "name": "Add invoice line to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1648,
+        176
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list"
+        }
+      },
+      "typeVersion": 4.7
+    },
+    {
+      "id": "bd9f8503-d8f1-4bbe-9031-cbc9bced3ca4",
+      "name": "Mark a message as read",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        624,
+        384
+      ],
+      "webhookId": "f5563794-d977-4bc4-a950-f11ca5b11029",
+      "parameters": {
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "operation": "markAsRead"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f35fd706-2b80-4dd3-bd67-d04b8556dbcd",
+      "name": "Extract invoice details with AI",
+      "type": "@cradl/n8n-nodes-cradlai.cradlAi",
+      "position": [
+        1120,
+        176
+      ],
+      "webhookId": "1999cf96-f246-46f1-a0d9-92dad756dd02",
+      "parameters": {
+        "agentId": "cradl:agent:556e3aa0d2214b6c899c631b78a5cd43",
+        "documentBinaryData": "data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "44382756-645b-43a6-ac4b-8c857e4a71af",
+      "name": "Split out each invoice line",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1472,
+        176
+      ],
+      "parameters": {
+        "include": "allOtherFields",
+        "options": {},
+        "fieldToSplitOut": "body.output.invoice_lines"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "binaryMode": "separate",
+    "executionOrder": "v1"
+  },
+  "versionId": "6269e7c4-ba42-4a78-95df-8321480b01eb",
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter PDF attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter PDF attachments": {
+      "main": [
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract invoice details with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark a message as read": {
+      "main": [
+        []
+      ]
+    },
+    "Split out each invoice line": {
+      "main": [
+        [
+          {
+            "node": "Add invoice line to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract invoice details with AI": {
+      "main": [
+        [
+          {
+            "node": "Split out each invoice line",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
