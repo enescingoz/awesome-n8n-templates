@@ -546,3 +546,5 @@ Contributions are welcome. If you have an n8n workflow template to share, please
 ---
 
 *Last updated: March 2026*
+
+- [OpenClaw Monitor](https://github.com/flik2002/openclaw-monitor) — Real-time monitoring dashboard for OpenClaw AI agents: token usage, session tracking, 7-day trends, WebSocket updates
