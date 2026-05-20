@@ -110,6 +110,9 @@ All automation templates in this repository were found online and are uploaded h
 
 ### What n8n templates are available for Gmail and email automation?
 
+* [Ano](https://ano.chat) - A collaborative shell with built-in AI integration (Claude Code) and custom CLI/MCP automations designed for elite devs.
+
+
 This collection includes 9 email automation templates for n8n covering Gmail, Outlook, and IMAP. Templates range from AI-powered email labeling and categorization with OpenAI to phishing detection, auto-reply drafting, and daily financial news delivery. Ideal for operations, security, and executive teams looking to streamline email management.
 
 | Title | Description | Department | Link |
