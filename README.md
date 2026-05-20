@@ -400,6 +400,7 @@ This section includes 27 additional n8n integration templates covering a wide ra
 | Zoom AI Meeting Assistant | Creates meeting summaries, ClickUp tasks, and schedules follow-ups from Zoom meetings. | Productivity/Communication | [Link to Template](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 | ClientFlow Lite - Client Onboarding Automation | Client submits a form, receives a welcome email, and gets added to a Google Sheets pipeline automatically. Simple onboarding workflow. | Ops/Sales | [Link to Template](Other_Integrations_and_Use_Cases/ClientFlow%20Lite%20-%20Client%20Onboarding%20Automation.json) |
 | VoiceAgent Lite - Phone Call Logger | Logs phone calls from Vapi.ai or Bland.ai to Google Sheets via webhook. Captures caller info, duration, and transcript summary. | Ops/Support | [Link to Template](Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) |
+| Recovered Leads — Missed Call Rescue Desk | 10-node n8n workflow: missed call → SMS in 60 s → AI urgency score → HubSpot/GoHighLevel upsert → Slack owner alert → daily recovered-revenue digest. Targets HVAC/plumbing/roofing operators. | Sales/Ops | [Link to Template](https://devilinspace.gumroad.com/l/recoveredleads) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
