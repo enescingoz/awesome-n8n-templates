@@ -1,0 +1,113 @@
+{
+  "name": "Bilig WorkPaper MCP formula engine for n8n agents",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Bilig WorkPaper MCP\n\nCalls the public Bilig WorkPaper MCP endpoint, writes a formula into a demo workbook, and verifies calculated readback + restore proof.\n\nNo Excel, browser automation, credentials, or local files required.\n\nRepo: https://github.com/proompteng/bilig",
+        "height": 220,
+        "width": 360,
+        "color": 5
+      },
+      "id": "bilig-note-0001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        -180
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "bilig-manual-trigger-0001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bilig.proompteng.ai/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "accept",
+              "value": "application/json, text/event-stream"
+            },
+            {
+              "name": "mcp-protocol-version",
+              "value": "2025-11-25"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"set_cell_contents\",\"arguments\":{\"sheetName\":\"Inputs\",\"address\":\"C2\",\"value\":\"=B2*B3\"}}}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "bilig-http-request-0001",
+      "name": "Bilig MCP: write formula and verify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -420,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst text = response?.result?.content?.[0]?.text;\nif (!text) {\n  throw new Error('Bilig MCP did not return MCP text content.');\n}\nconst proof = JSON.parse(text);\nconst displayValue = proof?.after?.displayValue;\nconst formula = proof?.after?.formula;\nconst restoredMatchesAfter = proof?.checks?.restoredMatchesAfter === true;\nif (formula !== '=B2*B3') {\n  throw new Error('Unexpected formula readback: ' + String(formula));\n}\nif (displayValue !== '5') {\n  throw new Error('Unexpected calculated value: ' + String(displayValue));\n}\nif (!restoredMatchesAfter) {\n  throw new Error('Bilig MCP did not prove restored readback.');\n}\nreturn [{\n  json: {\n    summary: 'Bilig WorkPaper calculated =B2*B3 as 5 and proved restored readback.',\n    editedCell: proof.editedCell,\n    formula,\n    displayValue,\n    restoredMatchesAfter,\n    github: 'https://github.com/proompteng/bilig',\n    docs: 'https://proompteng.github.io/bilig/mcp-workpaper-tool-server.html',\n    mcpRegistry: 'https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.proompteng%2Fbilig-workpaper',\n    proof\n  }\n}];"
+      },
+      "id": "bilig-extract-proof-0001",
+      "name": "Extract formula proof",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Bilig MCP: write formula and verify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bilig MCP: write formula and verify": {
+      "main": [
+        [
+          {
+            "node": "Extract formula proof",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
