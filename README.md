@@ -421,6 +421,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 
 | Workflow Title | Description | Department | Link to Template |
 |---|---|---|---|
+| Bilig WorkPaper MCP formula engine for n8n agents | Calls Bilig's public MCP endpoint from n8n to write a spreadsheet formula, calculate the result, and verify restored readback without Excel UI automation. | Engineering, AI Automation | [Link to Template](AI_Research_RAG_and_Data_Analysis/Bilig%20WorkPaper%20MCP%20formula%20engine%20for%20n8n%20agents.json) |
 | Analyze tradingview.com charts with Chrome extension, N8N and OpenAI | Analyzes TradingView charts using a Chrome extension, n8n, and OpenAI for automated insights. | Data Analysis | [Analyze tradingview.com charts with Chrome extension, N8N and OpenAI.txt](./AI_Research_RAG_and_Data_Analysis/Analyze%20tradingview.com%20charts%20with%20Chrome%20extension,%20N8N%20and%20OpenAI.json) |
 | Automated Hugging Face Paper Summary Fetching & Categorization Workflow | Automates fetching, summarizing, and categorizing research papers from Hugging Face. | AI Research | [Automated Hugging Face Paper Summary Fetching & Categorization Workflow.txt](./AI_Research_RAG_and_Data_Analysis/Automated%20Hugging%20Face%20Paper%20Summary%20Fetching%20%26%20Categorization%20Workflow.json) |
 | Autonomous AI crawler | An autonomous AI-powered web crawler for data collection and analysis. | AI Research | [Autonomous AI crawler.txt](./AI_Research_RAG_and_Data_Analysis/Autonomous%20AI%20crawler.json) |
