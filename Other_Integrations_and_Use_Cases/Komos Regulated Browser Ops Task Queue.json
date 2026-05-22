@@ -1,0 +1,215 @@
+{
+  "name": "Komos Regulated Browser Ops Task Queue",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        160,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "task-id",
+              "name": "task_id",
+              "value": "={{ $env.KOMOS_TASK_ID || 'replace-with-komos-task-id' }}",
+              "type": "string"
+            },
+            {
+              "id": "case-id",
+              "name": "case_id",
+              "value": "CRA-DEMO-001",
+              "type": "string"
+            },
+            {
+              "id": "workflow-type",
+              "name": "workflow_type",
+              "value": "background_screening_portal_check",
+              "type": "string"
+            },
+            {
+              "id": "industry",
+              "name": "industry",
+              "value": "background_screening",
+              "type": "string"
+            },
+            {
+              "id": "applicant-name",
+              "name": "applicant_name",
+              "value": "Example Applicant",
+              "type": "string"
+            },
+            {
+              "id": "portal-url",
+              "name": "portal_url",
+              "value": "https://example-portal.local/cases/CRA-DEMO-001",
+              "type": "string"
+            },
+            {
+              "id": "review-required",
+              "name": "review_required",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "build-case-payload",
+      "name": "Build Regulated Ops Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        420,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.komos.ai/public/v1/tasks/' + ($env.KOMOS_TASK_ID || $json.task_id) + '/runs' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.KOMOS_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"clientRequestId\": \"n8n-{{ $json.case_id }}-{{ Date.now() }}\",\n  \"inputs\": {\n    \"case_id\": \"{{ $json.case_id }}\",\n    \"workflow_type\": \"{{ $json.workflow_type }}\",\n    \"applicant_name\": \"{{ $json.applicant_name }}\",\n    \"portal_url\": \"{{ $json.portal_url }}\",\n    \"review_required\": {{ $json.review_required }}\n  },\n  \"metadata\": {\n    \"source\": \"n8n\",\n    \"use_case\": \"regulated_browser_operations\",\n    \"industry\": \"{{ $json.industry }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "queue-komos-task",
+      "name": "Queue Komos Task Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status",
+              "value": "queued",
+              "type": "string"
+            },
+            {
+              "id": "komos_response",
+              "name": "komos_response",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "next-step",
+              "name": "next_step",
+              "value": "Review the Komos run history for browser actions, logs, and any human approval checkpoint.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-response",
+      "name": "Format Queue Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        980,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Komos Regulated Browser Ops Task Queue\n\nUse this template to queue a Komos task from n8n when a CRA, bank, or insurance ops workflow needs browser portal work.\n\nSet these environment variables before running:\n\nKOMOS_API_KEY\nKOMOS_TASK_ID\n\nAPI docs: https://docs.komos.ai/api-reference/introduction\nBackground screening example: https://www.komos.ai/solutions/hr",
+        "height": 260,
+        "width": 380,
+        "color": 5
+      },
+      "id": "setup-note",
+      "name": "Setup Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Build Regulated Ops Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Regulated Ops Payload": {
+      "main": [
+        [
+          {
+            "node": "Queue Komos Task Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Komos Task Run": {
+      "main": [
+        [
+          {
+            "node": "Format Queue Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    {
+      "name": "Komos",
+      "id": "komos"
+    },
+    {
+      "name": "Regulated Ops",
+      "id": "regulated-ops"
+    },
+    {
+      "name": "Browser Automation",
+      "id": "browser-automation"
+    }
+  ],
+  "meta": {
+    "instanceId": "komos-regulated-browser-ops-v1"
+  }
+}
