@@ -58,13 +58,13 @@
 "id": "030f8f90-2669-4c20-9eab-c572c4b7c70c",
 "name": "CLIENT_ID",
 "type": "string",
-"value": "local.6779636e712043.37129431"
+"value": "YOUR_CLIENT_ID"
 },
 {
 "id": "de9bbb7a-b782-4540-b259-527625db8490",
 "name": "CLIENT_SECRET",
 "type": "string",
-"value": "dTzUfBoTFLxNhuzc1zsnDbCeii98ZaE5By4aQPQEOxLJAS9y6i"
+"value": "YOUR_CLIENT_SECRET"
 },
 {
 "id": "86b7aff7-1e25-4b12-a366-23cf34e5a405",
@@ -451,102 +451,6 @@
 }
 ],
 "active": true,
-"pinData": {
-"Bitrix24 Handler": [
-{
-"json": {
-"body": {
-"ts": "1737037713",
-"event": "ONIMBOTMESSAGEADD",
-"auth[scope]": "imbot,im",
-"auth[domain]": "hgap.bitrix24.eu",
-"auth[status]": "L",
-"auth[expires]": "1737041313",
-"auth[user_id]": "256",
-"data[USER][ID]": "256",
-"auth[member_id]": "19acdffbcfadf692f61b677d3d824490",
-"auth[expires_in]": "3600",
-"data[USER][NAME]": "Java Tech User",
-"event_handler_id": "126",
-"auth[access_token]": "a12589670074bb250066880900000100000007f6bf4682415a014425fed22a6b37af33",
-"data[USER][GENDER]": "M",
-"data[USER][IS_BOT]": "N",
-"auth[refresh_token]": "91a4b0670074bb2500668809000001000000075047004f6b25a0b76236e66bb7316e97",
-"auth[client_endpoint]": "https://hgap.bitrix24.eu/rest/",
-"auth[server_endpoint]": "https://oauth.bitrix.info/rest/",
-"data[BOT][302][scope]": "imbot,im",
-"data[PARAMS][CHAT_ID]": "6196",
-"data[PARAMS][MESSAGE]": "Szia!",
-"data[USER][LAST_NAME]": "Java",
-"data[BOT][302][BOT_ID]": "302",
-"data[BOT][302][domain]": "hgap.bitrix24.eu",
-"data[BOT][302][status]": "L",
-"data[PARAMS][LANGUAGE]": "en",
-"data[USER][FIRST_NAME]": "Tech User",
-"data[USER][IS_NETWORK]": "N",
-"auth[application_token]": "0d83800efe3a5b2977650e025e0754d5",
-"data[BOT][302][expires]": "1737041313",
-"data[BOT][302][user_id]": "302",
-"data[PARAMS][AUTHOR_ID]": "256",
-"data[PARAMS][CHAT_TYPE]": "P",
-"data[PARAMS][DIALOG_ID]": "256",
-"data[USER][IS_EXTRANET]": "N",
-"data[BOT][302][BOT_CODE]": "LocalExampleBot",
-"data[PARAMS][MESSAGE_ID]": "314686",
-"data[PARAMS][TO_USER_ID]": "302",
-"data[USER][IS_CONNECTOR]": "N",
-"data[BOT][302][client_id]": "local.6779636e712043.37129431",
-"data[BOT][302][member_id]": "19acdffbcfadf692f61b677d3d824490",
-"data[PARAMS][TEMPLATE_ID]": "09c62e39-23c2-4281-a53f-4a3a76d2cf4a",
-"data[USER][WORK_POSITION]": "Technical User",
-"data[BOT][302][expires_in]": "3600",
-"data[PARAMS][FROM_USER_ID]": "256",
-"data[PARAMS][MESSAGE_TYPE]": "P",
-"data[PARAMS][SKIP_COMMAND]": "N",
-"data[BOT][302][AUTH][scope]": "imbot,im",
-"data[BOT][302][AUTH][domain]": "hgap.bitrix24.eu",
-"data[BOT][302][AUTH][status]": "L",
-"data[BOT][302][access_token]": "a12589670074bb25006688090000012ee0e30782de43659ca7cc172d61e7a91b24b241",
-"data[PARAMS][SKIP_CONNECTOR]": "N",
-"data[PARAMS][SKIP_URL_INDEX]": "N",
-"data[BOT][302][AUTH][expires]": "1737041313",
-"data[BOT][302][AUTH][user_id]": "302",
-"data[BOT][302][refresh_token]": "91a4b0670074bb25006688090000012ee0e307bbd7e4e8b80e4c5ba61e3c99f0283f40",
-"data[PARAMS][COMMAND_CONTEXT]": "TEXTAREA",
-"data[PARAMS][SILENT_CONNECTOR]": "N",
-"data[BOT][302][AUTH][client_id]": "local.6779636e712043.37129431",
-"data[BOT][302][AUTH][member_id]": "19acdffbcfadf692f61b677d3d824490",
-"data[BOT][302][client_endpoint]": "https://hgap.bitrix24.eu/rest/",
-"data[BOT][302][server_endpoint]": "https://oauth.bitrix.info/rest/",
-"data[BOT][302][AUTH][expires_in]": "3600",
-"data[BOT][302][application_token]": "0d83800efe3a5b2977650e025e0754d5",
-"data[PARAMS][IMPORTANT_CONNECTOR]": "N",
-"data[BOT][302][AUTH][access_token]": "a12589670074bb25006688090000012ee0e30782de43659ca7cc172d61e7a91b24b241",
-"data[BOT][302][AUTH][refresh_token]": "91a4b0670074bb25006688090000012ee0e307bbd7e4e8b80e4c5ba61e3c99f0283f40",
-"data[BOT][302][AUTH][client_endpoint]": "https://hgap.bitrix24.eu/rest/",
-"data[BOT][302][AUTH][server_endpoint]": "https://oauth.bitrix.info/rest/",
-"data[PARAMS][SKIP_COUNTER_INCREMENTS]": "N",
-"data[BOT][302][AUTH][application_token]": "0d83800efe3a5b2977650e025e0754d5"
-},
-"query": {},
-"params": {},
-"headers": {
-"host": "orpheus-dev.h-gap.hu",
-"x-real-ip": "3.217.33.54",
-"user-agent": "Bitrix24 Webhook Engine",
-"content-type": "application/x-www-form-urlencoded",
-"content-length": "3711",
-"accept-encoding": "gzip",
-"x-forwarded-for": "3.217.33.54",
-"x-forwarded-proto": "https",
-"x-forwarded-scheme": "https"
-},
-"webhookUrl": "REDACTED_WEBHOOK_URL",
-"executionMode": "production"
-}
-}
-]
-},
 "settings": {
 "executionOrder": "v1"
 },
