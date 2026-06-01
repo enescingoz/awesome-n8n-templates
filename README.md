@@ -365,7 +365,7 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 27 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 28 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -386,6 +386,7 @@ This section includes 27 additional n8n integration templates covering a wide ra
 | Integrating AI with Open-Meteo API | Enhances weather forecasting with AI analysis. | Data Science/Weather | [Link to Template](Other_Integrations_and_Use_Cases/Integrating%20AI%20with%20Open-Meteo%20API%20for%20Enhanced%20Weather%20Forecasting.json) |
 | Introduction to the HTTP Tool | Basic tutorial on using HTTP tools in n8n. | Development | [Link to Template](Other_Integrations_and_Use_Cases/Introduction%20to%20the%20HTTP%20Tool.json) |
 | KB Tool - Confluence Knowledge Base | Integrates with Confluence for knowledge base management. | Documentation/IT | [Link to Template](Other_Integrations_and_Use_Cases/KB%20Tool%20-%20Confluence%20Knowledge%20Base.json) |
+| Komos Regulated Browser Ops Task Queue | Queues a [Komos](https://www.komos.ai/) browser automation task from n8n for CRA, banking, or insurance portal operations with audit-ready run metadata. | Ops/Compliance | [Link to Template](Other_Integrations_and_Use_Cases/Komos%20Regulated%20Browser%20Ops%20Task%20Queue.json) |
 | LINE Assistant with Google Calendar and Gmail | Creates a LINE assistant that integrates with Google Calendar and Gmail. | Productivity/Communication | [Link to Template](Other_Integrations_and_Use_Cases/LINE%20Assistant%20with%20Google%20Calendar%20and%20Gmail%20Integration.json) |
 | Monthly Spotify Track Archiving | Archives and classifies monthly Spotify tracks into playlists. | Personal/Music | [Link to Template](Other_Integrations_and_Use_Cases/Monthly%20Spotify%20Track%20Archiving%20and%20Playlist%20Classification.json) |
 | Obsidian Notes Read Aloud | Converts Obsidian notes into audio format as a podcast feed. | Productivity/Content | [Link to Template](Other_Integrations_and_Use_Cases/Obsidian%20Notes%20Read%20Aloud%20using%20AI_%20Available%20as%20a%20Podcast%20Feed.json) |
