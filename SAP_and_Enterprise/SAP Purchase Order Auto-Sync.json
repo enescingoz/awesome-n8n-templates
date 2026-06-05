@@ -1,0 +1,154 @@
+{
+  "name": "SAP Purchase Order Auto-Sync to Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ],
+          "timezone": "Asia/Shanghai"
+        }
+      },
+      "id": "trigger-1",
+      "name": "Daily at 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "resource": "entity",
+        "operation": "getAll",
+        "servicePath": "/sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV",
+        "entitySet": "A_PurchaseOrder",
+        "queryOptions": {
+          "$filter": "CreationDate ge datetime'{{ $now.minus({days:1}).toFormat('yyyy-MM-dd') }}T00:00:00'",
+          "$select": "PurchaseOrder,PurchaseOrderType,Supplier,CompanyCode,TotalNetAmount,Currency,CreationDate",
+          "$orderby": "CreationDate desc"
+        },
+        "returnAll": true
+      },
+      "id": "sap-1",
+      "name": "Get New POs from SAP",
+      "type": "n8n-nodes-sap-odata.sapOdata",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "sapOdataApi": {
+          "id": "CONFIGURE_ME",
+          "name": "SAP OData API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "YOUR_GOOGLE_SHEET_ID"
+        },
+        "sheetName": "PurchaseOrders",
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "PO_Number": "={{ $json.PurchaseOrder }}",
+            "PO_Type": "={{ $json.PurchaseOrderType }}",
+            "Supplier": "={{ $json.Supplier }}",
+            "Company": "={{ $json.CompanyCode }}",
+            "Amount": "={{ $json.TotalNetAmount }}",
+            "Currency": "={{ $json.Currency }}",
+            "Created": "={{ $json.CreationDate }}"
+          }
+        }
+      },
+      "id": "sheets-1",
+      "name": "Append to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURE_ME",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#procurement",
+        "text": "=\ud83d\udcca {{ $items('Get New POs from SAP').length }} new Purchase Orders synced from SAP\\nTotal Value: {{ $sum($items('Get New POs from SAP').json.TotalNetAmount).toFixed(2) }} {{ $items('Get New POs from SAP')[0].json.Currency }}\\nView in Google Sheets: https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+      },
+      "id": "slack-1",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 8AM": {
+      "main": [
+        [
+          {
+            "node": "Get New POs from SAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get New POs from SAP": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "templateId": "sap-po-sync-001",
+    "category": "SAP Procurement",
+    "author": "SAP Consultant",
+    "price": "free",
+    "description": "Automatically sync new SAP Purchase Orders to Google Sheets daily with Slack notifications"
+  }
+}

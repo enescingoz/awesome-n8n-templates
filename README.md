@@ -56,6 +56,7 @@
   - [Other Integrations & Use Cases](#what-other-n8n-integration-templates-are-available)
   - [Forms & Surveys](#how-do-i-automate-forms-and-surveys-with-n8n)
   - [AI Research, RAG, and Data Analysis](#what-n8n-templates-exist-for-ai-research-rag-and-data-analysis)
+  - [SAP & Enterprise ERP](#what-n8n-templates-are-available-for-sap-and-enterprise-erp)
   - [Other](#other)
 - [FAQ](#faq)
 - [Contributing](#contributing)
@@ -466,6 +467,16 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Transforms Perplexity AI research into HTML content for AI-powered content creation. | Content Creation, AI Research | [🔍 Perplexity Research to HTML_ AI-Powered Content Creation.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+
+### What n8n templates are available for SAP and Enterprise ERP?
+
+> Connect SAP S/4HANA and SAP ECC to n8n for enterprise automation. Requires [n8n-nodes-sap-odata](https://github.com/sseegebarth/n8n-nodes-sap-odata) community node.
+
+| Template Title | Description | Department | Link |
+|---|---|---|---|
+| SAP Purchase Order Auto-Sync | Daily sync new SAP Purchase Orders to Google Sheets with Slack notifications. Free template. | Procurement, Operations | [SAP Purchase Order Auto-Sync.json](./SAP_and_Enterprise/SAP%20Purchase%20Order%20Auto-Sync.json) |
+
+> 💡 More SAP templates (Invoice OCR, Inventory Alerts, HR Onboarding, Report Automation) available at [n8n-sap-templates](https://github.com/bladeJumper/n8n-sap-templates)
 
 ### Other
 
