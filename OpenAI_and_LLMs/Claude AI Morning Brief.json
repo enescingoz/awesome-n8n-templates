@@ -1,0 +1,126 @@
+{
+  "name": "[n8n Template] AI Morning Brief",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b2c3d4e5-0001-0001-0001-b2c3d4e50001",
+      "name": "Every Day 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build today's context for Claude\nconst now = new Date();\nconst dateStr = now.toLocaleDateString('en-US', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric'\n});\n\n// Customize: add your tasks/calendar data here\nconst todaysTasks = [\n  'Check emails',\n  'Team standup at 10am',\n  'Review pull requests'\n];\n\nreturn [{\n  json: {\n    date: dateStr,\n    tasks: todaysTasks.join('\\n- '),\n    prompt: `Today is ${dateStr}.\\n\\nMy tasks for today:\\n- ${todaysTasks.join('\\n- ')}\\n\\nPlease give me a motivating, concise morning brief (3-5 sentences) that:\\n1. Acknowledges today's date/day\\n2. Highlights the key priorities\\n3. Ends with one actionable focus tip`\n  }\n}];"
+      },
+      "id": "b2c3d4e5-0002-0002-0002-b2c3d4e50002",
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5\",\n  \"max_tokens\": 300,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.prompt }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0003-0003-0003-b2c3d4e50003",
+      "name": "Generate Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LINE_CHANNEL_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $env.LINE_USER_ID }}\",\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"🌅 Morning Brief\\n\\n{{ $json.content[0].text }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "b2c3d4e5-0004-0004-0004-b2c3d4e50004",
+      "name": "Send via LINE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [860, 300]
+    }
+  ],
+  "connections": {
+    "Every Day 8am": {
+      "main": [
+        [
+          { "node": "Build Context", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Context": {
+      "main": [
+        [
+          { "node": "Generate Brief", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Generate Brief": {
+      "main": [
+        [
+          { "node": "Send via LINE", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "n8n-claude-template-02",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "template"
+  },
+  "pinData": {},
+  "staticData": null
+}
