@@ -1,0 +1,120 @@
+{
+  "name": "GCF Token Optimization — Encode API Data, Decode Losslessly",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/n8n-io/n8n/contributors?per_page=100",
+        "options": {}
+      },
+      "id": "http-request",
+      "name": "GET /contributors (100 records)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const allData = $input.all().map(i => i.json);\nreturn [{ json: { payload: allData } }];"
+      },
+      "id": "batch",
+      "name": "Batch into Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "operation": "encode",
+        "inputData": "payload",
+        "outputField": "data",
+        "additionalOptions": {
+          "includeTokenMetrics": true
+        }
+      },
+      "id": "gcf-encode",
+      "name": "GCF Encode",
+      "type": "n8n-nodes-gcf.gcf",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "operation": "decode",
+        "inputData": "data",
+        "outputField": "decoded"
+      },
+      "id": "gcf-decode",
+      "name": "GCF Decode (lossless)",
+      "type": "n8n-nodes-gcf.gcf",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "GET /contributors (100 records)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /contributors (100 records)": {
+      "main": [
+        [
+          {
+            "node": "Batch into Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch into Array": {
+      "main": [
+        [
+          {
+            "node": "GCF Encode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GCF Encode": {
+      "main": [
+        [
+          {
+            "node": "GCF Decode (lossless)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    { "name": "AI" },
+    { "name": "Token Optimization" },
+    { "name": "LLM" },
+    { "name": "Data Transformation" }
+  ]
+}
