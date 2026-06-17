@@ -247,6 +247,27 @@ jobs:
           - If \`New workflow JSON files added\` is non-empty (not \"none\"):
               - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
               - If README IS touched, check the README diff for self-promotion (personal sites, blogs, social handles, donations, \"follow me\" sections unrelated to listing the template). Flag any such content as NEEDS CHANGES.
+              - Additionally, scan EVERY new link (any URL or path added with a \`+\` line in the README diff) and apply the external-link rule below.
+
+          ### External-link rule for README changes
+          This repo is a curated list; it must only link to its own content and the official n8n site. When the README diff is available, inspect every line starting with \`+\` for new links (Markdown syntax \`[text](url)\`, bare URLs, or HTML href/src).
+
+          A link is ALLOWED only if it matches ONE of these:
+          - A relative path with no scheme and no host — e.g. \`OpenAI_and_LLMs/Foo.json\`, \`./Slack/bar.json\`, \`#section-anchor\`
+          - The repo's own GitHub URL: host is \`github.com\` AND path starts with \`/enescingoz/awesome-n8n-templates\`
+          - The official n8n site: host is \`n8n.io\` or any subdomain of \`n8n.io\` (e.g. \`docs.n8n.io\`, \`community.n8n.io\`)
+
+          ANY other URL must be flagged as self-promotion → NEEDS CHANGES. This includes, but is not limited to:
+          - External GitHub repos or forks: \`github.com/<anyone-else>/...\` or \`github.com/enescingoz/<other-repo>\`
+          - Personal blogs, Medium, Substack, Dev.to articles
+          - Personal websites, portfolios, landing pages
+          - Affiliate / referral / monetisation links (Gumroad, Patreon, BuyMeACoffee, partnerlinks.io, etc.)
+          - Social media: Twitter/X, LinkedIn, Instagram, Facebook, TikTok
+          - YouTube or other video platforms
+          - Any \"read more here\", \"full guide here\", \"multilingual version here\" link pointing off-repo
+
+          When flagging, the action item must be: \"Remove external link(s) added to the README — this repo only links to its own templates.\" and list the specific URL(s) found.
+
           - If \`New workflow JSON files added\` is \"none\" AND \`Existing workflow JSON files modified\` is non-empty (not \"none\"):
               - This is an EDIT to an existing template. README update is NOT required. Focus only on: real hardcoded secrets, invalid JSON, malicious code.
           - If both \`New workflow JSON files added\` and \`Existing workflow JSON files modified\` are \"none\":
@@ -287,9 +308,9 @@ jobs:
 
           Use exactly one of these three verdicts:
 
-          **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no real hardcoded secrets, JSON appears valid.
+          **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no external links in README, no real hardcoded secrets, JSON appears valid.
 
-          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
+          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, external link(s) added to the README that are not relative paths or approved domains (n8n.io, this repo's own GitHub URL), real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
 
           **NOT A TEMPLATE PR** — The PR does not add or modify any n8n workflow JSON file (e.g. it is a docs fix, typo correction, README-only change, or meta change). This is INFORMATIONAL — no action items needed.
 
@@ -567,6 +588,27 @@ jobs:
           - If \`New workflow JSON files added\` is non-empty (not \"none\"):
               - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
               - If README IS touched, check the README diff for self-promotion (personal sites, blogs, social handles, donations, \"follow me\" sections unrelated to listing the template). Flag any such content as NEEDS CHANGES.
+              - Additionally, scan EVERY new link (any URL or path added with a \`+\` line in the README diff) and apply the external-link rule below.
+
+          ### External-link rule for README changes
+          This repo is a curated list; it must only link to its own content and the official n8n site. When the README diff is available, inspect every line starting with \`+\` for new links (Markdown syntax \`[text](url)\`, bare URLs, or HTML href/src).
+
+          A link is ALLOWED only if it matches ONE of these:
+          - A relative path with no scheme and no host — e.g. \`OpenAI_and_LLMs/Foo.json\`, \`./Slack/bar.json\`, \`#section-anchor\`
+          - The repo's own GitHub URL: host is \`github.com\` AND path starts with \`/enescingoz/awesome-n8n-templates\`
+          - The official n8n site: host is \`n8n.io\` or any subdomain of \`n8n.io\` (e.g. \`docs.n8n.io\`, \`community.n8n.io\`)
+
+          ANY other URL must be flagged as self-promotion → NEEDS CHANGES. This includes, but is not limited to:
+          - External GitHub repos or forks: \`github.com/<anyone-else>/...\` or \`github.com/enescingoz/<other-repo>\`
+          - Personal blogs, Medium, Substack, Dev.to articles
+          - Personal websites, portfolios, landing pages
+          - Affiliate / referral / monetisation links (Gumroad, Patreon, BuyMeACoffee, partnerlinks.io, etc.)
+          - Social media: Twitter/X, LinkedIn, Instagram, Facebook, TikTok
+          - YouTube or other video platforms
+          - Any \"read more here\", \"full guide here\", \"multilingual version here\" link pointing off-repo
+
+          When flagging, the action item must be: \"Remove external link(s) added to the README — this repo only links to its own templates.\" and list the specific URL(s) found.
+
           - If \`New workflow JSON files added\` is \"none\" AND \`Existing workflow JSON files modified\` is non-empty (not \"none\"):
               - This is an EDIT to an existing template. README update is NOT required. Focus only on: real hardcoded secrets, invalid JSON, malicious code.
           - If both \`New workflow JSON files added\` and \`Existing workflow JSON files modified\` are \"none\":
@@ -607,9 +649,9 @@ jobs:
 
           Use exactly one of these three verdicts:
 
-          **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no real hardcoded secrets, JSON appears valid.
+          **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no external links in README, no real hardcoded secrets, JSON appears valid.
 
-          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
+          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, external link(s) added to the README that are not relative paths or approved domains (n8n.io, this repo's own GitHub URL), real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
 
           **NOT A TEMPLATE PR** — The PR does not add or modify any n8n workflow JSON file (e.g. it is a docs fix, typo correction, README-only change, or meta change). This is INFORMATIONAL — no action items needed.
 
