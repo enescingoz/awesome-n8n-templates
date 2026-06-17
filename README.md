@@ -466,6 +466,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 | SocialPulse Lite - Reddit Trend Monitor | Monitors Reddit subreddits for trending topics and analyzes them with OpenAI. Saves insights to Google Sheets for tracking emerging trends. | Data Analysis, Marketing | [Link to Template](AI_Research_RAG_and_Data_Analysis/SocialPulse%20Lite%20-%20Reddit%20Trend%20Monitor.json) |
 | DataForge Lite - AI URL Data Extractor | POST any URL and extract structured data using OpenAI. Returns clean JSON output for easy integration with other workflows. | Data Extraction, AI Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/DataForge%20Lite%20-%20AI%20URL%20Data%20Extractor.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Transforms Perplexity AI research into HTML content for AI-powered content creation. | Content Creation, AI Research | [🔍 Perplexity Research to HTML_ AI-Powered Content Creation.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
+| Live Web Research Agent with Superhighway | Search the live web, get AI-ready results (title, URL, snippet) using Superhighway's free search API. No browser required — pure HTTP. | Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/Live%20Web%20Research%20Agent%20with%20Superhighway.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
