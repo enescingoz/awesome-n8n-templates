@@ -1,0 +1,195 @@
+{
+  "name": "Glasp Highlights Auto Export",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare the query parameters for the Glasp API\nconst sd = $getWorkflowStaticData('global');\nconst now = new Date();\nconst firstRun = !sd.lastRunAt;\n\nlet baseDate = firstRun\n  ? new Date(now.getTime() - 24 * 60 * 60 * 1000)\n  : new Date(sd.lastRunAt);\n\n// 5-minute buffer\nbaseDate = new Date(baseDate.getTime() - 5 * 60 * 1000);\n\nsd.exportedDocs = sd.exportedDocs || {};\n\nreturn [\n  {\n    json: {\n      updatedAfter: baseDate.toISOString(),\n      exportedDocs: sd.exportedDocs,\n    },\n  },\n];\n"
+      },
+      "id": "prepare-params",
+      "name": "Prepare Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.glasp.co/v1/highlights/export",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "updatedAfter",
+              "value": "={{ $json.updatedAfter }}"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "paginationMode": "responseContainsNextURL",
+            "nextURL": "={{ $response.body.nextPageCursor ? 'https://api.glasp.co/v1/highlights/export?updatedAfter=' + $json.updatedAfter + '&pageCursor=' + $response.body.nextPageCursor : '' }}",
+            "paginationCompleteWhen": "receiveSpecificStatusCodes",
+            "statusCodesWhenComplete": "",
+            "maxRequests": 100
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "http-glasp-api",
+      "name": "Glasp API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Glasp Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter out already-exported docs, then format for export\nconst sd = $getWorkflowStaticData('global');\nsd.exportedDocs = sd.exportedDocs || {};\nconst now = new Date();\n\n// Collect all results from all paginated responses\nconst allItems = $input.all();\nlet allResults = [];\n\nfor (const item of allItems) {\n  const data = item.json;\n  // Handle both: direct results array or nested in response\n  if (data.results && Array.isArray(data.results)) {\n    allResults = allResults.concat(data.results);\n  }\n}\n\n// Filter: only new docs with highlights\nconst newDocs = allResults.filter(function(doc) {\n  return !sd.exportedDocs[doc.id] && doc.highlights && doc.highlights.length > 0;\n});\n\n// Mark as exported\nfor (const doc of newDocs) {\n  sd.exportedDocs[doc.id] = now.toISOString();\n}\n\n// Update last run\nsd.lastRunAt = now.toISOString();\n\n// Cleanup old tracking (30 days)\nconst thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\nfor (const [docId, exportedAt] of Object.entries(sd.exportedDocs)) {\n  if (new Date(exportedAt) < thirtyDaysAgo) {\n    delete sd.exportedDocs[docId];\n  }\n}\n\nif (newDocs.length === 0) {\n  return [{ json: { message: 'No new highlights found.', count: 0 } }];\n}\n\n// Format each doc for export\nreturn newDocs.map(function(doc) {\n  var lines = [];\n  lines.push('## ' + (doc.title || 'Untitled'));\n  lines.push('');\n  lines.push('**URL:** ' + doc.url);\n  lines.push('**Glasp:** ' + doc.glasp_url);\n  if (doc.tags && doc.tags.length > 0) {\n    lines.push('**Tags:** ' + doc.tags.join(', '));\n  }\n  if (doc.document_note) {\n    lines.push('**Note:** ' + doc.document_note);\n  }\n  lines.push('');\n  lines.push('### Highlights');\n  lines.push('');\n\n  for (var i = 0; i < doc.highlights.length; i++) {\n    var h = doc.highlights[i];\n    lines.push('> ' + h.text);\n    if (h.note) {\n      lines.push('');\n      lines.push('**Note:** ' + h.note);\n    }\n    var d = new Date(h.highlighted_at).toLocaleDateString();\n    lines.push('');\n    lines.push('- *' + h.color + ' highlight, ' + d + '*');\n    lines.push('');\n  }\n\n  var highlightsMarkdown = lines.join('\\n');\n\n  var highlightsText = doc.highlights\n    .map(function(h) {\n      return h.text + (h.note ? ' [Note: ' + h.note + ']' : '');\n    })\n    .join('\\n\\n');\n\n  return {\n    json: {\n      documentId: doc.id,\n      title: doc.title || 'Untitled',\n      url: doc.url,\n      glasp_url: doc.glasp_url,\n      domain: doc.domain,\n      category: doc.category,\n      tags: doc.tags || [],\n      author: doc.author || '',\n      thumbnail_url: doc.thumbnail_url || '',\n      document_note: doc.document_note || '',\n      is_favorite: doc.is_favorite || false,\n      highlightCount: doc.highlights.length,\n      highlightsText: highlightsText,\n      highlightsMarkdown: highlightsMarkdown,\n      highlights: doc.highlights.map(function(h) {\n        return {\n          id: h.id,\n          text: h.text,\n          note: h.note || '',\n          color: h.color,\n          highlighted_at: h.highlighted_at,\n        };\n      }),\n      createdAt: doc.created_at,\n      updatedAt: doc.updated_at,\n    },\n  };\n});\n"
+      },
+      "id": "filter-and-format",
+      "name": "Filter & Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## [Connect Your Destination Here]\n\nAdd your preferred export node after \"Filter & Format\".\n\n**Available fields per item:**\n- `title` -- Article/page title\n- `url` -- Original URL\n- `glasp_url` -- Glasp page URL\n- `domain`, `category`, `tags`\n- `highlightCount`\n- `highlightsText` -- Plain text\n- `highlightsMarkdown` -- Markdown\n- `highlights[]` -- Array of objects\n- `createdAt`, `updatedAt`\n\n**Examples:**\n- Notion: Create Database Item\n- Slack: Send Message\n- Google Sheets: Append Row\n- Email: Send Email\n- Webhook: HTTP Request POST",
+        "height": 440,
+        "width": 360
+      },
+      "id": "sticky-note-destination",
+      "name": "Sticky Note - Destination Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## [Setup - 2 steps]\n\n**Step 1:** Get your Glasp Access Token\nhttps://glasp.co/settings/access_token\n\n**Step 2:** Create a \"Header Auth\" credential\n- Name: Authorization\n- Value: Bearer YOUR_TOKEN\nThen assign it to the \"Glasp API\" node.\n\n**Optional:** Adjust schedule frequency\nby clicking the Schedule Trigger node.\nDefault: every 6 hours.",
+        "height": 320,
+        "width": 360
+      },
+      "id": "sticky-note-setup",
+      "name": "Sticky Note - Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## [Security]\n\n- Access token is stored in n8n's\n  encrypted Credentials, never in\n  the workflow JSON.\n- Exported doc tracking auto-cleans\n  after 30 days.\n- No secrets in code.",
+        "height": 220,
+        "width": 360
+      },
+      "id": "sticky-note-security",
+      "name": "Sticky Note - Security",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        600,
+        -100
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Parameters": {
+      "main": [
+        [
+          {
+            "node": "Glasp API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Glasp API": {
+      "main": [
+        [
+          {
+            "node": "Filter & Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Glasp"
+    },
+    {
+      "name": "Highlights"
+    },
+    {
+      "name": "Export"
+    },
+    {
+      "name": "Automation"
+    }
+  ],
+  "pinData": {}
+}
