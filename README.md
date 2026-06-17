@@ -327,6 +327,7 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 | AI: Summarize podcast episode and enhance using Wikipedia | Summarizes podcast episodes and enhances the summary with information from Wikipedia using AI. | Content Creation/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 | AI Blog Writer Pipeline with Ollama | Uses Ollama local AI to research topics, create outlines, draft full blog posts, and edit them. Runs entirely locally with no API keys needed. | Content Creation/AI | [Link to Template](OpenAI_and_LLMs/AI%20Blog%20Writer%20Pipeline%20with%20Ollama.json) |
 | SupportFlow Lite - Simple AI Customer Support Chatbot | A lightweight AI chatbot that answers customer questions using company info and OpenAI gpt-4o-mini. Easy single-workflow setup with Google Sheets knowledge base. | Customer Support/AI | [Link to Template](OpenAI_and_LLMs/SupportFlow%20Lite%20-%20Simple%20AI%20Customer%20Support%20Chatbot.json) |
+| GCF Token Optimization for LLM Tool Responses | Fetches GitHub contributors, batches into an array, encodes to GCF (Graph Compact Format) for 53-71% fewer tokens, then decodes back to JSON losslessly. Uses the n8n-nodes-gcf community node. | AI/DevOps/Optimization | [Link to Template](OpenAI_and_LLMs/GCF%20Token%20Optimization%20for%20LLM%20Tool%20Responses.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
