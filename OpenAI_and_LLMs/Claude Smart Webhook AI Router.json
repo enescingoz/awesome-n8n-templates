@@ -1,0 +1,164 @@
+{
+  "name": "[n8n Template] Smart Webhook AI Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-router",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0001-0001-0001-d4e5f6a70001",
+      "name": "Incoming Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "ai-router"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5\",\n  \"max_tokens\": 100,\n  \"system\": \"You are a request classifier. Analyze the incoming request and respond with ONLY a JSON object: {\\\"route\\\": \\\"<route_name>\\\", \\\"priority\\\": \\\"high|medium|low\\\", \\\"summary\\\": \\\"<one sentence>\\\"}\\n\\nAvailable routes: support, sales, technical, general\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Classify this request: {{ JSON.stringify($json.body || $json) }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0002-0002-0002-d4e5f6a70002",
+      "name": "Claude Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's classification response\nconst rawText = $input.first().json.content[0].text;\nlet classification;\n\ntry {\n  // Extract JSON from response\n  const jsonMatch = rawText.match(/\\{[^}]+\\}/);\n  classification = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  classification = { route: 'general', priority: 'medium', summary: 'Unable to classify' };\n}\n\nreturn [{\n  json: {\n    route: classification.route || 'general',\n    priority: classification.priority || 'medium',\n    summary: classification.summary || '',\n    originalPayload: $('Incoming Webhook').first().json\n  }\n}];"
+      },
+      "id": "d4e5f6a7-0003-0003-0003-d4e5f6a70003",
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "support",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "support"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "technical",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "technical"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "sales",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "sales"
+            }
+          ]
+        },
+        "fallbackOutput": "extra"
+      },
+      "id": "d4e5f6a7-0004-0004-0004-d4e5f6a70004",
+      "name": "Route Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"received\": true,\n  \"route\": \"{{ $('Parse Classification').first().json.route }}\",\n  \"priority\": \"{{ $('Parse Classification').first().json.priority }}\",\n  \"summary\": \"{{ $('Parse Classification').first().json.summary }}\"\n}",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0005-0005-0005-d4e5f6a70005",
+      "name": "Return Route Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [640, 500]
+    }
+  ],
+  "connections": {
+    "Incoming Webhook": {
+      "main": [
+        [
+          { "node": "Claude Classifier", "type": "main", "index": 0 },
+          { "node": "Return Route Result", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Claude Classifier": {
+      "main": [
+        [
+          { "node": "Parse Classification", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Parse Classification": {
+      "main": [
+        [
+          { "node": "Route Switch", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "n8n-claude-template-04",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "template"
+  },
+  "pinData": {},
+  "staticData": null
+}

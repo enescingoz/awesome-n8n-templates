@@ -1,0 +1,123 @@
+{
+  "name": "[n8n Template] AI Content Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-content",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c3d4e5f6-0001-0001-0001-c3d4e5f60001",
+      "name": "Trigger Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "generate-content"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract topic and content type from request\nconst body = $input.first().json;\n\nconst topic = body.topic || 'AI automation trends';\nconst contentType = body.type || 'blog'; // 'blog', 'newsletter', 'social'\nconst language = body.language || 'English';\nconst tone = body.tone || 'professional but approachable';\n\nconst prompts = {\n  blog: `Write a complete blog post about: \"${topic}\"\\n\\nRequirements:\\n- Title (H1)\\n- Introduction (2-3 sentences)\\n- 3 main sections with H2 headers\\n- Practical examples in each section\\n- Conclusion with call to action\\n- Tone: ${tone}\\n- Language: ${language}\\n- Length: ~600 words`,\n  \n  newsletter: `Write a newsletter issue about: \"${topic}\"\\n\\nRequirements:\\n- Catchy subject line\\n- Opening hook (1-2 sentences)\\n- 3 key insights with brief explanations\\n- One actionable tip\\n- Sign-off\\n- Tone: ${tone}\\n- Language: ${language}\\n- Length: ~300 words`,\n  \n  social: `Write 3 social media posts about: \"${topic}\"\\n\\nFor each post:\\n- Platform variant (Twitter/X, LinkedIn, Instagram)\\n- Different angle for each\\n- Relevant hashtags\\n- Tone: ${tone}\\n- Language: ${language}`\n};\n\nreturn [{\n  json: {\n    topic,\n    contentType,\n    language,\n    prompt: prompts[contentType] || prompts.blog\n  }\n}];"
+      },
+      "id": "c3d4e5f6-0002-0002-0002-c3d4e5f60002",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 2000,\n  \"system\": \"You are an expert content writer. Produce high-quality, engaging content that provides real value to readers.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.prompt }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "c3d4e5f6-0003-0003-0003-c3d4e5f60003",
+      "name": "Generate Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://hooks.slack.com/services/{{ $env.SLACK_WEBHOOK_PATH }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"✍️ New content generated for topic: *{{ $('Build Prompt').first().json.topic }}*\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"✍️ *Content Ready*\\nTopic: {{ $('Build Prompt').first().json.topic }}\\nType: {{ $('Build Prompt').first().json.contentType }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"{{ $json.content[0].text.substring(0, 500) }}...\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "c3d4e5f6-0004-0004-0004-c3d4e5f60004",
+      "name": "Notify via Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [860, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"topic\": \"{{ $('Build Prompt').first().json.topic }}\",\n  \"contentType\": \"{{ $('Build Prompt').first().json.contentType }}\",\n  \"content\": \"{{ $('Generate Content').first().json.content[0].text }}\"\n}",
+        "options": {}
+      },
+      "id": "c3d4e5f6-0005-0005-0005-c3d4e5f60005",
+      "name": "Return Content",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [860, 400]
+    }
+  ],
+  "connections": {
+    "Trigger Webhook": {
+      "main": [
+        [
+          { "node": "Build Prompt", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          { "node": "Generate Content", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Generate Content": {
+      "main": [
+        [
+          { "node": "Notify via Slack", "type": "main", "index": 0 },
+          { "node": "Return Content", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "n8n-claude-template-03",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "template"
+  },
+  "pinData": {},
+  "staticData": null
+}
