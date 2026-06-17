@@ -54,6 +54,7 @@ jobs:
     name: Review PR (auto)
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Review PR ${{ github.event.pull_request.number }}
         env:
@@ -95,13 +96,13 @@ jobs:
           # call_model <model> <prompt>
           # Returns 0 and sets REVIEW_BODY on success.
           # Returns 1 on all retries exhausted.
+          # Returns 2 if payload is too large (413) — caller must skip fallback.
           call_model() {
             local model="$1"
             local prompt="$2"
-            local attempt delay http_code response body
+            local attempt http_code response body
 
-            for attempt in 1 2 3; do
-              delay=$(( 2 ** attempt ))   # 2s, 4s, 8s
+            for attempt in 1 2 3 4 5; do
 
               # Capture body + HTTP status in one call
               response=$(curl -sS -w "\n%{http_code}" \
@@ -123,16 +124,6 @@ jobs:
 
               echo "  [attempt ${attempt}] model=${model} http=${http_code}"
 
-              # Check for API-level error in body
-              if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                echo "  API error: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                if [ "${attempt}" -lt 3 ]; then
-                  echo "  Retrying in ${delay}s..."
-                  sleep "${delay}"
-                fi
-                continue
-              fi
-
               if [ "${http_code}" = "200" ]; then
                 local text
                 text=$(printf '%s' "${body}" | jq -r '.choices[0].message.content // empty' 2>/dev/null || true)
@@ -142,18 +133,47 @@ jobs:
                   return 0
                 fi
                 echo "  Empty content in response; retrying..."
-              elif [ "${http_code}" = "429" ] || [ "${http_code}" -ge 500 ]; then
+              elif [ "${http_code}" = "413" ]; then
+                echo "  Payload too large (413) — diff exceeds model context. Skipping retries and fallback."
+                return 2
+              elif [ "${http_code}" = "429" ]; then
                 local retry_after
-                # respect retry-after if the header was surfaced in the body
                 retry_after=$(printf '%s' "${body}" | jq -r '.error.retry_after // empty' 2>/dev/null || true)
                 if [ -n "${retry_after}" ]; then
-                  echo "  Rate limited; waiting ${retry_after}s (retry-after)..."
+                  echo "  Rate limited; waiting ${retry_after}s (retry-after header)..."
                   sleep "${retry_after}"
                 else
-                  echo "  Retryable error ${http_code}; waiting ${delay}s..."
-                  sleep "${delay}"
+                  local wait_secs
+                  if [ $(( 10 * attempt )) -lt 60 ]; then
+                    wait_secs=$(( 10 * attempt ))
+                  else
+                    wait_secs=60
+                  fi
+                  echo "  Rate limited (429); waiting ${wait_secs}s (attempt ${attempt}/5)..."
+                  sleep "${wait_secs}"
+                fi
+                # Log any API error message for diagnostics
+                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
+                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
+                fi
+              elif [ "${http_code}" -ge 500 ]; then
+                local delay
+                delay=$(( 2 ** attempt ))   # 2s, 4s, 8s
+                echo "  Server error ${http_code}; waiting ${delay}s..."
+                # Log any API error message for diagnostics
+                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
+                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
+                fi
+                sleep "${delay}"
+                if [ "${attempt}" -ge 3 ]; then
+                  echo "  Capping 5xx retries at 3 attempts."
+                  break
                 fi
               else
+                # Log any API error message for diagnostics
+                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
+                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
+                fi
                 echo "  Non-retryable error ${http_code} from ${model}"
                 break
               fi
@@ -170,20 +190,34 @@ jobs:
 
           # ── fetch PR metadata (no checkout of PR code) ───
           PR_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}")
-          PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title')
-          PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"')
+          PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title' | head -c 300)
+          PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"' | head -c 2000)
           PR_AUTHOR=$(echo "${PR_JSON}" | jq -r '.user.login')
 
-          # changed files list
-          FILES=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-            --jq '[.[] | .filename] | join("\n")' 2>/dev/null || echo "(unavailable)")
+          # changed files — compute pre-signals before building the prompt
+          FILES_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" 2>/dev/null || echo '[]')
 
-          # diff (capped at 50 KB to stay well inside the context window)
-          DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 51200 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
+          ADDED_WORKFLOWS=$(printf '%s' "${FILES_JSON}" | jq -r '
+            [.[] | select(.status=="added") | select(.filename | endswith(".json")) | select(.filename | startswith(".github/") | not) | .filename] | join("\n")')
+
+          MODIFIED_WORKFLOWS=$(printf '%s' "${FILES_JSON}" | jq -r '
+            [.[] | select(.status=="modified") | select(.filename | endswith(".json")) | select(.filename | startswith(".github/") | not) | .filename] | join("\n")')
+
+          README_TOUCHED=$(printf '%s' "${FILES_JSON}" | jq -r '
+            if any(.[]; .filename | test("(?i)readme.*\\.md$")) then "yes" else "no" end')
+
+          # All changed filenames with status for context (capped at 50 lines)
+          FILES=$(printf '%s' "${FILES_JSON}" | jq -r '[.[] | "\(.status): \(.filename)"] | join("\n")' | head -n 50)
+
+          ADDED_WORKFLOWS_DISPLAY="${ADDED_WORKFLOWS:-none}"
+          MODIFIED_WORKFLOWS_DISPLAY="${MODIFIED_WORKFLOWS:-none}"
+
+          # diff (capped at ~3K tokens to stay inside the 8K free-tier context window)
+          DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 12000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
           # ── build prompt ──────────────────────────────────
           # Note: indented here to satisfy YAML block scalar; sed strips the indent.
-          PROMPT="You are a security-aware code reviewer for an open-source repository of n8n workflow JSON templates. Your job is to review pull requests submitted by contributors and flag issues specific to n8n template repositories.
+          PROMPT="You are a reviewer for an open-source curated list of n8n workflow JSON templates (awesome-n8n-templates). Your job is to check whether a PR correctly adds a new workflow template and flag real problems. Be conservative — only flag things you can clearly see in the diff.
 
           ## PR Details
           - **PR number**: #${PR_NUMBER}
@@ -191,38 +225,89 @@ jobs:
           - **Title**: ${PR_TITLE}
           - **Description**: ${PR_BODY}
 
+          ## Pre-computed PR signals
+          - New workflow JSON files added: ${ADDED_WORKFLOWS_DISPLAY}
+          - Existing workflow JSON files modified: ${MODIFIED_WORKFLOWS_DISPLAY}
+          - README touched in this PR: ${README_TOUCHED}
+
           ## Changed Files
           \`\`\`
           ${FILES}
           \`\`\`
 
-          ## Diff (may be truncated at 50 KB)
+          ## Diff (may be truncated; review based on visible portion)
           \`\`\`diff
           ${DIFF}
           \`\`\`
 
-          ## Your task
-          Respond with a structured markdown review containing EXACTLY these three sections:
+          ## Rules for the verdict
+
+          Use the Pre-computed PR signals above — do NOT re-derive them from the diff.
+
+          - If \`New workflow JSON files added\` is non-empty (not \"none\"):
+              - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
+              - If README IS touched, check the README diff for self-promotion (personal sites, blogs, social handles, donations, \"follow me\" sections unrelated to listing the template). Flag any such content as NEEDS CHANGES.
+          - If \`New workflow JSON files added\` is \"none\" AND \`Existing workflow JSON files modified\` is non-empty (not \"none\"):
+              - This is an EDIT to an existing template. README update is NOT required. Focus only on: real hardcoded secrets, invalid JSON, malicious code.
+          - If both \`New workflow JSON files added\` and \`Existing workflow JSON files modified\` are \"none\":
+              - Verdict is NOT A TEMPLATE PR. Do not perform other checks.
+
+          ## SECONDARY CHECKS (flag only if clearly evident — do NOT be picky)
+
+          ### Real hardcoded secrets
+          A real hardcoded secret is a long (20+ characters) random-looking token, password, or key embedded LITERALLY in the JSON — for example:
+          - OpenAI keys starting with \"sk-\"
+          - AWS access keys starting with \"AKIA\"
+          - Long hex/base64 strings that look like real tokens
+
+          IMPORTANT — do NOT flag these patterns as secrets (they are safe n8n template syntax):
+          - {{ \$vars.ANYTHING }} — n8n variable reference
+          - {{ \$env.ANYTHING }} — n8n environment variable reference
+          - {{ \$credentials.ANYTHING }} — n8n credential reference
+          - {{ \$secrets.ANYTHING }} — n8n secrets reference
+          - {{ \$json.ANYTHING }}, {{ \$node.ANYTHING }}, {{ \$item.ANYTHING }} — n8n expression syntax
+          - Placeholder strings like YOUR_API_KEY_HERE, <YOUR_TOKEN>, REPLACE_ME, etc.
+          - Any value inside an n8n credential node (those are references, not literal secrets)
+
+          ### Broken JSON
+          If the diff contains malformed JSON (unclosed brackets, invalid syntax) that would prevent the workflow from loading in n8n, flag it.
+
+          ### Obvious malicious code
+          Flag only clear malicious intent inside n8n Function/Code nodes: eval() on remote content, fetching and executing remote scripts, exfiltrating environment variables to attacker-controlled domains.
+          Do NOT flag: normal HTTP requests to legitimate third-party APIs. The following domains and services are always safe — do not flag them: Telegram, WhatsApp, CallMeBot, TextBelt, Gmail, Slack, Discord, Notion, Airtable, OpenAI, Anthropic, Google APIs (googleapis.com), AWS official endpoints, GitHub API, HubSpot, Salesforce, Stripe, and any other well-known SaaS/API.
+
+          ## THINGS YOU MUST NOT FLAG (these produce noise and false positives)
+          - n8n expression syntax: {{ \$vars.X }}, {{ \$env.X }}, {{ \$json.X }}, {{ \$node.X }}, {{ \$item.X }}, {{ \$workflow.X }}, {{ \$runIndex }}, etc.
+          - HTTP requests to legitimate third-party APIs or web services
+          - \"Overly broad permissions\" — you cannot judge this from a workflow JSON
+          - Duplicate templates — you cannot know what is already in the repo
+          - Code style, naming conventions, or non-security formatting issues
+
+          ## VERDICT SCALE
+
+          Use exactly one of these three verdicts:
+
+          **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no real hardcoded secrets, JSON appears valid.
+
+          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
+
+          **NOT A TEMPLATE PR** — The PR does not add or modify any n8n workflow JSON file (e.g. it is a docs fix, typo correction, README-only change, or meta change). This is INFORMATIONAL — no action items needed.
+
+          ## REQUIRED OUTPUT FORMAT
+          Respond with EXACTLY these three sections and no other content:
 
           ### Summary
           2-4 bullet points describing what this PR does.
 
           ### Safety Assessment
-          One of: **SAFE TO MERGE** | **NEEDS CHANGES** | **DO NOT MERGE**
+          **SAFE TO MERGE** or **NEEDS CHANGES** or **NOT A TEMPLATE PR**
 
-          Followed by a brief rationale (1-3 sentences).
+          Brief rationale (1-3 sentences).
 
           ### Action Items
-          If the assessment is NEEDS CHANGES or DO NOT MERGE, list specific actionable steps the maintainer should request from the contributor. If SAFE TO MERGE, write \"None — looks good.\".
-
-          ## Review checklist (n8n template repo specific — flag any of these)
-          - Hardcoded credentials, API keys, tokens, passwords, or secrets in JSON
-          - Suspicious or malicious URLs (phishing, C2, data exfiltration patterns)
-          - Malicious or obfuscated code/expressions inside n8n nodes
-          - Duplicate templates (the same workflow already exists in the repo)
-          - Broken or invalid JSON that would fail to import into n8n
-          - Missing README entry for the new template (contributors should add one)
-          - Overly broad permissions requested by the workflow (e.g. admin-level API scopes)
+          If SAFE TO MERGE: \"None — looks good.\"
+          If NEEDS CHANGES: concrete, minimal list of what must be fixed.
+          If NOT A TEMPLATE PR: \"Not a template submission — review manually.\"
 
           Be concise. This review will be posted as a GitHub comment."
           PROMPT=$(printf '%s' "${PROMPT}" | sed 's/^          //')
@@ -232,14 +317,44 @@ jobs:
           USED_MODEL=""
 
           echo "Trying primary model: ${PRIMARY_MODEL}"
-          if ! call_model "${PRIMARY_MODEL}" "${PROMPT}"; then
-            echo "Primary model failed. Trying fallback: ${FALLBACK_MODEL}"
-            if ! call_model "${FALLBACK_MODEL}" "${PROMPT}"; then
-              echo "Both models failed. Posting fallback comment."
-              REVIEW_BODY="Automated review unavailable — please review manually."
-              USED_MODEL="(unavailable)"
-            fi
-          fi
+          set +e
+          call_model "${PRIMARY_MODEL}" "${PROMPT}"
+          rc=$?
+          set -e
+
+          case "${rc}" in
+            0)
+              # success — REVIEW_BODY already set by call_model
+              ;;
+            2)
+              echo "Payload too large for primary — skipping fallback (same cap applies)."
+              REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+              USED_MODEL="(skipped: payload too large)"
+              ;;
+            *)
+              echo "Primary model failed. Trying fallback: ${FALLBACK_MODEL}"
+              set +e
+              call_model "${FALLBACK_MODEL}" "${PROMPT}"
+              rc2=$?
+              set -e
+
+              case "${rc2}" in
+                0)
+                  # success on fallback — REVIEW_BODY already set by call_model
+                  ;;
+                2)
+                  echo "Payload too large for fallback as well."
+                  REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+                  USED_MODEL="(skipped: payload too large)"
+                  ;;
+                *)
+                  echo "Both models failed. Posting fallback comment."
+                  REVIEW_BODY="Automated review unavailable — please review manually."
+                  USED_MODEL="(unavailable)"
+                  ;;
+              esac
+              ;;
+          esac
 
           # ── compose and post comment ──────────────────────
           COMMENT="## 🤖 Automated PR Review
@@ -260,6 +375,7 @@ jobs:
     name: Review PR (manual — ${{ inputs.mode }})
     if: github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Run review (${{ inputs.mode }})
         env:
@@ -302,13 +418,13 @@ jobs:
           # call_model <model> <prompt>
           # Returns 0 and sets REVIEW_BODY on success.
           # Returns 1 on all retries exhausted.
+          # Returns 2 if payload is too large (413) — caller must skip fallback.
           call_model() {
             local model="$1"
             local prompt="$2"
-            local attempt delay http_code response body
+            local attempt http_code response body
 
-            for attempt in 1 2 3; do
-              delay=$(( 2 ** attempt ))   # 2s, 4s, 8s
+            for attempt in 1 2 3 4 5; do
 
               # Capture body + HTTP status in one call
               response=$(curl -sS -w "\n%{http_code}" \
@@ -330,16 +446,6 @@ jobs:
 
               echo "  [attempt ${attempt}] model=${model} http=${http_code}"
 
-              # Check for API-level error in body
-              if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                echo "  API error: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                if [ "${attempt}" -lt 3 ]; then
-                  echo "  Retrying in ${delay}s..."
-                  sleep "${delay}"
-                fi
-                continue
-              fi
-
               if [ "${http_code}" = "200" ]; then
                 local text
                 text=$(printf '%s' "${body}" | jq -r '.choices[0].message.content // empty' 2>/dev/null || true)
@@ -349,18 +455,47 @@ jobs:
                   return 0
                 fi
                 echo "  Empty content in response; retrying..."
-              elif [ "${http_code}" = "429" ] || [ "${http_code}" -ge 500 ]; then
+              elif [ "${http_code}" = "413" ]; then
+                echo "  Payload too large (413) — diff exceeds model context. Skipping retries and fallback."
+                return 2
+              elif [ "${http_code}" = "429" ]; then
                 local retry_after
-                # respect retry-after if the header was surfaced in the body
                 retry_after=$(printf '%s' "${body}" | jq -r '.error.retry_after // empty' 2>/dev/null || true)
                 if [ -n "${retry_after}" ]; then
-                  echo "  Rate limited; waiting ${retry_after}s (retry-after)..."
+                  echo "  Rate limited; waiting ${retry_after}s (retry-after header)..."
                   sleep "${retry_after}"
                 else
-                  echo "  Retryable error ${http_code}; waiting ${delay}s..."
-                  sleep "${delay}"
+                  local wait_secs
+                  if [ $(( 10 * attempt )) -lt 60 ]; then
+                    wait_secs=$(( 10 * attempt ))
+                  else
+                    wait_secs=60
+                  fi
+                  echo "  Rate limited (429); waiting ${wait_secs}s (attempt ${attempt}/5)..."
+                  sleep "${wait_secs}"
+                fi
+                # Log any API error message for diagnostics
+                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
+                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
+                fi
+              elif [ "${http_code}" -ge 500 ]; then
+                local delay
+                delay=$(( 2 ** attempt ))   # 2s, 4s, 8s
+                echo "  Server error ${http_code}; waiting ${delay}s..."
+                # Log any API error message for diagnostics
+                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
+                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
+                fi
+                sleep "${delay}"
+                if [ "${attempt}" -ge 3 ]; then
+                  echo "  Capping 5xx retries at 3 attempts."
+                  break
                 fi
               else
+                # Log any API error message for diagnostics
+                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
+                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
+                fi
                 echo "  Non-retryable error ${http_code} from ${model}"
                 break
               fi
@@ -376,17 +511,33 @@ jobs:
 
             # fetch metadata (no checkout)
             PR_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}")
-            PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title')
-            PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"')
+            PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title' | head -c 300)
+            PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"' | head -c 2000)
             PR_AUTHOR=$(echo "${PR_JSON}" | jq -r '.user.login')
 
-            FILES=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-              --jq '[.[] | .filename] | join("\n")' 2>/dev/null || echo "(unavailable)")
+            # changed files — compute pre-signals before building the prompt
+            FILES_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" 2>/dev/null || echo '[]')
 
-            DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 51200 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
+            ADDED_WORKFLOWS=$(printf '%s' "${FILES_JSON}" | jq -r '
+              [.[] | select(.status=="added") | select(.filename | endswith(".json")) | select(.filename | startswith(".github/") | not) | .filename] | join("\n")')
+
+            MODIFIED_WORKFLOWS=$(printf '%s' "${FILES_JSON}" | jq -r '
+              [.[] | select(.status=="modified") | select(.filename | endswith(".json")) | select(.filename | startswith(".github/") | not) | .filename] | join("\n")')
+
+            README_TOUCHED=$(printf '%s' "${FILES_JSON}" | jq -r '
+              if any(.[]; .filename | test("(?i)readme.*\\.md$")) then "yes" else "no" end')
+
+            # All changed filenames with status for context (capped at 50 lines)
+            FILES=$(printf '%s' "${FILES_JSON}" | jq -r '[.[] | "\(.status): \(.filename)"] | join("\n")' | head -n 50)
+
+            ADDED_WORKFLOWS_DISPLAY="${ADDED_WORKFLOWS:-none}"
+            MODIFIED_WORKFLOWS_DISPLAY="${MODIFIED_WORKFLOWS:-none}"
+
+            # diff (capped at ~3K tokens to stay inside the 8K free-tier context window)
+            DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 12000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
             # Note: indented here to satisfy YAML block scalar; sed strips the indent.
-            PROMPT="You are a security-aware code reviewer for an open-source repository of n8n workflow JSON templates. Your job is to review pull requests submitted by contributors and flag issues specific to n8n template repositories.
+            PROMPT="You are a reviewer for an open-source curated list of n8n workflow JSON templates (awesome-n8n-templates). Your job is to check whether a PR correctly adds a new workflow template and flag real problems. Be conservative — only flag things you can clearly see in the diff.
 
           ## PR Details
           - **PR number**: #${PR_NUMBER}
@@ -394,38 +545,89 @@ jobs:
           - **Title**: ${PR_TITLE}
           - **Description**: ${PR_BODY}
 
+          ## Pre-computed PR signals
+          - New workflow JSON files added: ${ADDED_WORKFLOWS_DISPLAY}
+          - Existing workflow JSON files modified: ${MODIFIED_WORKFLOWS_DISPLAY}
+          - README touched in this PR: ${README_TOUCHED}
+
           ## Changed Files
           \`\`\`
           ${FILES}
           \`\`\`
 
-          ## Diff (may be truncated at 50 KB)
+          ## Diff (may be truncated; review based on visible portion)
           \`\`\`diff
           ${DIFF}
           \`\`\`
 
-          ## Your task
-          Respond with a structured markdown review containing EXACTLY these three sections:
+          ## Rules for the verdict
+
+          Use the Pre-computed PR signals above — do NOT re-derive them from the diff.
+
+          - If \`New workflow JSON files added\` is non-empty (not \"none\"):
+              - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
+              - If README IS touched, check the README diff for self-promotion (personal sites, blogs, social handles, donations, \"follow me\" sections unrelated to listing the template). Flag any such content as NEEDS CHANGES.
+          - If \`New workflow JSON files added\` is \"none\" AND \`Existing workflow JSON files modified\` is non-empty (not \"none\"):
+              - This is an EDIT to an existing template. README update is NOT required. Focus only on: real hardcoded secrets, invalid JSON, malicious code.
+          - If both \`New workflow JSON files added\` and \`Existing workflow JSON files modified\` are \"none\":
+              - Verdict is NOT A TEMPLATE PR. Do not perform other checks.
+
+          ## SECONDARY CHECKS (flag only if clearly evident — do NOT be picky)
+
+          ### Real hardcoded secrets
+          A real hardcoded secret is a long (20+ characters) random-looking token, password, or key embedded LITERALLY in the JSON — for example:
+          - OpenAI keys starting with \"sk-\"
+          - AWS access keys starting with \"AKIA\"
+          - Long hex/base64 strings that look like real tokens
+
+          IMPORTANT — do NOT flag these patterns as secrets (they are safe n8n template syntax):
+          - {{ \$vars.ANYTHING }} — n8n variable reference
+          - {{ \$env.ANYTHING }} — n8n environment variable reference
+          - {{ \$credentials.ANYTHING }} — n8n credential reference
+          - {{ \$secrets.ANYTHING }} — n8n secrets reference
+          - {{ \$json.ANYTHING }}, {{ \$node.ANYTHING }}, {{ \$item.ANYTHING }} — n8n expression syntax
+          - Placeholder strings like YOUR_API_KEY_HERE, <YOUR_TOKEN>, REPLACE_ME, etc.
+          - Any value inside an n8n credential node (those are references, not literal secrets)
+
+          ### Broken JSON
+          If the diff contains malformed JSON (unclosed brackets, invalid syntax) that would prevent the workflow from loading in n8n, flag it.
+
+          ### Obvious malicious code
+          Flag only clear malicious intent inside n8n Function/Code nodes: eval() on remote content, fetching and executing remote scripts, exfiltrating environment variables to attacker-controlled domains.
+          Do NOT flag: normal HTTP requests to legitimate third-party APIs. The following domains and services are always safe — do not flag them: Telegram, WhatsApp, CallMeBot, TextBelt, Gmail, Slack, Discord, Notion, Airtable, OpenAI, Anthropic, Google APIs (googleapis.com), AWS official endpoints, GitHub API, HubSpot, Salesforce, Stripe, and any other well-known SaaS/API.
+
+          ## THINGS YOU MUST NOT FLAG (these produce noise and false positives)
+          - n8n expression syntax: {{ \$vars.X }}, {{ \$env.X }}, {{ \$json.X }}, {{ \$node.X }}, {{ \$item.X }}, {{ \$workflow.X }}, {{ \$runIndex }}, etc.
+          - HTTP requests to legitimate third-party APIs or web services
+          - \"Overly broad permissions\" — you cannot judge this from a workflow JSON
+          - Duplicate templates — you cannot know what is already in the repo
+          - Code style, naming conventions, or non-security formatting issues
+
+          ## VERDICT SCALE
+
+          Use exactly one of these three verdicts:
+
+          **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no real hardcoded secrets, JSON appears valid.
+
+          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
+
+          **NOT A TEMPLATE PR** — The PR does not add or modify any n8n workflow JSON file (e.g. it is a docs fix, typo correction, README-only change, or meta change). This is INFORMATIONAL — no action items needed.
+
+          ## REQUIRED OUTPUT FORMAT
+          Respond with EXACTLY these three sections and no other content:
 
           ### Summary
           2-4 bullet points describing what this PR does.
 
           ### Safety Assessment
-          One of: **SAFE TO MERGE** | **NEEDS CHANGES** | **DO NOT MERGE**
+          **SAFE TO MERGE** or **NEEDS CHANGES** or **NOT A TEMPLATE PR**
 
-          Followed by a brief rationale (1-3 sentences).
+          Brief rationale (1-3 sentences).
 
           ### Action Items
-          If the assessment is NEEDS CHANGES or DO NOT MERGE, list specific actionable steps the maintainer should request from the contributor. If SAFE TO MERGE, write \"None — looks good.\".
-
-          ## Review checklist (n8n template repo specific — flag any of these)
-          - Hardcoded credentials, API keys, tokens, passwords, or secrets in JSON
-          - Suspicious or malicious URLs (phishing, C2, data exfiltration patterns)
-          - Malicious or obfuscated code/expressions inside n8n nodes
-          - Duplicate templates (the same workflow already exists in the repo)
-          - Broken or invalid JSON that would fail to import into n8n
-          - Missing README entry for the new template (contributors should add one)
-          - Overly broad permissions requested by the workflow (e.g. admin-level API scopes)
+          If SAFE TO MERGE: \"None — looks good.\"
+          If NEEDS CHANGES: concrete, minimal list of what must be fixed.
+          If NOT A TEMPLATE PR: \"Not a template submission — review manually.\"
 
           Be concise. This review will be posted as a GitHub comment."
             PROMPT=$(printf '%s' "${PROMPT}" | sed 's/^          //')
@@ -434,14 +636,44 @@ jobs:
             USED_MODEL=""
 
             echo "Trying primary model: ${PRIMARY_MODEL}"
-            if ! call_model "${PRIMARY_MODEL}" "${PROMPT}"; then
-              echo "Primary model failed. Trying fallback: ${FALLBACK_MODEL}"
-              if ! call_model "${FALLBACK_MODEL}" "${PROMPT}"; then
-                echo "Both models failed. Posting fallback comment."
-                REVIEW_BODY="Automated review unavailable — please review manually."
-                USED_MODEL="(unavailable)"
-              fi
-            fi
+            set +e
+            call_model "${PRIMARY_MODEL}" "${PROMPT}"
+            rc=$?
+            set -e
+
+            case "${rc}" in
+              0)
+                # success — REVIEW_BODY already set by call_model
+                ;;
+              2)
+                echo "Payload too large for primary — skipping fallback (same cap applies)."
+                REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+                USED_MODEL="(skipped: payload too large)"
+                ;;
+              *)
+                echo "Primary model failed. Trying fallback: ${FALLBACK_MODEL}"
+                set +e
+                call_model "${FALLBACK_MODEL}" "${PROMPT}"
+                rc2=$?
+                set -e
+
+                case "${rc2}" in
+                  0)
+                    # success on fallback — REVIEW_BODY already set by call_model
+                    ;;
+                  2)
+                    echo "Payload too large for fallback as well."
+                    REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+                    USED_MODEL="(skipped: payload too large)"
+                    ;;
+                  *)
+                    echo "Both models failed. Posting fallback comment."
+                    REVIEW_BODY="Automated review unavailable — please review manually."
+                    USED_MODEL="(unavailable)"
+                    ;;
+                esac
+                ;;
+            esac
 
             COMMENT="          ## 🤖 Automated PR Review
 
