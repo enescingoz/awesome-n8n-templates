@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/enescingoz-awesome-n8n-templates-badge.png)](https://mseep.ai/app/enescingoz-awesome-n8n-templates)
+
 # Awesome n8n Templates
 
 > The largest open-source collection of n8n automation templates on GitHub. Browse 280+ free, ready-to-import workflow templates covering Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets, and dozens more platforms. Continuously updated as of March 2026.
