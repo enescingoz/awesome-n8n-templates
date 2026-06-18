@@ -1,0 +1,16 @@
+{
+  "name": "💰 Daily Revenue Tracker",
+  "description": "Tracks daily revenue from Gumroad and sends Telegram summary.",
+  "category": "revenue",
+  "nodes": [
+    {"name": "Schedule Trigger", "type": "n8n-nodes-base.scheduleTrigger", "position": [250, 300], "parameters": {"rule": {"interval": [{"field": "hours", "hoursInterval": 24}]}}},
+    {"name": "Fetch Gumroad Sales", "type": "n8n-nodes-base.httpRequest", "position": [450, 200], "parameters": {"url": "https://api.gumroad.com/v2/sales"}},
+    {"name": "Calculate Total", "type": "n8n-nodes-base.code", "position": [650, 300], "parameters": {"jsCode": "const sales = $input.all()[0].json.sales || []; const total = sales.reduce((sum, s) => sum + parseFloat(s.price || 0), 0); return [{json: {total: total.toFixed(2), count: sales.length}}];"}},
+    {"name": "Send Telegram", "type": "n8n-nodes-base.telegram", "position": [850, 300], "parameters": {"text": "📊 Revenue: ${{$json.total}} | Sales: {{$json.count}}"}}
+  ],
+  "connections": {
+    "Schedule Trigger": {"main": [[{"node": "Fetch Gumroad Sales", "type": "main", "index": 0}]]},
+    "Fetch Gumroad Sales": {"main": [[{"node": "Calculate Total", "type": "main", "index": 0}]]},
+    "Calculate Total": {"main": [[{"node": "Send Telegram", "type": "main", "index": 0}]]}
+  }
+}
