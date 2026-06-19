@@ -1,0 +1,150 @@
+{
+  "name": "Monitor X Search with Xquik",
+  "description": "Searches X through Xquik, normalizes results, and builds an email-ready social listening digest.",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "query",
+              "name": "query",
+              "value": "n8n automation",
+              "type": "string"
+            },
+            {
+              "id": "limit",
+              "name": "limit",
+              "value": 10,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-settings",
+      "name": "Search Settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "color": 3,
+        "width": 300,
+        "height": 120,
+        "content": "Set XQUIK_API_KEY in n8n before running. This workflow reads it from $env and does not store the key."
+      },
+      "id": "api-key-note",
+      "name": "API Key Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [460, 140]
+    },
+    {
+      "parameters": {
+        "url": "https://xquik.com/api/v1/x/tweets/search",
+        "sendQuery": true,
+        "sendHeaders": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit }}"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.XQUIK_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "search-x-with-xquik",
+      "name": "Search X with Xquik",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst tweets = Array.isArray(body.tweets) ? body.tweets : [];\nconst normalized = tweets.map((tweet) => {\n  const id = tweet.id ?? tweet.tweet_id ?? tweet.rest_id ?? '';\n  const author = tweet.author ?? tweet.user ?? {};\n  return {\n    id,\n    url: tweet.url ?? (id ? `https://x.com/i/web/status/${id}` : ''),\n    text: tweet.text ?? tweet.full_text ?? tweet.content ?? '',\n    author: author.username ?? author.screen_name ?? author.name ?? '',\n    created_at: tweet.created_at ?? tweet.created ?? tweet.timestamp ?? '',\n    metrics: tweet.metrics ?? {}\n  };\n});\nconst digestLines = normalized.length === 0\n  ? ['No matching X posts found for this query.']\n  : normalized.map((tweet, index) => {\n      const author = tweet.author ? ` by ${tweet.author}` : '';\n      const link = tweet.url ? `\\n${tweet.url}` : '';\n      return `${index + 1}. ${tweet.text}${author}${link}`;\n    });\nreturn [{\n  json: {\n    query: $('Search Settings').first().json.query,\n    results_count: normalized.length,\n    has_more: Boolean(body.has_more),\n    next_cursor: body.next_cursor ?? '',\n    tweets: normalized,\n    digest: digestLines.join('\\n\\n')\n  }\n}];"
+      },
+      "id": "build-digest",
+      "name": "Build Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Settings": {
+      "main": [
+        [
+          {
+            "node": "Search X with Xquik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search X with Xquik": {
+      "main": [
+        [
+          {
+            "node": "Build Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Xquik"
+    },
+    {
+      "name": "X"
+    },
+    {
+      "name": "Social Listening"
+    },
+    {
+      "name": "Marketing"
+    }
+  ]
+}
