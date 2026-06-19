@@ -1,0 +1,197 @@
+{
+  "nodes": [
+    {
+      "id": "2c1cc9d6-50e0-4928-a1ec-c95e754857f4",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -460,
+        80
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "d23954d2-e888-4285-973f-eafbc93c1fd8",
+      "name": "API Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -200,
+        80
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b44243c6-544e-4141-a71f-f9e7983ae21c",
+              "name": "api_key",
+              "type": "string",
+              "value": ""
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "740cffc4-d20a-4b83-8e00-39ccb0d4311e",
+      "name": "Search Query",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        60,
+        80
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b69143b1-1b41-470c-9e29-7caad34c4905",
+              "name": "query",
+              "type": "string",
+              "value": "latest AI agent frameworks 2026"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "03bbc419-51c5-4e53-b9f7-1dfe533174a1",
+      "name": "Superhighway Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        320,
+        80
+      ],
+      "parameters": {
+        "url": "https://superhighway.walls.sh/search",
+        "method": "GET",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('Search Query').item.json.query }}"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('API Config').item.json.api_key }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "c47bee08-5123-414e-adb5-b1815ec30b4e",
+      "name": "Format Results",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        580,
+        80
+      ],
+      "parameters": {
+        "jsCode": "// Superhighway returns an array of results (commonly under `results`).\n// Normalize to a clean list of { title, url, snippet } items.\nconst body = $input.first().json;\n\nconst raw = Array.isArray(body)\n  ? body\n  : (body.results || body.data || body.items || []);\n\nreturn raw.map((r) => ({\n  json: {\n    title: r.title || r.name || '',\n    url: r.url || r.link || '',\n    snippet: r.snippet || r.description || r.content || r.text || ''\n  }\n}));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "f218e9b7-d8b8-44f3-b8db-880d973641f4",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -220,
+        -260
+      ],
+      "parameters": {
+        "width": 520,
+        "height": 280,
+        "content": "## Setup — Superhighway Web Search\n\nSuperhighway is a web search API built for AI agents.\n\n**1/ Get a free API key** at https://superhighway.walls.sh\n\n**2/** Open the **API Config** node and paste your key into the `api_key` field.\n\n**3/** Open the **Search Query** node and set your `query`.\n\nThat's it — run the workflow with **Test workflow**.\n\nSearch is free with an API key (or $0.001/call). The same key works for `/news`, `/images`, `/scrape` and `/research`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "ef81ab75-8903-4cf5-bf0f-6f370c7ffb07",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        260
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 420,
+        "height": 160,
+        "content": "**Other Superhighway endpoints** (same auth header):\n\n- `GET /search?q=...&limit=5` — web search\n- `GET /news?q=...` — news search\n- `GET /images?q=...` — image search\n- `GET /scrape?url=...` — page → clean markdown\n- `GET /research?q=...&pages=3` — deep research"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "API Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Config": {
+      "main": [
+        [
+          {
+            "node": "Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Query": {
+      "main": [
+        [
+          {
+            "node": "Superhighway Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Superhighway Search": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "meta": {
+    "instanceId": "superhighway-live-web-research-agent-template"
+  },
+  "id": "6eeedaa3b39d48688bfec70fb5b09c2a",
+  "name": "Live Web Research Agent with Superhighway",
+  "active": false
+}
