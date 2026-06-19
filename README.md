@@ -327,7 +327,7 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 | AI: Summarize podcast episode and enhance using Wikipedia | Summarizes podcast episodes and enhances the summary with information from Wikipedia using AI. | Content Creation/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 | AI Blog Writer Pipeline with Ollama | Uses Ollama local AI to research topics, create outlines, draft full blog posts, and edit them. Runs entirely locally with no API keys needed. | Content Creation/AI | [Link to Template](OpenAI_and_LLMs/AI%20Blog%20Writer%20Pipeline%20with%20Ollama.json) |
 | SupportFlow Lite - Simple AI Customer Support Chatbot | A lightweight AI chatbot that answers customer questions using company info and OpenAI gpt-4o-mini. Easy single-workflow setup with Google Sheets knowledge base. | Customer Support/AI | [Link to Template](OpenAI_and_LLMs/SupportFlow%20Lite%20-%20Simple%20AI%20Customer%20Support%20Chatbot.json) |
-| n8n + Local LLM (Ollama) Basic Setup | Connect n8n with local LLMs (Llama 3, Mistral, Phi-3) for 100% free AI automation. [View Full Multilingual Guide here](https://github.com/maheerCodes/free-ai-automation-n8n-ollama). | AI/Automation | [Link to Template](OpenAI_and_LLMs/Ollama_Basic_Workflow.json) |
+| n8n + Local LLM (Ollama) Basic Setup | Connect n8n with local LLMs (Llama 3, Mistral, Phi-3) for 100% free AI automation. No API keys required. | AI/Automation | [Link to Template](./OpenAI_and_LLMs/Ollama_Basic_Workflow.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
