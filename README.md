@@ -350,7 +350,7 @@ This section includes 4 WhatsApp automation templates for n8n. Automate sales me
 
 ### What are the best n8n templates for social media automation?
 
-Explore 10 social media automation templates for n8n covering Instagram, Twitter/X, Reddit, YouTube, LinkedIn, and more. Templates include AI-powered Instagram DM management with Manychat, dynamic Twitter banners, trend-based content generation with AI image creation, tweet generators, YouTube-to-X posting, Reddit digest creation, social media analytics, and virtual AI influencer management.
+Explore 13 social media automation templates for n8n covering Instagram, Twitter/X, Reddit, YouTube, LinkedIn, and more. Templates include AI-powered Instagram DM management with Manychat, dynamic Twitter banners, trend-based content generation with AI image creation, tweet generators, YouTube-to-X posting, Reddit digest creation, social media analytics, and virtual AI influencer management.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -366,6 +366,7 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 | Update Twitter banner using HTTP request | Updates a Twitter banner using HTTP requests. | Marketing/Development | [Link to Template](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 | AI Social Media Content Generator with Ollama | Generates optimized posts for Twitter, LinkedIn, Reddit, and Instagram from a single topic using Ollama local AI with built-in quality review. | Marketing/AI/Content | [Link to Template](Instagram_Twitter_Social_Media/AI%20Social%20Media%20Content%20Generator%20with%20Ollama.json) |
 | FlowScribe Lite - AI Content Repurposing (4 Platforms) | Converts one blog post into four optimized social media posts for Twitter, LinkedIn, Instagram, and Facebook using OpenAI. | Marketing/Content | [Link to Template](Instagram_Twitter_Social_Media/FlowScribe%20Lite%20-%20AI%20Content%20Repurposing%204%20Platforms.json) |
+| Monitor X Search with Xquik | Searches X with Xquik, normalizes matching posts, and builds an email-ready social listening digest. | Marketing/Analytics | [Link to Template](Instagram_Twitter_Social_Media/Monitor%20X%20Search%20with%20Xquik.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
