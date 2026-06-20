@@ -35,6 +35,11 @@ on:
         description: "PR number (required when mode=single)"
         required: false
         type: string
+      force:
+        description: "Force re-review even if up to date (latest/backlog modes)"
+        required: false
+        type: boolean
+        default: false
 
   # Auto-trigger on new/updated PRs
   pull_request_target:
@@ -55,12 +60,16 @@ jobs:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: pr-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     steps:
       - name: Review PR ${{ github.event.pull_request.number }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
 
@@ -70,27 +79,92 @@ jobs:
           FALLBACK_MODEL="openai/gpt-4o-mini"
           MODELS_ENDPOINT="https://models.github.ai/inference/chat/completions"
 
-          already_reviewed() {
+          # needs_review <pr> <head_sha> — echoes "yes" or "no"
+          # "no" only when a MARKER comment exists whose reviewed-sha == head_sha.
+          # On API failure or parse failure, defaults to "yes" (auto/single/latest
+          # always re-review anyway; backlog wraps each PR in error handling).
+          needs_review() {
             local pr="$1"
-            local comments
+            local head_sha="$2"
+            local comments reviewed_sha
             if ! comments=$(gh api "repos/${REPO}/issues/${pr}/comments" --jq '.[].body' 2>/dev/null); then
-              # API failed — conservative: assume already reviewed to avoid spam
               echo "yes"
               return
             fi
-            if printf '%s' "$comments" | grep -qF "${MARKER}"; then
+            if ! printf '%s' "${comments}" | grep -qF "${MARKER}"; then
+              # No prior review comment — needs review.
               echo "yes"
-            else
+              return
+            fi
+            # Extract reviewed SHA from the marker comment's hidden line.
+            reviewed_sha=$(printf '%s' "${comments}" \
+              | grep -oE '<!-- reviewed-sha: [0-9a-fA-F]+ -->' \
+              | head -n1 \
+              | sed -E 's/<!-- reviewed-sha: ([0-9a-fA-F]+) -->/\1/')
+            if [ -z "${reviewed_sha}" ]; then
+              # Marker present but no parseable SHA — re-review to be safe.
+              echo "yes"
+              return
+            fi
+            if [ "${reviewed_sha}" = "${head_sha}" ]; then
               echo "no"
+            else
+              echo "yes"
             fi
           }
 
+          # post_review <pr> <body> <head_sha> — UPSERT one review comment.
+          # Body is stamped with MARKER + hidden reviewed-sha line.
           post_review() {
             local pr="$1"
             local body="$2"
-            gh api "repos/${REPO}/issues/${pr}/comments" \
-              -X POST \
-              -f body="${MARKER}"$'\n'"${body}"
+            local head_sha="$3"
+            local full_body existing_id
+            full_body="${MARKER}"$'\n'"<!-- reviewed-sha: ${head_sha} -->"$'\n'"${body}"
+            existing_id=$(gh api "repos/${REPO}/issues/${pr}/comments" \
+              --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" 2>/dev/null | head -n1)
+            if [ -n "${existing_id}" ]; then
+              echo "Updating existing review comment ${existing_id} on PR #${pr}."
+              gh api "repos/${REPO}/issues/comments/${existing_id}" \
+                -X PATCH \
+                -f body="${full_body}"
+            else
+              echo "Posting new review comment on PR #${pr}."
+              gh api "repos/${REPO}/issues/${pr}/comments" \
+                -X POST \
+                -f body="${full_body}"
+            fi
+          }
+
+          # apply_verdict_label <pr> <body> — apply exactly one verdict label.
+          apply_verdict_label() {
+            local pr="$1"
+            local body="$2"
+            local verdict
+            if printf '%s' "${body}" | grep -qF "NEEDS CHANGES"; then
+              verdict="auto-review: needs-changes"
+            elif printf '%s' "${body}" | grep -qF "NOT A TEMPLATE"; then
+              verdict="auto-review: not-a-template"
+            elif printf '%s' "${body}" | grep -qF "SAFE TO MERGE"; then
+              verdict="auto-review: safe"
+            else
+              verdict="auto-review: error"
+            fi
+
+            # Ensure all four labels exist (idempotent via --force).
+            gh label create "auto-review: safe"          --color 0e8a16 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: needs-changes" --color d93f0b --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: not-a-template" --color ededed --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: error"         --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
+
+            echo "Applying verdict label '${verdict}' to PR #${pr}."
+            # Remove all four, then add the matched one (tolerate "not present").
+            gh pr edit "${pr}" --repo "${REPO}" \
+              --remove-label "auto-review: safe" \
+              --remove-label "auto-review: needs-changes" \
+              --remove-label "auto-review: not-a-template" \
+              --remove-label "auto-review: error" \
+              --add-label "${verdict}" || true
           }
 
           # call_model <model> <prompt>
@@ -182,11 +256,16 @@ jobs:
             return 1
           }
 
-          # ── skip if already reviewed ──────────────────────
-          if [ "$(already_reviewed "${PR_NUMBER}")" = "yes" ]; then
-            echo "PR #${PR_NUMBER} already has a review — skipping."
-            exit 0
+          # ── always re-review on every PR event (opened/reopened/synchronize) ──
+          # We intentionally do NOT skip when a prior review exists: a new commit
+          # must trigger a fresh re-check. post_review() upserts the existing
+          # comment so we re-check without spamming new comments.
+
+          # Resolve the head SHA to stamp: prefer the event payload, fall back to API.
+          if [ -z "${HEAD_SHA:-}" ]; then
+            HEAD_SHA=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.head.sha')
           fi
+          echo "Reviewing PR #${PR_NUMBER} at head ${HEAD_SHA}."
 
           # ── fetch PR metadata (no checkout of PR code) ───
           PR_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}")
@@ -386,7 +465,8 @@ jobs:
           <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>"
           COMMENT=$(printf '%s' "${COMMENT}" | sed 's/^          //')
 
-          post_review "${PR_NUMBER}" "${COMMENT}"
+          post_review "${PR_NUMBER}" "${COMMENT}" "${HEAD_SHA}"
+          apply_verdict_label "${PR_NUMBER}" "${REVIEW_BODY}"
           echo "Review posted on PR #${PR_NUMBER} (model: ${USED_MODEL})."
 
   # ──────────────────────────────────────────────────────────
@@ -404,6 +484,7 @@ jobs:
           REPO: ${{ github.repository }}
           MODE: ${{ inputs.mode }}
           INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          FORCE: ${{ inputs.force }}
         run: |
           set -euo pipefail
 
@@ -413,27 +494,85 @@ jobs:
           FALLBACK_MODEL="openai/gpt-4o-mini"
           MODELS_ENDPOINT="https://models.github.ai/inference/chat/completions"
 
-          already_reviewed() {
+          # needs_review <pr> <head_sha> — echoes "yes" or "no"
+          # "no" only when a MARKER comment exists whose reviewed-sha == head_sha.
+          # On API failure or parse failure, defaults to "yes".
+          needs_review() {
             local pr="$1"
-            local comments
+            local head_sha="$2"
+            local comments reviewed_sha
             if ! comments=$(gh api "repos/${REPO}/issues/${pr}/comments" --jq '.[].body' 2>/dev/null); then
-              # API failed — conservative: assume already reviewed to avoid spam
               echo "yes"
               return
             fi
-            if printf '%s' "$comments" | grep -qF "${MARKER}"; then
+            if ! printf '%s' "${comments}" | grep -qF "${MARKER}"; then
               echo "yes"
-            else
+              return
+            fi
+            reviewed_sha=$(printf '%s' "${comments}" \
+              | grep -oE '<!-- reviewed-sha: [0-9a-fA-F]+ -->' \
+              | head -n1 \
+              | sed -E 's/<!-- reviewed-sha: ([0-9a-fA-F]+) -->/\1/')
+            if [ -z "${reviewed_sha}" ]; then
+              echo "yes"
+              return
+            fi
+            if [ "${reviewed_sha}" = "${head_sha}" ]; then
               echo "no"
+            else
+              echo "yes"
             fi
           }
 
+          # post_review <pr> <body> <head_sha> — UPSERT one review comment.
           post_review() {
             local pr="$1"
             local body="$2"
-            gh api "repos/${REPO}/issues/${pr}/comments" \
-              -X POST \
-              -f body="${MARKER}"$'\n'"${body}"
+            local head_sha="$3"
+            local full_body existing_id
+            full_body="${MARKER}"$'\n'"<!-- reviewed-sha: ${head_sha} -->"$'\n'"${body}"
+            existing_id=$(gh api "repos/${REPO}/issues/${pr}/comments" \
+              --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" 2>/dev/null | head -n1)
+            if [ -n "${existing_id}" ]; then
+              echo "Updating existing review comment ${existing_id} on PR #${pr}."
+              gh api "repos/${REPO}/issues/comments/${existing_id}" \
+                -X PATCH \
+                -f body="${full_body}"
+            else
+              echo "Posting new review comment on PR #${pr}."
+              gh api "repos/${REPO}/issues/${pr}/comments" \
+                -X POST \
+                -f body="${full_body}"
+            fi
+          }
+
+          # apply_verdict_label <pr> <body> — apply exactly one verdict label.
+          apply_verdict_label() {
+            local pr="$1"
+            local body="$2"
+            local verdict
+            if printf '%s' "${body}" | grep -qF "NEEDS CHANGES"; then
+              verdict="auto-review: needs-changes"
+            elif printf '%s' "${body}" | grep -qF "NOT A TEMPLATE"; then
+              verdict="auto-review: not-a-template"
+            elif printf '%s' "${body}" | grep -qF "SAFE TO MERGE"; then
+              verdict="auto-review: safe"
+            else
+              verdict="auto-review: error"
+            fi
+
+            gh label create "auto-review: safe"          --color 0e8a16 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: needs-changes" --color d93f0b --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: not-a-template" --color ededed --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: error"         --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
+
+            echo "Applying verdict label '${verdict}' to PR #${pr}."
+            gh pr edit "${pr}" --repo "${REPO}" \
+              --remove-label "auto-review: safe" \
+              --remove-label "auto-review: needs-changes" \
+              --remove-label "auto-review: not-a-template" \
+              --remove-label "auto-review: error" \
+              --add-label "${verdict}" || true
           }
 
           # call_model <model> <prompt>
@@ -527,11 +666,13 @@ jobs:
 
           review_one_pr() {
             local PR_NUMBER="$1"
+            local HEAD_SHA
 
             echo "--- Reviewing PR #${PR_NUMBER} ---"
 
             # fetch metadata (no checkout)
             PR_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}")
+            HEAD_SHA=$(echo "${PR_JSON}" | jq -r '.head.sha')
             PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title' | head -c 300)
             PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"' | head -c 2000)
             PR_AUTHOR=$(echo "${PR_JSON}" | jq -r '.user.login')
@@ -725,7 +866,8 @@ jobs:
           <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>"
             COMMENT=$(printf '%s' "${COMMENT}" | sed 's/^          //')
 
-            post_review "${PR_NUMBER}" "${COMMENT}"
+            post_review "${PR_NUMBER}" "${COMMENT}" "${HEAD_SHA}"
+            apply_verdict_label "${PR_NUMBER}" "${REVIEW_BODY}"
             echo "Review posted on PR #${PR_NUMBER} (model: ${USED_MODEL})."
           }
 
@@ -742,8 +884,10 @@ jobs:
 
             echo "Latest open PR: #${LATEST_PR}"
 
-            if [ "$(already_reviewed "${LATEST_PR}")" = "yes" ]; then
-              echo "PR #${LATEST_PR} already reviewed — use 'single' mode with the PR number to force re-review."
+            HEAD_SHA=$(gh api "repos/${REPO}/pulls/${LATEST_PR}" --jq '.head.sha')
+
+            if [ "${FORCE}" != "true" ] && [ "$(needs_review "${LATEST_PR}" "${HEAD_SHA}")" = "no" ]; then
+              echo "PR #${LATEST_PR} already up to date — nothing to do (use force=true to re-review)."
               exit 0
             fi
 
@@ -754,6 +898,7 @@ jobs:
               echo "ERROR: pr_number input is required when mode=single"
               exit 1
             fi
+            # single mode ALWAYS force re-reviews — ignore needs_review.
             review_one_pr "${INPUT_PR_NUMBER}"
 
           elif [ "${MODE}" = "backlog" ]; then
@@ -767,13 +912,22 @@ jobs:
             fi
 
             for PR_NUM in ${OPEN_PRS}; do
-              if [ "$(already_reviewed "${PR_NUM}")" = "yes" ]; then
-                echo "PR #${PR_NUM} already reviewed — skipping."
-              else
+              # Wrap each PR so a single failure logs and continues the sweep.
+              (
+                set -e
+                HEAD_SHA=$(gh api "repos/${REPO}/pulls/${PR_NUM}" --jq '.head.sha')
+                if [ -z "${HEAD_SHA}" ] || [ "${HEAD_SHA}" = "null" ]; then
+                  echo "PR #${PR_NUM}: could not resolve head SHA — skipping."
+                  exit 0
+                fi
+                if [ "${FORCE}" != "true" ] && [ "$(needs_review "${PR_NUM}" "${HEAD_SHA}")" = "no" ]; then
+                  echo "PR #${PR_NUM} up to date — skipping."
+                  exit 0
+                fi
                 review_one_pr "${PR_NUM}"
-                # Small delay between PRs to avoid rate limits
+                # Small delay between actual reviews to avoid rate limits.
                 sleep 10
-              fi
+              ) || echo "PR #${PR_NUM}: processing failed — logged and continuing to next PR."
             done
             echo "Backlog sweep complete."
           else
