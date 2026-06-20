@@ -1,0 +1,58 @@
+{
+  "id": "airtable-gsheets-sync-20260411",
+  "meta": {
+    "instanceId": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+  },
+  "nodes": [
+    {
+      "id": "manual-trigger-001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [250, 300],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "airtable-search-001",
+      "name": "Airtable Search",
+      "type": "n8n-nodes-base.airtable",
+      "position": [450, 300],
+      "parameters": {
+        "operation": "search",
+        "baseId": "YOUR_AIRTABLE_BASE_ID",
+        "table": "TableName",
+        "filterByFormula": "{LastUpdated} >= DATEADD(TODAY(), -1, 'days')"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gsheets-upsert-001",
+      "name": "Google Sheets Upsert",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [650, 300],
+      "parameters": {
+        "operation": "upsert",
+        "sheetId": "YOUR_GOOGLE_SHEET_ID",
+        "range": "A1:E1000",
+        "columnHeaderRow": 1,
+        "valueInputMode": "RAW",
+        "options": {
+          "compareColumn": "Email"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Airtable Search", "type": "main", "index": 0 }]
+      ]
+    },
+    "Airtable Search": {
+      "main": [
+        [{ "node": "Google Sheets Upsert", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
