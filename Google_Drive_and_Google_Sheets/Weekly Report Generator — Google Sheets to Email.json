@@ -1,0 +1,100 @@
+{
+  "name": "Weekly Report Generator — Google Sheets to Email",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "6a1b2c3d-0001-4a5b-8c6d-7e8f90123456",
+      "name": "Every Monday 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Weekly KPIs",
+          "mode": "name"
+        },
+        "options": {
+          "headerRow": 1
+        }
+      },
+      "id": "6a1b2c3d-0002-4a5b-8c6d-7e8f90123456",
+      "name": "Read KPI Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(r => r.json);\nconst week = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });\n\nlet totalRevenue = 0, totalLeads = 0, totalTasks = 0;\nrows.forEach(r => {\n  totalRevenue += parseFloat(r['Revenue'] || 0);\n  totalLeads   += parseInt(r['Leads'] || 0, 10);\n  totalTasks   += parseInt(r['Tasks Completed'] || 0, 10);\n});\n\nconst avgRevenue = rows.length ? (totalRevenue / rows.length).toFixed(2) : 0;\n\nconst body = `Weekly Report — ${week}\\n\\n` +\n  `Revenue: $${totalRevenue.toFixed(2)} (avg: $${avgRevenue}/day)\\n` +\n  `Leads: ${totalLeads}\\n` +\n  `Tasks Completed: ${totalTasks}\\n\\n` +\n  `Rows processed: ${rows.length}\\n\\n` +\n  `---\\nGenerated automatically. Reply to update targets.`;\n\nreturn [{ json: { subject: `Weekly Report — ${week}`, body } }];"
+      },
+      "id": "6a1b2c3d-0003-4a5b-8c6d-7e8f90123456",
+      "name": "Summarise KPIs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_RECIPIENT_EMAIL",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "6a1b2c3d-0004-4a5b-8c6d-7e8f90123456",
+      "name": "Send Report Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every Monday 8am": {
+      "main": [[{ "node": "Read KPI Sheet", "type": "main", "index": 0 }]]
+    },
+    "Read KPI Sheet": {
+      "main": [[{ "node": "Summarise KPIs", "type": "main", "index": 0 }]]
+    },
+    "Summarise KPIs": {
+      "main": [[{ "node": "Send Report Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1a2b3c4d-5e6f-7890-abcd-ef1234567890",
+  "id": "weekly-report-google-sheets-email",
+  "tags": []
+}
