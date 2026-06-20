@@ -126,6 +126,8 @@ This collection includes 9 email automation templates for n8n covering Gmail, Ou
 | AI Email Auto-Responder with Ollama | Classifies incoming emails, filters spam, and drafts context-aware replies using Ollama local AI. No external API keys required. | Support | [Link to Template](Gmail_and_Email_Automation/AI%20Email%20Auto-Responder%20with%20Ollama.json) |
 | InboxZero Lite - AI Email Classifier | AI classifies Gmail emails as urgent, important, info, or spam using OpenAI gpt-4o-mini. Lightweight single-workflow setup with Google Sheets logging. | Ops | [Link to Template](Gmail_and_Email_Automation/InboxZero%20Lite%20-%20AI%20Email%20Classifier.json) |
 | LeadPilot Lite - AI Cold Email Writer | AI writes personalized cold emails from a Google Sheets lead list using OpenAI. Generates subject lines and body text tailored to each prospect. | Sales | [Link to Template](Gmail_and_Email_Automation/LeadPilot%20Lite%20-%20AI%20Cold%20Email%20Writer.json) |
+| Daily Email Notification | Summarizes daily inbox emails using local LLM (Ollama) and sends notifications via Telegram or ntfy. | Ops | [Link to Template](Gmail_and_Email_Automation/Daily%20Email%20Notification.json) |
+
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
