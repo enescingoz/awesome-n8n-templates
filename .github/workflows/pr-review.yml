@@ -74,6 +74,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SERVER_URL: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
 
@@ -515,7 +517,7 @@ jobs:
           ${REVIEW_BODY}
 
           ---
-          <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>"
+          <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${SERVER_URL}/${REPO}/actions/runs/${RUN_ID})</sub>"
           COMMENT=$(printf '%s' "${COMMENT}" | sed 's/^          //')
 
           if [ "${DEFERRED}" = "yes" ]; then
@@ -540,6 +542,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
           # On schedule, inputs.* are empty → default to a backlog sweep.
           MODE: ${{ inputs.mode || (github.event_name == 'schedule' && 'backlog' || 'latest') }}
           INPUT_PR_NUMBER: ${{ inputs.pr_number }}
@@ -971,7 +975,7 @@ jobs:
           ${REVIEW_BODY}
 
           ---
-          <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>"
+          <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${SERVER_URL}/${REPO}/actions/runs/${RUN_ID})</sub>"
             COMMENT=$(printf '%s' "${COMMENT}" | sed 's/^          //')
 
             if [ "${DEFERRED}" = "yes" ]; then
