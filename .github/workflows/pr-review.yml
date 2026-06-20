@@ -158,13 +158,27 @@ jobs:
             gh label create "auto-review: error"         --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
 
             echo "Applying verdict label '${verdict}' to PR #${pr}."
-            # Remove all four, then add the matched one (tolerate "not present").
-            gh pr edit "${pr}" --repo "${REPO}" \
-              --remove-label "auto-review: safe" \
-              --remove-label "auto-review: needs-changes" \
-              --remove-label "auto-review: not-a-template" \
-              --remove-label "auto-review: error" \
-              --add-label "${verdict}" || true
+            # Only remove the OTHER auto-review labels that are actually present,
+            # and add the target only if it is missing. This avoids removing and
+            # re-adding the same label in one call (which spams the PR timeline
+            # with "added X / removed X" events and can leave the wrong state).
+            local current edit_args=()
+            current=$(gh pr view "${pr}" --repo "${REPO}" --json labels --jq '.labels[].name' 2>/dev/null || true)
+            local L
+            for L in "auto-review: safe" "auto-review: needs-changes" "auto-review: not-a-template" "auto-review: error"; do
+              if [ "${L}" = "${verdict}" ]; then
+                if ! printf '%s\n' "${current}" | grep -qxF "${L}"; then
+                  edit_args+=(--add-label "${L}")
+                fi
+              elif printf '%s\n' "${current}" | grep -qxF "${L}"; then
+                edit_args+=(--remove-label "${L}")
+              fi
+            done
+            if [ "${#edit_args[@]}" -gt 0 ]; then
+              gh pr edit "${pr}" --repo "${REPO}" "${edit_args[@]}" || true
+            else
+              echo "Label '${verdict}' already correct on PR #${pr}; no change."
+            fi
           }
 
           # call_model <model> <prompt>
