@@ -1,0 +1,52 @@
+{
+  "name": "Ollama Basic Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e6f49767-4e94-4348-8964-89c025076412",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [380, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": \"phi3\",\n  \"prompt\": \"Write a short welcome message for an AI automation enthusiast.\",\n  \"stream\": false\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "7a3b3f11-477d-4c31-902c-567e98a32454",
+      "name": "Ollama Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 240]
+    }
+  ],
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Ollama Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bc29a51c-4b5c-4e8b-8e2b-7e6d5c4b3a21",
+  "meta": {
+    "instanceId": "local"
+  },
+  "tags": []
+}
