@@ -1,0 +1,198 @@
+{
+  "id": "InvoiceGmailSheetsSlack1",
+  "meta": {
+    "instanceId": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    "templateCredsSetupCompleted": false
+  },
+  "name": "Invoice Email Notifier — Gmail → Google Sheets + Slack",
+  "tags": [],
+  "nodes": [
+    {
+      "id": "stickynote-setup",
+      "name": "📋 Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [180, 80],
+      "parameters": {
+        "content": "## Invoice Email Notifier\n\nAutomatically tracks invoice emails from Gmail, logs them to Google Sheets, and pings your team on Slack.\n\n**Setup (5 minutes):**\n1. Connect **Gmail OAuth2** credentials\n2. Connect **Google Sheets OAuth2** credentials\n3. Connect a **Slack API** token\n4. In the Google Sheets node: replace `YOUR_SPREADSHEET_ID` with your sheet ID\n5. In the Slack node: set your `#accounting` channel name\n6. Activate the workflow\n\n**Required Google Sheet columns:** Date | From | Subject | Snippet | Status\n\n---\nTemplate by [merdify](https://merdify.gumroad.com) — more automation templates at merdify.gumroad.com",
+        "height": 420,
+        "width": 380,
+        "color": 7
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-trigger-1",
+      "name": "Watch Gmail for Invoices",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [640, 300],
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "filters": {
+          "q": "subject:invoice newer_than:1d -label:invoice-logged",
+          "labelIds": ["INBOX"],
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": false
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail Account"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "set-fields-1",
+      "name": "Prepare Invoice Data",
+      "type": "n8n-nodes-base.set",
+      "position": [860, 300],
+      "parameters": {
+        "mode": "manual",
+        "fields": {
+          "values": [
+            {
+              "name": "date",
+              "type": "stringValue",
+              "stringValue": "={{ $now.format('YYYY-MM-DD HH:mm') }}"
+            },
+            {
+              "name": "from",
+              "type": "stringValue",
+              "stringValue": "={{ $json.from }}"
+            },
+            {
+              "name": "subject",
+              "type": "stringValue",
+              "stringValue": "={{ $json.subject }}"
+            },
+            {
+              "name": "snippet",
+              "type": "stringValue",
+              "stringValue": "={{ $json.snippet }}"
+            },
+            {
+              "name": "status",
+              "type": "stringValue",
+              "stringValue": "Pending Review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "sheets-append-1",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [1080, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Invoices",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.date }}",
+            "From": "={{ $json.from }}",
+            "Subject": "={{ $json.subject }}",
+            "Snippet": "={{ $json.snippet }}",
+            "Status": "={{ $json.status }}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets Account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "slack-notify-1",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "position": [1300, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": {
+          "__rl": true,
+          "value": "#accounting",
+          "mode": "name"
+        },
+        "text": ":receipt: *New invoice email received*\n*From:* {{ $json.from }}\n*Subject:* {{ $json.subject }}\n*Time:* {{ $json.date }}\n\nLogged to Google Sheets ✅",
+        "otherOptions": {
+          "mrkdwn": true
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack Account"
+        }
+      },
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Watch Gmail for Invoices": {
+      "main": [
+        [
+          {
+            "node": "Prepare Invoice Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1"
+}
