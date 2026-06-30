@@ -1,0 +1,16 @@
+{
+  "name": "🤖 AI Agent Coordinator",
+  "description": "Coordinates multiple AI agents to complete complex tasks. Research → Write → Review pipeline.",
+  "category": "ai-agents",
+  "nodes": [
+    {"name": "Webhook Trigger", "type": "n8n-nodes-base.webhook", "position": [250, 300], "parameters": {"path": "multi-agent-task", "httpMethod": "POST"}},
+    {"name": "Agent 1: Research", "type": "n8n-nodes-base.openAi", "position": [450, 200], "parameters": {"model": "gpt-4o", "prompt": "Research: {{$json.topic}}"}},
+    {"name": "Agent 2: Write", "type": "n8n-nodes-base.openAi", "position": [650, 300], "parameters": {"model": "gpt-4o", "prompt": "Write based on: {{$json.output}}"}},
+    {"name": "Agent 3: Review", "type": "n8n-nodes-base.openAi", "position": [850, 400], "parameters": {"model": "gpt-4o", "prompt": "Review: {{$json.output}}"}}
+  ],
+  "connections": {
+    "Webhook Trigger": {"main": [[{"node": "Agent 1: Research", "type": "main", "index": 0}]]},
+    "Agent 1: Research": {"main": [[{"node": "Agent 2: Write", "type": "main", "index": 0}]]},
+    "Agent 2: Write": {"main": [[{"node": "Agent 3: Review", "type": "main", "index": 0}]]}
+  }
+}
