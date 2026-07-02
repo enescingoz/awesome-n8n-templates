@@ -1,0 +1,872 @@
+{
+  "name": "WhatsApp AI Agent with Lead Capture",
+  "nodes": [
+    {
+      "id": "28ea11a0-298f-4a79-ad68-adffb2ef955c",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "ignoreBots": true
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d09b91fc-d0bd-4681-8ca9-9d9f01b17f2e",
+      "name": "Is Verification Request? (GET)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        260,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "03c66edf-ae97-4898-bfee-eef4fa894a51",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.query['hub.mode'] }}",
+              "rightValue": "subscribe"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a87cd8c1-cacf-459b-83a6-b0821b98d6a5",
+      "name": "Verify Token Correct?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f397eb9d-8f3e-48f2-bb99-1529af608a35",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.query['hub.verify_token'] }}",
+              "rightValue": "REPLACE_WITH_YOUR_VERIFY_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b3851187-0613-40e9-9df4-809e7c4ea998",
+      "name": "Respond - Return Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        780,
+        200
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "d430a088-70a4-4c54-86a5-6fe6f03032b1",
+      "name": "Respond - Verification Failed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        780,
+        400
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Forbidden: verify token mismatch",
+        "options": {
+          "responseCode": 403
+        }
+      }
+    },
+    {
+      "id": "9c077412-7574-40a7-9a75-643d24e8fc2e",
+      "name": "Respond - Ack Received",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        520,
+        620
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"received\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "ab7026e6-6581-447b-83b2-15fb294c7431",
+      "name": "Has Incoming Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        780,
+        620
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "415b9007-22de-4d72-ab07-28689f69807b",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ Boolean($json.body && $json.body.entry && $json.body.entry[0] && $json.body.entry[0].changes && $json.body.entry[0].changes[0] && $json.body.entry[0].changes[0].value && $json.body.entry[0].changes[0].value.messages && $json.body.entry[0].changes[0].value.messages[0]) }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b86e75cb-fd43-4b62-af4c-710483b85962",
+      "name": "Extract Message Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        540
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ff2dd4b-a9cb-4a38-a55a-ce123b9451ac",
+              "name": "senderId",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}"
+            },
+            {
+              "id": "63ec4776-3fdf-4862-baac-513c70289d5b",
+              "name": "senderName",
+              "type": "string",
+              "value": "={{ ($json.body.entry[0].changes[0].value.contacts && $json.body.entry[0].changes[0].value.contacts[0] && $json.body.entry[0].changes[0].value.contacts[0].profile && $json.body.entry[0].changes[0].value.contacts[0].profile.name) || '' }}"
+            },
+            {
+              "id": "ea5385e5-f5f9-4fa8-b7e7-bfeb5ba195d5",
+              "name": "messageType",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}"
+            },
+            {
+              "id": "ad1f1476-1b31-4499-94de-91e34bfc2bf0",
+              "name": "messageText",
+              "type": "string",
+              "value": "={{ ($json.body.entry[0].changes[0].value.messages[0].text && $json.body.entry[0].changes[0].value.messages[0].text.body) || '' }}"
+            },
+            {
+              "id": "c31ec721-fc08-40d1-8985-bb7dac8f970b",
+              "name": "phoneNumberId",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].changes[0].value.metadata.phone_number_id }}"
+            },
+            {
+              "id": "bcc61e53-398c-4608-a2e8-6ef932bcde73",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].timestamp }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b785f237-0560-4742-a0df-b91be3f26169",
+      "name": "Is Text Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1300,
+        540
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "4683f887-53da-4574-8226-b7bcc6fd9c3b",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.messageType }}",
+              "rightValue": "text"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6b535988-2571-4a7d-af73-ff097c86b8ae",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1560,
+        400
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messageText }}",
+        "hasOutputParser": false,
+        "options": {
+          "systemMessage": "SYSTEM_PROMPT (EDIT THIS BLOCK before going live):\n\nYou are the WhatsApp assistant for [YOUR_BUSINESS_NAME]. You talk to potential and existing customers over WhatsApp on behalf of the business.\n\nYour goals, in order:\n1. Answer the customer's question about the business, its products/services, pricing, or process as accurately and helpfully as you can, using only the facts below. If you don't know something, say so honestly - never invent facts, prices, or promises.\n2. Naturally collect two things over the course of the conversation, without being pushy or asking a rigid checklist: the customer's NAME, and their NEED (what they are looking for / why they are reaching out). Once you have both, you can casually confirm them back to the customer.\n3. ALWAYS reply in the same language the customer just wrote in (detect it message by message - do not assume it stays constant).\n4. Keep replies short and conversational, the way a helpful human would text on WhatsApp - not long paragraphs, no markdown headers.\n5. If the customer explicitly asks to talk to a person/agent/human, or if you are not confident you can correctly answer their question, say - in their language - that a team member will follow up with them shortly, keep the reply short, and end it with the exact literal token HANDOFF_NEEDED on its own final line (this token is stripped automatically before the customer sees it - it exists only so the workflow can route a notification to the team, do not explain it to the customer and do not omit it when a handoff is warranted).\n\n--- CUSTOMIZE BELOW: replace with your real business facts ---\nBusiness name: [YOUR_BUSINESS_NAME]\nWhat we do (1-3 sentences): [YOUR_DESCRIPTION]\nBusiness hours: [YOUR_HOURS]\nKey FAQ / facts the assistant should know: [BULLET LIST - pricing, services, policies, location, etc.]\n--- END CUSTOMIZE ---\n"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "0bb7ad6f-20c8-4562-8f31-2f103b4fa377",
+      "name": "OpenAI Chat Model (edit model + Base URL)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1500,
+        600
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "78190bb0-e3a7-4388-9295-a2404245f676",
+      "name": "Window Buffer Memory (per WhatsApp sender)",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1680,
+        600
+      ],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Extract Message Data').item.json.senderId }}",
+        "contextWindowLength": 20
+      }
+    },
+    {
+      "id": "00b13bd0-9e7c-482b-aa9a-0d399eed0195",
+      "name": "Needs Human Handoff?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1820,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "da186b04-19e3-4b25-a12a-2c865d758504",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ /\\b(agent|human|representative|advisor|manager|נציג|אדם)\\b/i.test($('Extract Message Data').item.json.messageText || '') || String($json.output || '').includes('HANDOFF_NEEDED') }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1a124fd7-3e4d-4d77-9934-823b4b4308a7",
+      "name": "Notify Team - Human Handoff (Slack, disabled by default)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        2080,
+        260
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "REPLACE_WITH_CHANNEL_ID",
+          "cachedResultName": "REPLACE_WITH_CHANNEL_NAME"
+        },
+        "text": "=🔔 WhatsApp handoff requested\nFrom: {{ $('Extract Message Data').item.json.senderName || 'Unknown' }} ({{ $('Extract Message Data').item.json.senderId }})\nMessage: {{ $('Extract Message Data').item.json.messageText }}",
+        "otherOptions": {}
+      },
+      "disabled": true,
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "6da11069-cfc7-4102-9919-38ed3f77296f",
+      "name": "Prepare AI Reply Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2340,
+        400
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1c99666-490a-4d49-a6c4-ffedecaa9ad3",
+              "name": "replyText",
+              "type": "string",
+              "value": "={{ String($json.output || '').replace(/\\s*HANDOFF_NEEDED\\s*$/i, '').trim() }}"
+            },
+            {
+              "id": "6bd75298-fc21-481e-8e3e-4fbd1e81f16b",
+              "name": "senderId",
+              "type": "string",
+              "value": "={{ $('Extract Message Data').item.json.senderId }}"
+            },
+            {
+              "id": "e8e90652-c4f8-416d-b5f5-cbd429d2e0d0",
+              "name": "senderName",
+              "type": "string",
+              "value": "={{ $('Extract Message Data').item.json.senderName }}"
+            },
+            {
+              "id": "c9410a4f-da3a-4c0b-866e-91bf95777319",
+              "name": "phoneNumberId",
+              "type": "string",
+              "value": "={{ $('Extract Message Data').item.json.phoneNumberId }}"
+            },
+            {
+              "id": "d9c9596b-3c78-458a-9723-89a608e7575e",
+              "name": "messageText",
+              "type": "string",
+              "value": "={{ $('Extract Message Data').item.json.messageText }}"
+            },
+            {
+              "id": "55e47f4b-9e64-446f-b11e-5316e6b34fc0",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $('Extract Message Data').item.json.timestamp }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "321f7efa-eb18-45a7-b892-11a4359cb091",
+      "name": "Prepare Text-Only Reply",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1560,
+        700
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f56f8414-9506-4b5a-8890-995aac9cc866",
+              "name": "replyText",
+              "type": "string",
+              "value": "Thanks for your message! Right now I can only read text messages here - could you type your question in words? A team member can help with anything else you've sent."
+            },
+            {
+              "id": "0bbb945f-c8f5-44d3-adc1-14cd29eae0a0",
+              "name": "senderId",
+              "type": "string",
+              "value": "={{ $json.senderId }}"
+            },
+            {
+              "id": "fb49d7eb-4491-4424-9f87-93fc42ea7a52",
+              "name": "phoneNumberId",
+              "type": "string",
+              "value": "={{ $json.phoneNumberId }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "4c1b5818-1f7f-4af0-a0fa-92142e40963d",
+      "name": "Send WhatsApp Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2600,
+        540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $json.phoneNumberId }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.senderId }}\",\n  \"type\": \"text\",\n  \"text\": { \"body\": {{ JSON.stringify($json.replyText) }} }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "ea0f0604-e998-4f0e-9afb-a831f95baff9",
+      "name": "Log Lead to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2600,
+        260
+      ],
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "cachedResultName": "REPLACE_WITH_GOOGLE_SHEET_NAME"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads",
+          "cachedResultName": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.toISO() }}",
+            "sender_wa_id": "={{ $json.senderId }}",
+            "name": "={{ $json.senderName }}",
+            "first_message": "={{ $json.messageText }}"
+          },
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sender_wa_id",
+              "displayName": "sender_wa_id",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_message",
+              "displayName": "first_message",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "matchingColumns": [
+            "sender_wa_id"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "80fde2d4-cc97-49f9-be42-f8e7b37e08f6",
+      "name": "Note - Webhook & Verification",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ],
+      "parameters": {
+        "content": "## 1) Meta webhook + verification\nOne Webhook node handles BOTH:\n- **GET** — Meta's one-time subscription check (`hub.mode`, `hub.verify_token`, `hub.challenge`). We compare `hub.verify_token` to a value you set, then echo `hub.challenge` back as plain text.\n- **POST** — actual message/status events.\n\nEdit the token check node with the same Verify Token you enter in the Meta App dashboard.",
+        "height": 380,
+        "width": 500,
+        "color": 5
+      }
+    },
+    {
+      "id": "3156908d-8802-498b-9499-61dad1760ba4",
+      "name": "Note - Extract & Route",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        780
+      ],
+      "parameters": {
+        "content": "## 2) Ack + extract + route\nMeta requires a fast 200 response to every POST, so we respond immediately, then keep processing.\n`Has Incoming Message?` filters out status callbacks (sent/delivered/read) which have no `messages[]`.\n`Is Text Message?` routes non-text (image/audio/location/sticker/etc.) to a polite fixed reply.",
+        "height": 260,
+        "width": 560,
+        "color": 5
+      }
+    },
+    {
+      "id": "9e0c924e-84e1-4f01-b4cb-1dce60dfb0a5",
+      "name": "Note - AI Agent & Memory",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        40
+      ],
+      "parameters": {
+        "content": "## 3) AI Agent + memory\nEdit the SYSTEM_PROMPT inside the AI Agent node's 'System Message' option — marked SYSTEM_PROMPT in the text.\nSwap the OpenAI Chat Model's credential Base URL to point at any OpenAI-compatible endpoint (Azure OpenAI, OpenRouter, a local vLLM/Ollama proxy, etc.) — the model ID is just a placeholder.\nMemory is keyed on the WhatsApp sender ID, so each customer gets their own conversation window.",
+        "height": 340,
+        "width": 460,
+        "color": 5
+      }
+    },
+    {
+      "id": "625f52fd-dcf0-46aa-a957-d5bab97cbf99",
+      "name": "Note - Human Handoff",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        40
+      ],
+      "parameters": {
+        "content": "## 4) Human handoff\nTwo independent triggers, either fires a handoff:\n1. Customer's message contains a handoff keyword (agent/human/נציג/etc — edit the regex).\n2. The AI itself appends the literal token HANDOFF_NEEDED when it isn't confident — stripped before sending.\n\nThe Slack notify node is DISABLED by default so the template runs without a Slack credential. Enable it and set a channel, or swap it for any other notification (Teams/Discord/generic webhook).",
+        "height": 340,
+        "width": 500,
+        "color": 5
+      }
+    },
+    {
+      "id": "27cb2588-0a20-4334-9e55-3f1a9588001d",
+      "name": "Note - Reply & Lead Capture",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2340,
+        780
+      ],
+      "parameters": {
+        "content": "## 5) Send reply + lead capture\nBoth branches converge on one HTTP Request node that POSTs to the WhatsApp Cloud API using YOUR business phone_number_id (extracted from the incoming payload) — not the customer's number.\nAuth: create a generic 'Header Auth' credential named e.g. 'WhatsApp Cloud API Token' with Name=Authorization, Value=Bearer <your permanent access token>.\n\nLead capture appends one row per real text conversation. Swap the Google Sheets node for a CRM webhook (HTTP Request/your CRM's node) — see SETUP-DRAFT.md.",
+        "height": 300,
+        "width": 560,
+        "color": 5
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is Verification Request? (GET)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Verification Request? (GET)": {
+      "main": [
+        [
+          {
+            "node": "Verify Token Correct?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Ack Received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Token Correct?": {
+      "main": [
+        [
+          {
+            "node": "Respond - Return Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Verification Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond - Ack Received": {
+      "main": [
+        [
+          {
+            "node": "Has Incoming Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Incoming Message?": {
+      "main": [
+        [
+          {
+            "node": "Extract Message Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Message Data": {
+      "main": [
+        [
+          {
+            "node": "Is Text Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Text Message?": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Text-Only Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model (edit model + Base URL)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory (per WhatsApp sender)": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Needs Human Handoff?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Human Handoff?": {
+      "main": [
+        [
+          {
+            "node": "Notify Team - Human Handoff (Slack, disabled by default)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare AI Reply Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Team - Human Handoff (Slack, disabled by default)": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Reply Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Reply Text": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Lead to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Text-Only Reply": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

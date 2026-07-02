@@ -341,7 +341,7 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 
 ### How do I build WhatsApp chatbots with n8n?
 
-This section includes 4 WhatsApp automation templates for n8n. Automate sales meeting preparation with AI and Apify, build your first WhatsApp chatbot, create a full business RAG chatbot powered by OpenAI, or set up professional AI-powered message responses. Ideal for customer service, sales, and business communication workflows.
+This section includes 5 WhatsApp automation templates for n8n. Automate sales meeting preparation with AI and Apify, build your first WhatsApp chatbot, create a full business RAG chatbot powered by OpenAI, or set up professional AI-powered message responses. Ideal for customer service, sales, and business communication workflows.
 
 | Title | Description | Department | Link |
 |---|---|---|---|
@@ -349,6 +349,7 @@ This section includes 4 WhatsApp automation templates for n8n. Automate sales me
 | Building Your First WhatsApp Chatbot | This workflow guides you through building your first WhatsApp chatbot. | Customer Service/Development | [Link to Template](./WhatsApp/Building%20Your%20First%20WhatsApp%20Chatbot.json) |
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | This workflow builds a complete business WhatsApp AI-powered RAG chatbot using OpenAI. | Customer Service/AI/Development | [Link to Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | This workflow enables professional AI-powered responses to WhatsApp messages. | Customer Service/AI/Communication | [Link to Template](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
+| WhatsApp AI Agent with Lead Capture and Human Handoff | Production-shaped WhatsApp Business Cloud API agent: webhook verification handled in-workflow, LangChain agent with per-sender memory, keyword/low-confidence human handoff, lead logging to Google Sheets (CRM-swappable). By Automaziot AI. | Customer Service/Sales/AI | [Link to Template](./WhatsApp/WhatsApp%20AI%20Agent%20with%20Lead%20Capture%20and%20Human%20Handoff.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
