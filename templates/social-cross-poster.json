@@ -1,0 +1,17 @@
+{
+  "name": "📱 Social Media Cross-Poster",
+  "description": "Post to Twitter, LinkedIn, and Dev.to simultaneously.",
+  "category": "marketing",
+  "nodes": [
+    {"name": "Webhook Trigger", "type": "n8n-nodes-base.webhook", "position": [250, 300], "parameters": {"path": "social-post", "httpMethod": "POST"}},
+    {"name": "Format Twitter", "type": "n8n-nodes-base.code", "position": [450, 150], "parameters": {"jsCode": "const c = $input.all()[0].json.content; return [{json: {text: c.substring(0, 250) + '\\n#AI #automation'}}];"}},
+    {"name": "Format LinkedIn", "type": "n8n-nodes-base.code", "position": [450, 350], "parameters": {"jsCode": "const c = $input.all()[0].json.content; return [{json: {text: c + '\\n\\n#AI #Automation #BuildInPublic'}}];"}},
+    {"name": "Post Twitter", "type": "n8n-nodes-base.twitter", "position": [650, 150], "parameters": {"text": "={{$json.text}}"}},
+    {"name": "Post LinkedIn", "type": "n8n-nodes-base.linkedIn", "position": [650, 350], "parameters": {"text": "={{$json.text}}"}}
+  ],
+  "connections": {
+    "Webhook Trigger": {"main": [[{"node": "Format Twitter", "type": "main", "index": 0}, {"node": "Format LinkedIn", "type": "main", "index": 0}]]},
+    "Format Twitter": {"main": [[{"node": "Post Twitter", "type": "main", "index": 0}]]},
+    "Format LinkedIn": {"main": [[{"node": "Post LinkedIn", "type": "main", "index": 0}]]}
+  }
+}
