@@ -1,0 +1,141 @@
+{
+  "id": "tunovaFormToSong",
+  "name": "Tunova — Generate a song from a form",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Make a song with AI",
+        "formDescription": "Describe the track you want — Tunova generates it with Suno (v5.5).",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Prompt",
+              "placeholder": "calm rainy-night lofi, mellow piano, vinyl crackle",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Instrumental",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "No" },
+                  { "option": "Yes" }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "id": "11111111-1111-4111-8111-111111111111",
+      "name": "On form submission",
+      "webhookId": "tunova-song-form"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tunova.ai/api/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": {{ JSON.stringify($json.Prompt) }},\n  \"instrumental\": {{ $json.Instrumental === 'Yes' }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "id": "22222222-2222-4222-8222-222222222222",
+      "name": "Tunova: start generation",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_TUNOVA_CREDENTIAL",
+          "name": "Tunova API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 120,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [440, 0],
+      "id": "33333333-3333-4333-8333-333333333333",
+      "name": "Wait for render (~2 min)",
+      "webhookId": "tunova-song-wait"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.tunova.ai/api/jobs/{{ $('Tunova: start generation').item.json.job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "id": "44444444-4444-4444-8444-444444444444",
+      "name": "Tunova: get result",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_TUNOVA_CREDENTIAL",
+          "name": "Tunova API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "audio_url",
+              "value": "={{ $json.clips?.[0]?.audio_url }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "title",
+              "value": "={{ $json.clips?.[0]?.title }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [880, 0],
+      "id": "55555555-5555-4555-8555-555555555555",
+      "name": "Your track"
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [[{ "node": "Tunova: start generation", "type": "main", "index": 0 }]]
+    },
+    "Tunova: start generation": {
+      "main": [[{ "node": "Wait for render (~2 min)", "type": "main", "index": 0 }]]
+    },
+    "Wait for render (~2 min)": {
+      "main": [[{ "node": "Tunova: get result", "type": "main", "index": 0 }]]
+    },
+    "Tunova: get result": {
+      "main": [[{ "node": "Your track", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": {}
+}
