@@ -1,0 +1,92 @@
+{
+  "id": "tunovaWebhookToSong",
+  "name": "Tunova — Generate a song via webhook (drop-in API)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-song",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "name": "POST /generate-song",
+      "webhookId": "tunova-generate-song"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tunova.ai/api/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": {{ JSON.stringify($json.body.prompt) }},\n  \"instrumental\": {{ $json.body.instrumental === true }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "name": "Tunova: start generation",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_TUNOVA_CREDENTIAL",
+          "name": "Tunova API key"
+        }
+      }
+    },
+    {
+      "parameters": { "amount": 150, "unit": "seconds" },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [440, 0],
+      "id": "a3333333-3333-4333-8333-333333333333",
+      "name": "Wait for render",
+      "webhookId": "tunova-webhook-wait"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.tunova.ai/api/jobs/{{ $('Tunova: start generation').item.json.job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "id": "a4444444-4444-4444-8444-444444444444",
+      "name": "Tunova: get result",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_TUNOVA_CREDENTIAL",
+          "name": "Tunova API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": {{ JSON.stringify($json.status) }},\n  \"audio_url\": {{ JSON.stringify($json.clips?.[0]?.audio_url ?? null) }},\n  \"title\": {{ JSON.stringify($json.clips?.[0]?.title ?? null) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, 0],
+      "id": "a5555555-5555-4555-8555-555555555555",
+      "name": "Return audio URL"
+    }
+  ],
+  "connections": {
+    "POST /generate-song": { "main": [[{ "node": "Tunova: start generation", "type": "main", "index": 0 }]] },
+    "Tunova: start generation": { "main": [[{ "node": "Wait for render", "type": "main", "index": 0 }]] },
+    "Wait for render": { "main": [[{ "node": "Tunova: get result", "type": "main", "index": 0 }]] },
+    "Tunova: get result": { "main": [[{ "node": "Return audio URL", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": {}
+}

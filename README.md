@@ -376,11 +376,12 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 28 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 29 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
 | API Schema Extractor | Extracts API schemas from web services for documentation or integration purposes. | Development/Integration | [Link to Template](Other_Integrations_and_Use_Cases/API%20Schema%20Extractor.json) |
+| Generate a Song via Webhook (Tunova / Suno API) | POST a prompt to a webhook and get back a finished Suno AI music track (audio URL) — a drop-in music-generation endpoint for your app. Core HTTP node; free API key at tunova.ai. | Engineering/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Tunova%20-%20Generate%20a%20song%20via%20webhook.json) |
 | Analyze feedback and send a message on Mattermost | Analyzes user feedback and sends notifications to Mattermost channels. | Support/Communication | [Link to Template](Other_Integrations_and_Use_Cases/Analyze%20feedback%20and%20send%20a%20message%20on%20Mattermost.json) |
 | Analyze feedback using AWS Comprehend | Performs sentiment analysis on feedback using AWS Comprehend and sends results to Mattermost. | Support/AI | [Link to Template](Other_Integrations_and_Use_Cases/Analyze%20feedback%20using%20AWS%20Comprehend%20and%20send%20it%20to%20a%20Mattermost%20channel.json) |
 | Automate Pinterest Analysis & AI-Powered Content Suggestions | Analyzes Pinterest data and provides AI-powered content suggestions. | Marketing/AI | [Link to Template](Other_Integrations_and_Use_Cases/Automate%20Pinterest%20Analysis%20%26%20AI-Powered%20Content%20Suggestions%20With%20Pinterest%20API.json) |
@@ -418,12 +419,13 @@ This section includes 28 additional n8n integration templates covering a wide ra
 
 ### How do I automate forms and surveys with n8n?
 
-This section contains 3 form and survey automation templates for n8n. Conduct AI-powered conversational interviews via n8n Forms, manage email subscriptions with Airtable integration, or qualify appointment requests using AI. These templates streamline data collection and lead processing workflows.
+This section contains 4 form and survey automation templates for n8n. Conduct AI-powered conversational interviews via n8n Forms, manage email subscriptions with Airtable integration, or qualify appointment requests using AI. These templates streamline data collection and lead processing workflows.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
 | Conversational Interviews with AI Agents and n8n Forms | Implements AI-powered conversational interviews using n8n Forms for interactive data collection. | Research/Marketing | [Link to Template](Forms_and_Surveys/Conversational%20Interviews%20with%20AI%20Agents%20and%20n8n%20Forms.json) |
 | Email Subscription Service with n8n Forms, Airtable and AI | Manages email subscriptions with n8n Forms, stores data in Airtable, and uses AI for processing. | Marketing/Communication | [Link to Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
+| Generate a Song from a Form (Tunova) | A hosted n8n Form collects a text prompt, then Tunova generates an original Suno AI song (v5.5) and returns the audio URL. Core HTTP node — runs on any n8n. Free API key at tunova.ai. | Marketing/Creative | [Link to Template](Forms_and_Surveys/Tunova%20-%20Generate%20a%20song%20from%20a%20form.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Uses AI to qualify and process appointment requests submitted through n8n Forms. | Sales/Support | [Link to Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
