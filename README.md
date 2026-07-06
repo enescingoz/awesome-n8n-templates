@@ -419,7 +419,7 @@ This section includes 29 additional n8n integration templates covering a wide ra
 
 ### How do I automate forms and surveys with n8n?
 
-This section contains 4 form and survey automation templates for n8n. Conduct AI-powered conversational interviews via n8n Forms, manage email subscriptions with Airtable integration, or qualify appointment requests using AI. These templates streamline data collection and lead processing workflows.
+This section contains 5 form and survey automation templates for n8n. Conduct AI-powered conversational interviews via n8n Forms, manage email subscriptions with Airtable integration, qualify appointment requests using AI, or instantly acknowledge a website lead via webhook. These templates streamline data collection and lead processing workflows.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -427,6 +427,7 @@ This section contains 4 form and survey automation templates for n8n. Conduct AI
 | Email Subscription Service with n8n Forms, Airtable and AI | Manages email subscriptions with n8n Forms, stores data in Airtable, and uses AI for processing. | Marketing/Communication | [Link to Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Generate a Song from a Form (Tunova) | A hosted n8n Form collects a text prompt, then Tunova generates an original Suno AI song (v5.5) and returns the audio URL. Core HTTP node — runs on any n8n. Free API key at tunova.ai. | Marketing/Creative | [Link to Template](Forms_and_Surveys/Tunova%20-%20Generate%20a%20song%20from%20a%20form.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Uses AI to qualify and process appointment requests submitted through n8n Forms. | Sales/Support | [Link to Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
+| Instant Lead Reply - Free Webhook Auto-Responder | Catches a website contact-form submission via webhook and immediately sends the lead a warm acknowledgement email quoting their own message back. 3 nodes, no branching. Free core of a lead-response kit (Vixelys). | Sales/Support | [Link to Template](Forms_and_Surveys/Instant%20Lead%20Reply%20-%20Free%20Webhook%20Auto-Responder.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 

@@ -1,0 +1,103 @@
+{
+  "name": "Instant Lead Reply \u2014 Lite (free)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-reply-lite",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "d3e00003-0003-4c01-8001-000000000001",
+      "name": "Lead intake (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        300
+      ],
+      "webhookId": "lead-reply-lite-webhook"
+    },
+    {
+      "parameters": {
+        "fromEmail": "{{SENDER_EMAIL}}",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "We've received your message \u2705",
+        "emailFormat": "html",
+        "html": "=<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.5\">\n<p>Hi {{ $json.body.name }},</p>\n<p>Thanks for reaching out \u2014 we've received your message and will get back to you shortly, usually within a few business hours.</p>\n<p>Here is a copy of your request:</p>\n<blockquote style=\"border-left:3px solid #ddd;margin:8px 0;padding:4px 12px;color:#555\">{{ $json.body.message }}</blockquote>\n<p>If it's urgent, you can also call us directly at <strong>{{BUSINESS_PHONE}}</strong>.</p>\n<p>Talk soon,<br/><strong>{{BUSINESS_NAME}}</strong></p>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "d3e00003-0003-4c01-8001-000000000002",
+      "name": "Instant reply to lead",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "{{SMTP_CREDENTIAL_ID}}",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"ok\", \"message\": \"Thanks \u2014 your request has been received. We'll get back to you shortly.\" } }}",
+        "options": {}
+      },
+      "id": "d3e00003-0003-4c01-8001-000000000003",
+      "name": "Respond to form",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Lead intake (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "Instant reply to lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instant reply to lead": {
+      "main": [
+        [
+          {
+            "node": "Respond to form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateId": "instant-lead-reply-lite",
+    "description": "Instant Lead Reply \u2014 Lite (free). Incoming lead (webhook) \u2192 instant acknowledgement email to the lead \u2192 JSON response to the form. Free version of the n8n Lead Capture Kit."
+  },
+  "tags": [
+    {
+      "name": "lead-capture-lite"
+    }
+  ]
+}
