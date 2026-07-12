@@ -128,7 +128,7 @@ Koleksi ini mencakup 9 template otomasi email untuk n8n yang meliputi Gmail, Out
 
 ### Bagaimana cara mengotomasi bot Telegram dengan n8n?
 
-Jelajahi 19 template otomasi Telegram untuk n8n, termasuk chatbot AI dengan LangChain dan OpenAI, terjemahan suara ke teks dalam 55 bahasa, fungsi chat PDF, bot analisis gambar, dan integrasi Spotify. Template ini mencakup kasus penggunaan dukungan, pemasaran, dan moderasi konten untuk Telegram.
+Jelajahi 20 template otomasi Telegram untuk n8n, termasuk chatbot AI dengan LangChain dan OpenAI, terjemahan suara ke teks dalam 55 bahasa, fungsi chat PDF, bot analisis gambar, dan integrasi Spotify. Template ini mencakup kasus penggunaan dukungan, pemasaran, dan moderasi konten untuk Telegram.
 
 | Title | Deskripsi | Departemen | Link |
 |-------|-----------|------------|------|
@@ -139,6 +139,7 @@ Jelajahi 19 template otomasi Telegram untuk n8n, termasuk chatbot AI dengan Lang
 | Angie, Personal AI Assistant with Telegram Voice and Text | Bot asisten pribadi suara & teks yang menjawab pertanyaan dan mengelola tugas menggunakan AI. | Dukungan | [Link ke Template](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | Bot Telegram minimal yang meneruskan pesan pengguna ke GPT dan mengembalikan balasan AI. | Dukungan | [Link ke Template](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
 | Internship Informer | Mengekstrak dan menganalisis postingan magang dari saluran Telegram menggunakan AI, melakukan scraping halaman pendaftaran melalui Firecrawl, memfilter kelayakan, dan mengirimkan peringatan ke WhatsApp. | HR/Ops | [Link ke Template](Telegram/Internship%20Informer.json) |
+| Resume Bot | Asisten resume dan surat pengantar bertenaga AI di Telegram yang menganalisis resume PDF, memperbarui profil pengguna di Supabase, dan menyusun resume LaTeX khusus melalui SSH. | HR/Operasional | [Link ke Template](Telegram/ResumeBot.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | Template bot asisten siap pakai yang menangani input suara dan teks dengan respons AI di Telegram. | Dukungan | [Link ke Template](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | Mengintegrasikan API NeurochainAI untuk pembuatan teks dan gambar di dalam Telegram. | Pemasaran | [Link ke Template](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | Menggunakan node LangChain untuk percakapan AI tingkat lanjut dan penggunaan alat di Telegram. | Dukungan | [Link ke Template](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |

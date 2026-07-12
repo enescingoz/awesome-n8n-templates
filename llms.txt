@@ -9,7 +9,7 @@ Awesome n8n Templates is an open-source collection of n8n workflow automation te
 ## Template Categories
 
 - [Gmail and Email Automation](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Gmail_and_Email_Automation): 9 templates for AI-powered email labeling, draft replies with OpenAI, phishing detection with ChatGPT Vision, and human-in-the-loop response systems for Gmail and Outlook.
-- [Telegram Bot Templates](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Telegram): 18 templates for AI chatbots, voice assistants, content moderation, PDF chat, Spotify integration, and multi-language translation bots.
+- [Telegram Bot Templates](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Telegram): 19 templates for AI chatbots, voice assistants, content moderation, PDF chat, resume building, Spotify integration, and multi-language translation bots.
 - [Google Drive and Google Sheets](https://github.com/enescingoz/awesome-n8n-templates/tree/main/Google_Drive_and_Google_Sheets): 13 templates for OpenAI fine-tuning, background removal, RAG chatbots, lead qualification, document summarization, and social media posting.
 - [WordPress](https://github.com/enescingoz/awesome-n8n-templates/tree/main/WordPress): 6 templates for AI blog categorization, auto-tagging, brand voice content creation, and AI chatbot integration.
 - [PDF and Document Processing](https://github.com/enescingoz/awesome-n8n-templates/tree/main/PDF_and_Document_Processing): 11 templates for PDF Q&A with AI, invoice extraction, resume parsing, license plate recognition, and study note generation.

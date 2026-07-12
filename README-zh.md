@@ -128,7 +128,7 @@
 
 ### 如何使用 n8n 实现 Telegram 机器人自动化？
 
-探索 19 个 n8n Telegram 自动化模板，包括基于 LangChain 和 OpenAI 的 AI 聊天机器人、支持 55 种语言的语音转文本翻译、PDF 聊天功能、图像分析机器人和 Spotify 集成。这些模板涵盖客户支持、营销和内容审核等使用场景。
+探索 20 个 n8n Telegram 自动化模板，包括基于 LangChain 和 OpenAI 的 AI 聊天机器人、支持 55 种语言的语音转文本翻译、PDF 聊天功能、图像分析机器人和 Spotify 集成。这些模板涵盖客户支持、营销和内容审核等使用场景。
 
 | 标题 | 描述 | 部门 | 链接 |
 |-------|-------------|------------|------|
@@ -139,6 +139,7 @@
 | Angie, Personal AI Assistant with Telegram Voice and Text | 个人语音和文本助手机器人，回答查询，管理任务，并使用AI自然交互。 | 支持 | [模板链接](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | 一个最小的Telegram机器人，将用户消息转发给GPT并返回AI生成的回复。AI聊天的理想起点。 | 支持 | [模板链接](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
 | Internship Informer | 使用人工智能从 Telegram 频道提取和解析实习岗位信息，通过 Firecrawl 抓取申请页面，过滤符合条件的岗位，并通过 WhatsApp 发送提醒。 | 人事/运营 | [模板链接](Telegram/Internship%20Informer.json) |
+| Resume Bot | Telegram 上的 AI 简历和求职信助手，可解析 PDF 简历、更新 Supabase 中的用户个人资料，并通过 SSH 编译定制的 LaTeX 简历。 | 人事/运营 | [模板链接](Telegram/ResumeBot.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | 现成的助手机器人，处理语音和文本输入，利用AI在Telegram中进行智能对话回复。 | 支持 | [模板链接](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | 集成NeurochainAI API以在Telegram内进行文本和图像生成，实现创意媒体交互。 | 营销 | [模板链接](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | 使用LangChain节点在Telegram中进行高级AI对话和工具使用。 | 支持 | [模板链接](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |
