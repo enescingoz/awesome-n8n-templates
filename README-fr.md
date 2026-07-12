@@ -128,7 +128,7 @@ Cette collection comprend 9 templates d'automatisation email pour n8n couvrant G
 
 ### Comment automatiser les bots Telegram avec n8n ?
 
-Decouvrez 18 templates d'automatisation Telegram pour n8n, incluant des chatbots IA avec LangChain et OpenAI, la traduction vocale dans 55 langues, le chat avec des PDF, des bots d'analyse d'images et l'integration Spotify. Ces templates couvrent les cas d'usage support, marketing et moderation de contenu pour Telegram.
+Decouvrez 19 templates d'automatisation Telegram pour n8n, incluant des chatbots IA avec LangChain et OpenAI, la traduction vocale dans 55 langues, le chat avec des PDF, des bots d'analyse d'images et l'integration Spotify. Ces templates couvrent les cas d'usage support, marketing et moderation de contenu pour Telegram.
 
 | Titre | Description | Departement | Lien |
 |-------|-------------|-------------|------|
@@ -138,6 +138,7 @@ Decouvrez 18 templates d'automatisation Telegram pour n8n, incluant des chatbots
 | Automated AI image analysis and response via Telegram | Permet aux utilisateurs d'envoyer des images sur Telegram et de recevoir automatiquement une analyse et un retour bases sur l'IA. | Ops | [Lien vers le template](Telegram/Automated%20AI%20image%20analysis%20and%20response%20via%20Telegram.json) |
 | Angie, Personal AI Assistant with Telegram Voice and Text | Bot assistant personnel vocal et textuel qui repond aux questions, gere les taches et interagit naturellement grace a l'IA. | Support | [Lien vers le template](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | Bot Telegram minimaliste qui transmet les messages des utilisateurs a GPT et renvoie les reponses generees par l'IA. Point de depart ideal pour le chat IA. | Support | [Lien vers le template](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
+| Internship Informer | Extrait et analyse les offres de stage des canaux Telegram à l'aide de l'IA, scrape les pages de candidature via Firecrawl, filtre par éligibilité et envoie des alertes sur WhatsApp. | RH/Ops | [Lien vers le modèle](Telegram/Internship%20Informer.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | Bot assistant cle en main gerant les entrees vocales et textuelles, exploitant l'IA pour des reponses conversationnelles intelligentes dans Telegram. | Support | [Lien vers le template](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | Integre l'API NeurochainAI pour la generation de texte et d'images dans Telegram, permettant des interactions media creatives. | Marketing | [Lien vers le template](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | Utilise les noeuds LangChain pour des conversations IA avancees et l'utilisation d'outils dans Telegram. | Support | [Lien vers le template](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |

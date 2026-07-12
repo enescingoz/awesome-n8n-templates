@@ -1,14 +1,14 @@
 ---
 layout: default
 title: "Telegram Bot Templates for n8n | Awesome n8n Templates"
-description: "18 free n8n Telegram automation templates. AI chatbots with LangChain, voice-to-text in 55 languages, PDF chat, image analysis, and Spotify integration."
+description: "19 free n8n Telegram automation templates. AI chatbots with LangChain, voice-to-text in 55 languages, PDF chat, image analysis, and Spotify integration."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Telegram Bots</nav>
 
 # How can I automate Telegram bots with n8n?
 
-Explore 18 Telegram automation templates for n8n, including AI chatbots with LangChain and OpenAI, voice-to-text translation across 55 languages, PDF chat functionality, image analysis bots, and Spotify integration. These templates cover support, marketing, and content moderation use cases for Telegram.
+Explore 19 Telegram automation templates for n8n, including AI chatbots with LangChain and OpenAI, voice-to-text translation across 55 languages, PDF chat functionality, image analysis bots, and Spotify integration. These templates cover support, marketing, and content moderation use cases for Telegram.
 
 <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Build Telegram Bots</a>
 
@@ -22,6 +22,7 @@ Explore 18 Telegram automation templates for n8n, including AI chatbots with Lan
 | [Automated AI image analysis and response via Telegram](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Automated%20AI%20image%20analysis%20and%20response%20via%20Telegram.json) | Send images to Telegram and receive AI-based analysis and feedback automatically. | Ops |
 | [Angie, Personal AI Assistant with Telegram Voice and Text](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) | Personal voice and text assistant bot that answers queries and manages tasks using AI. | Support |
 | [Chat with OpenAI's GPT via a simple Telegram Bot](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) | Minimal Telegram bot that forwards user messages to GPT and returns AI-generated replies. | Support |
+| [Internship Informer](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Internship%20Informer.json) | Extracts and parses internship postings from Telegram channels using AI, scrapes application pages via Firecrawl, filters for eligibility, and sends alerts to WhatsApp. | HR/Ops |
 | [Telegram AI bot assistant: ready-made template for voice & text](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) | Ready-made assistant bot handling both voice and text input with AI responses. | Support |
 | [Telegram AI Bot: NeurochainAI Text & Image](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) | Integrates NeurochainAI API for text and image generation inside Telegram. | Marketing |
 | [Telegram AI bot with LangChain nodes](https://github.com/enescingoz/awesome-n8n-templates/blob/main/Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) | Uses LangChain nodes for advanced AI conversations and tool use in Telegram. | Support |
