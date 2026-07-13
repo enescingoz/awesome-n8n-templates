@@ -128,7 +128,7 @@
 
 ### كيف يمكنني أتمتة بوتات Telegram باستخدام n8n؟
 
-استكشف 18 قالب أتمتة Telegram لـ n8n، تشمل بوتات ذكاء اصطناعي مع LangChain وOpenAI، وترجمة صوتية بـ 55 لغة، والدردشة مع ملفات PDF، وتحليل الصور، وتكامل Spotify.
+استكشف 20 قالب أتمتة Telegram لـ n8n، تشمل بوتات ذكاء اصطناعي مع LangChain وOpenAI، وترجمة صوتية بـ 55 لغة، والدردشة مع ملفات PDF، وتحليل الصور، وتكامل Spotify.
 
 | العنوان | الوصف | القسم | الرابط |
 |---------|-------|-------|--------|
@@ -138,6 +138,8 @@
 | Automated AI image analysis and response via Telegram | تحليل الصور والرد عليها تلقائياً عبر Telegram | عمليات | [رابط القالب](Telegram/Automated%20AI%20image%20analysis%20and%20response%20via%20Telegram.json) |
 | Angie, Personal AI Assistant with Telegram Voice and Text | مساعد شخصي ذكي بالصوت والنص عبر Telegram | دعم | [رابط القالب](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | دردشة مع GPT عبر بوت Telegram بسيط | دعم | [رابط القالب](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
+| Internship Informer | يستخرج ويحلل منشورات التدريب الداخلي من قنوات Telegram باستخدام الذكاء الاصطناعي، ويقوم بجمع صفحات التقديم عبر Firecrawl، ويقوم بالتصفية للأهلية، ويرسل تنبيهات إلى WhatsApp. | الموارد البشرية/العمليات | [رابط القالب](Telegram/Internship%20Informer.json) |
+| Resume Bot | بوت مساعد للسيرة الذاتية ورسائل التغطية المدعوم بالذكاء الاصطناعي على Telegram، يقوم بتحليل السير الذاتية بصيغة PDF وتحديث ملفات المستخدمين في Supabase وتجميع سير ذاتية مخصصة بتنسيق LaTeX عبر SSH. | الموارد البشرية/العمليات | [رابط القالب](Telegram/ResumeBot.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | قالب بوت جاهز يتعامل مع الرسائل الصوتية والنصية | دعم | [رابط القالب](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | توليد النصوص والصور عبر NeurochainAI في Telegram | تسويق | [رابط القالب](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | بوت Telegram بعقد LangChain للمحادثات المتقدمة | دعم | [رابط القالب](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |

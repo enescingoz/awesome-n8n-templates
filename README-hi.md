@@ -128,7 +128,7 @@ Is collection mein Gmail, Outlook, aur IMAP ke liye 9 email automation templates
 
 ### n8n se Telegram bots kaise automate karein?
 
-Telegram ke liye 18 automation templates -- AI chatbots, LangChain, voice-to-text translation (55 bhaashaayein), PDF chat, image analysis, aur Spotify integration shaamil hain.
+Telegram ke liye 20 automation templates -- AI chatbots, LangChain, voice-to-text translation (55 bhaashaayein), PDF chat, image analysis, aur Spotify integration shaamil hain.
 
 | Title | Vivaran | Vibhaag | Link |
 |-------|---------|---------|------|
@@ -138,6 +138,8 @@ Telegram ke liye 18 automation templates -- AI chatbots, LangChain, voice-to-tex
 | Automated AI image analysis and response via Telegram | Telegram par images bhejein aur AI analysis paayein. | Ops | [Link to Template](Telegram/Automated%20AI%20image%20analysis%20and%20response%20via%20Telegram.json) |
 | Angie, Personal AI Assistant with Telegram Voice and Text | Voice aur text se personal AI assistant bot. | Support | [Link to Template](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | Saadha Telegram bot jo GPT se jawaab deta hai. | Support | [Link to Template](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
+| Internship Informer | AI का उपयोग करके Telegram चैनलों से इंटर्नशिप पोस्टिंग को निकालता और विश्लेषण करता है, Firecrawl के माध्यम से आवेदन पृष्ठों को स्क्रैप करता है, पात्रता के लिए फ़िल्टर करता है, और WhatsApp पर अलर्ट भेजता है। | HR/Ops | [Link to Template](Telegram/Internship%20Informer.json) |
+| Resume Bot | Telegram पर एक एआई-संचालित रिज्यूमे और कवर लेटर सहायक जो पीडीएफ रिज्यूमे को पार्स करता है, Supabase में उपयोगकर्ता प्रोफाइल को अपडेट करता है, और SSH के माध्यम से अनुकूलित LaTeX रिज्यूमे संकलित करता है। | मानव संसाधन/संचालन | [Link to Template](Telegram/ResumeBot.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | Voice aur text dono ke liye taiyaar AI bot template. | Support | [Link to Template](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | NeurochainAI se Telegram mein text aur image generation. | Marketing | [Link to Template](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | LangChain nodes se Telegram mein AI conversations. | Support | [Link to Template](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |

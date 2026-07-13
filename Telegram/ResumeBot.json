@@ -1,0 +1,3866 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Error parsing your attached file. Ensure it is in .pdf format.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "103672de-acf8-4a64-b2cc-dec473d6ffe9",
+      "name": "Send PDF Error Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        35184,
+        138432
+      ],
+      "webhookId": "39b080ba-2187-40c4-a3d2-88e49ee5bdf5",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "a1718ecf-6f76-44e2-9011-557768eca2ec",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        32112,
+        138832
+      ],
+      "webhookId": "b1af7cf5-ac6a-49ee-b2b3-b16fd40009a3",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Profiles",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_id",
+              "condition": "eq",
+              "keyValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}"
+            }
+          ]
+        }
+      },
+      "id": "6844e6a4-a820-40c2-bb56-ea60a26cdf8d",
+      "name": "Supabase Fetch by ID",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        32336,
+        138832
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Supabase Fetch').first().json.master_profile;\nlet profile = null;\ntry { profile = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { profile = null; }\n\nconst missing = [];\nconst addMissing = (label) => { if (!missing.includes(label)) missing.push(label); };\nconst hasProfile = profile && typeof profile === 'object';\n\nif (!hasProfile) {\n  addMissing('your resume data');\n} else {\n  if (!profile.name || !String(profile.name).trim()) addMissing('your full name');\n  const contact = profile.contact || {};\n  if (!contact.email && !contact.phone) addMissing('a contact email or phone number');\n  if (!profile.summary || !String(profile.summary).trim()) addMissing('a short professional summary');\n  const hasSkills = Array.isArray(profile.skills) && profile.skills.some((s) => {\n    const items = Array.isArray(s?.items) ? s.items.join(', ') : (s?.items ?? s?.skills);\n    return items && String(items).trim();\n  });\n  if (!hasSkills) addMissing('your key skills');\n  if (!Array.isArray(profile.education) || profile.education.length === 0) addMissing('your education details');\n  if (!Array.isArray(profile.work_experience) || profile.work_experience.length === 0) addMissing('your work experience');\n  if (!Array.isArray(profile.projects) || profile.projects.length === 0) addMissing('your projects');\n}\n\nconst isSufficient = missing.length === 0;\nlet prompt = '';\nif (!isSufficient) {\n  if (!hasProfile) {\n    prompt = 'Your profile is currently empty. Please upload your resume PDF or send your professional details (starting with your full name) to establish your baseline profile.';\n  } else {\n    prompt = 'Your profile is incomplete. Please provide your ' + missing[0] + ' next to complete your profile. You can paste the text here or upload your resume PDF.';\n  }\n}\n\nreturn [{ json: { ...$input.item.json, profile_status: { isSufficient, missing, prompt } } }];"
+      },
+      "id": "eb5ba993-bae9-42d9-ad60-32de7220abce",
+      "name": "Assess Master Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33456,
+        138832
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const msg = $('Telegram Trigger').first().json.message?.text || ''; const text = msg.trim().toLowerCase(); if (!text) return false; const greetings = ['hi','hlo','oi','hoi','yo', 'hello', 'hey', 'hiya', 'good morning', 'good afternoon', 'good evening']; return greetings.some(g => text === g || text.startsWith(g + ' ')); })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "918143bf-4a1d-4331-90a8-1aad5f3f830c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "greeting"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t === '/start' || t === '/info'; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "r1fix-info-text-only-aaaa-bbbbcccc"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "info"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const msg = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')); const text = msg.trim().toLowerCase(); return !!text && text.startsWith('/') && text !== '/view' && text !== '/clear' && !$('Assess Master Profile').item.json.profile_status.isSufficient; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "7dd0c85d-cb65-43e0-b225-e1c6266aa5b6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "profileIncomplete"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ !!$('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    },
+                    "id": "fix04-aaaa-1111-bbbb-2222ccccdddd"
+                  },
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').first().json.message?.document ? true : false }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    },
+                    "id": "fix04-eeee-3333-ffff-4444aaaabbbb"
+                  },
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').first().json.callback_query ? true : false }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    },
+                    "id": "fix04-cccc-5555-dddd-6666eeeeffff"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "mediaGuard"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/view",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2f0e7dfa-4ab2-428b-8f2d-fb59f66dc905"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "view"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t === '/clear'; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "clear-profile-router-id"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "clear"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').first().json.message?.document ? true : false }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "43ad1b8d-21e4-49af-9c1b-f36da83100f5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').first().json.message?.document ? true : false }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    },
+                    "id": "22895ab4-8bad-464e-8d42-692854c6525d"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/view",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "cba85e23-8929-4422-a8db-f90f63e26af0"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/download",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "9e8d0735-ae9a-46a3-a865-d5e02786eb86"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/viewoptimized",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "44199f86-2947-4f6d-b86d-8b4fb3e897b6"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/downloadoptimized",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "d8037150-22bf-46b2-9bfd-77675f44ab92"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "981e3c79-f92c-4775-8c89-5c2a197ee67b"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/optimize",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notStartsWith"
+                    },
+                    "id": "4b657bfe-b368-4762-b662-bf152bc419a3"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/coverletter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notStartsWith"
+                    },
+                    "id": "cfa85e23-8929-4422-a8db-f90f63e26af1"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/analyze",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notStartsWith"
+                    },
+                    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  },
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/clear",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "clear-chat-exclusion-id"
+                  },
+                  {
+                    "leftValue": "={{ (() => { const msg = $('Telegram Trigger').first().json.message?.text || ''; const text = msg.trim().toLowerCase(); if (!text) return false; const greetings = ['hi','hlo','oi','hoi','yo', 'hello', 'hey', 'hiya', 'good morning', 'good afternoon', 'good evening']; return greetings.some(g => text === g || text.startsWith(g + ' ')); })() }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    },
+                    "id": "4c691f33-d9f0-413c-b584-4536477e1a3d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "chat"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/download",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9dd827b0-90b7-4068-866c-778a0f9b773a"
+                  },
+                  {
+                    "leftValue": "={{ $('Assess Master Profile').item.json.profile_status.isSufficient }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "d229a0fd-0c5c-460f-a8a2-718a4f0d7607"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "download"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/downloadoptimized",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "390d492d-c55a-475b-80ba-533c11f69ccc"
+                  },
+                  {
+                    "leftValue": "={{ $('Assess Master Profile').item.json.profile_status.isSufficient }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "55fcf488-2778-4e33-a08a-1c3b4b84c2e1"
+                  },
+                  {
+                    "leftValue": "={{ $('Supabase Fetch').first().json.tailored_profile ? true : false }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "fix01-aaaa-bbbb-cccc-ddddeeeeeeee"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "downloadOptimized"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t.startsWith('/optimize') && t.replace(/^\\/optimize\\s*/, '').length > 0; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "1c8659fe-12a2-42c3-b3ac-9fa2eb0acae0"
+                  },
+                  {
+                    "leftValue": "={{ $('Assess Master Profile').item.json.profile_status.isSufficient }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "5c351eaa-9558-4c5d-a7c9-7c07c16d62fd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "optimize"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t === '/viewoptimized' || (t === '/downloadoptimized' && !$('Supabase Fetch').first().json.tailored_profile); })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "a022defd-3406-4492-b41e-9fd5d998a9b0"
+                  },
+                  {
+                    "leftValue": "={{ $('Assess Master Profile').item.json.profile_status.isSufficient }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "c0f02df8-6613-45db-bbc1-5a4a28e0be07"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "viewOptimized"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase() }}",
+                    "rightValue": "/coverletter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "e568a147-93ad-4463-a1cc-0022b5e89f87"
+                  },
+                  {
+                    "leftValue": "={{ $('Assess Master Profile').item.json.profile_status.isSufficient }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "3a0282d5-67e6-4741-a4f2-cd9760d25cd7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "coverletter"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t.startsWith('/analyze') && t.replace(/^\\/analyze\\s*/, '').length > 0; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                  },
+                  {
+                    "leftValue": "={{ $('Assess Master Profile').item.json.profile_status.isSufficient }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "analyze"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t === '/optimize'; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "e0b4b83a-12a2-42c3-b3ac-9fa2eb0acae2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "optimizeNoJd"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ (() => { const t = ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '')).trim().toLowerCase(); return t === '/analyze'; })() }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    },
+                    "id": "c0b4b83a-e5f6-7890-abcd-ef1234567892"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "analyzeNoJd"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e9e57b51-8c13-425a-81ae-f264511d910f",
+      "name": "Command Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        33680,
+        138608
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.master_profile\n  ?? $('Supabase Fetch').first().json.master_profile;\n\nif (!raw) return [{ json: { text: \"📭 No profile found. Send me your resume PDF or tell me about yourself!\" } }];\n\nlet p;\ntry { p = typeof raw === 'string' ? JSON.parse(raw) : raw; }\ncatch(e) { return [{ json: { text: \"❌ Could not read profile data. Try uploading your resume PDF again.\" } }]; }\n\nif (!p || typeof p !== 'object') return [{ json: { text: \"📭 No profile found. Send me your resume PDF!\" } }];\n\nconst hasData = p.name || p.summary || p.tagline\n  || (p.skills && p.skills.length > 0)\n  || (p.work_experience && p.work_experience.length > 0)\n  || (p.education && p.education.length > 0)\n  || (p.projects && p.projects.length > 0)\n  || (p.certifications && p.certifications.length > 0)\n  || (p.contact && (p.contact.email || p.contact.phone));\n\nif (!hasData) return [{ json: { text: \"📭 Your profile appears empty. Please upload your resume PDF or tell me your details!\" } }];\n\nlet msg = `<b>Master Resume Profile</b>\\n━━━━━━━━━━━━━━━━━━━━\\n\\n`;\n\nif (p.name) msg += `<b>${p.name}</b>\\n`;\nif (p.tagline) msg += `<i>${p.tagline}</i>\\n`;\nif (p.name || p.tagline) msg += `\\n`;\n\nif (p.contact) {\n  const c = p.contact;\n  const hasContact = c.email || c.phone || c.linkedin_display || c.linkedin_url || c.github_display || c.github_url || c.portfolio_display || c.portfolio_url;\n  if (hasContact) {\n    msg += `<b>Contact Details</b>\\n`;\n    if (c.email) msg += `  Email: ${c.email}\\n`;\n    if (c.phone) msg += `  Phone: ${c.phone}\\n`;\n    if (c.linkedin_display || c.linkedin_url) {\n      if (c.linkedin_display && c.linkedin_url && c.linkedin_display !== c.linkedin_url) msg += `  LinkedIn: ${c.linkedin_display} (${c.linkedin_url})\\n`;\n      else msg += `  LinkedIn: ${c.linkedin_url || c.linkedin_display}\\n`;\n    }\n    if (c.github_display || c.github_url) {\n      if (c.github_display && c.github_url && c.github_display !== c.github_url) msg += `  GitHub: ${c.github_display} (${c.github_url})\\n`;\n      else msg += `  GitHub: ${c.github_url || c.github_display}\\n`;\n    }\n    if (c.portfolio_display || c.portfolio_url) {\n      if (c.portfolio_display && c.portfolio_url && c.portfolio_display !== c.portfolio_url) msg += `  Portfolio: ${c.portfolio_display} (${c.portfolio_url})\\n`;\n      else msg += `  Portfolio: ${c.portfolio_url || c.portfolio_display}\\n`;\n    }\n    msg += `\\n`;\n  }\n}\nif (p.summary) msg += `<b>Professional Summary</b>\\n${p.summary}\\n\\n`;\n\nif (p.education && p.education.length > 0) {\n  msg += `<b>Education</b>\\n`;\n  p.education.forEach(e => {\n    msg += `    - <b>${e.degree}</b>\\n    ${e.institution}\\n`;\n    if (e.score) msg += `    Score: ${e.score}\\n`;\n    if (e.year) msg += `    Year: ${e.year}\\n`;\n  });\n  msg += `\\n`;\n}\n\nif (p.work_experience && p.work_experience.length > 0) {\n  msg += `<b>Work Experience</b>\\n`;\n  p.work_experience.forEach(w => {\n    msg += `\\n  <b>${w.title}</b> at ${w.company}`;\n    if (w.location) msg += `, ${w.location}`;\n    msg += `\\n`;\n    if (w.start_date) msg += `  <i>${w.start_date}${w.end_date ? ' – ' + w.end_date : ' – Present'}</i>\\n`;\n    if (w.bullet_points && w.bullet_points.length > 0)\n      w.bullet_points.forEach(b => msg += `        - ${b}\\n`);\n  });\n  msg += `\\n`;\n}\n\nif (p.projects && p.projects.length > 0) {\n  msg += `<b>Projects</b>\\n`;\n  p.projects.forEach(proj => {\n    msg += `\\n  <b>${proj.name}</b>\\n`;\n    if (proj.tech_stack) msg += `  <i>${proj.tech_stack}</i>\\n`;\n    if (proj.duration) msg += `  <i>${proj.duration}</i>\\n`;\n    if (proj.link_display || proj.link_url) {\n      if (proj.link_display && proj.link_url && proj.link_display !== proj.link_url) msg += `  🔗 ${proj.link_display} (${proj.link_url})\\n`;\n      else msg += `  🔗 ${proj.link_url || proj.link_display}\\n`;\n    }\n    if (proj.bullet_points && proj.bullet_points.length > 0)\n      proj.bullet_points.forEach(b => msg += `        - ${b}\\n`);\n  });\n  msg += `\\n`;\n}\n\nif (p.skills && p.skills.length > 0) {\n  msg += `<b>Technical Skills</b>\\n`;\n  p.skills.forEach(s => msg += `    - <b>${s.category || 'Skill'}:</b> ${s.items || s}\\n`);\n  msg += `\\n`;\n}\n\nif (p.certifications && p.certifications.length > 0) {\n  msg += `<b>Certifications</b>\\n`;\n  p.certifications.forEach(cert => {\n    msg += `    - <b>${cert.name}</b>\\n    ${cert.issuer}`;\n    if (cert.year) msg += ` (${cert.year})`;\n    msg += `\\n`;\n  });\n  msg += `\\n`;\n}\n\nif (msg.length <= 4096) return [{ json: { text: msg, isLast: true } }];\nconst chunks = []; let current = '';\nfor (const line of msg.split('\\n')) {\n  if ((current + line + '\\n').length > 4000) { chunks.push(current.trim()); current = line + '\\n'; }\n  else current += line + '\\n';\n}\nif (current.trim()) chunks.push(current.trim());\nreturn chunks.map((text, index) => ({ json: { text, isLast: index === chunks.length - 1 } }));"
+      },
+      "id": "afb2ace1-385b-44ec-9acd-105325b8e06e",
+      "name": "Format Profile View",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33968,
+        138064
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "={{ $json.isLast ? 'inlineKeyboard' : 'none' }}",
+        "forceReply": {},
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Download PDF",
+                    "additionalFields": {
+                      "callback_data": "/download"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {},
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "95c37f98-9544-48e4-88d6-db1c277cf919",
+      "name": "Telegram View Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34256,
+        138064
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.data : ($('Telegram Trigger').item.json.message.text || '');\nconst isOptimized = msg.toLowerCase().startsWith('/downloadoptimized');\nconst rawTailored = $('Supabase Fetch').first().json.tailored_profile;\nconst rawMaster = $('Supabase Fetch').first().json.master_profile;\nconst rawProfile = isOptimized ? rawTailored : rawMaster;\n\nif (!rawProfile) {\n  return [{\n    json: {\n      text: isOptimized\n        ? \"📭 No optimized resume yet. Use `/optimize [paste JD here]` to create one!\"\n        : \"📭 No profile found. Please upload your resume PDF first!\"\n    }\n  }];\n}\nconst p = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile;\n\nfunction esc(str) {\n  if (!str) return '';\n  return String(str)\n    .replace(/\\\\/g, '\\\\textbackslash{}')\n    .replace(/([&%$#{}])/g, '\\\\$1')\n    .replace(/~/g, '\\\\textasciitilde{}')\n    .replace(/\\^/g, '\\\\textasciicircum{}')\n    .replace(/_/g, '\\\\_');\n}\n\nfunction url(str) {\n  if (!str) return '';\n  // Only encode characters that would actually break LaTeX href parsing.\n  // Do NOT apply esc() to URLs — it breaks underscores and # anchors.\n  return String(str).replace(/%/g, '\\\\%').replace(/\\\\/g, '/');\n}\n\nfunction extractUrls(text) {\n  if (!text) return [];\n  const regex = /(?:https?:\\/\\/|www\\.)[^\\s,\\|'\"]+|[a-zA-Z0-9.-]+\\.(?:com|app|net|io|me|dev|tech|co|org)(?:\\/[^\\s,\\|'\"]*)?/gi;\n  return text.match(regex) || [];\n}\n\nfunction getValidUrl(urlStr, displayStr) {\n  const urls = [];\n  if (urlStr) urls.push(...extractUrls(urlStr));\n  if (urls.length === 0 && displayStr) urls.push(...extractUrls(displayStr));\n  if (urls.length > 0) {\n      let u = urls[0];\n      if (!u.startsWith('http')) u = 'https://' + u;\n      return u;\n  }\n  return null;\n}\n\nconst c = p.contact || {};\n\nconst nameBlock = `{\\\\LARGE \\\\textbf{${esc(p.name)}}}`;\nconst taglineBlock = p.tagline ? `\\\\textit{${esc(p.tagline.substring(0, 100))}}` : '';\nconst emailBlock = c.email ? `\\\\href{mailto:${url(c.email)}}{${esc(c.email)}}` : '';\n\nlet phoneBlock = '';\nif (c.phone) {\n  const cleanPhone = c.phone.replace(/[^+\\d]/g, '');\n  phoneBlock = `\\\\href{tel:${cleanPhone}}{${esc(c.phone)}}`;\n}\n\nfunction getCleanDisplay(urlStr, displayVal, defaultLabel) {\n  if (displayVal && displayVal.trim() && displayVal.trim().toLowerCase() !== defaultLabel.toLowerCase()) {\n    return displayVal.trim();\n  }\n  if (urlStr) {\n    return urlStr.trim().replace(/^(https?:\\/\\/)?(www\\.)?/, '').replace(/\\/$/, '');\n  }\n  return defaultLabel;\n}\n\nlet linkedinBlock = '';\nif (c.linkedin_url || c.linkedin_display) {\n  const display = getCleanDisplay(c.linkedin_url, c.linkedin_display, 'LinkedIn');\n  const u = getValidUrl(c.linkedin_url, c.linkedin_display);\n  linkedinBlock = u ? `\\\\href{${url(u)}}{LinkedIn: ${esc(display)}}` : `LinkedIn: ${esc(display)}`;\n}\n\nlet githubBlock = '';\nif (c.github_url || c.github_display) {\n  const display = getCleanDisplay(c.github_url, c.github_display, 'GitHub');\n  const u = getValidUrl(c.github_url, c.github_display);\n  githubBlock = u ? `\\\\href{${url(u)}}{GitHub: ${esc(display)}}` : `GitHub: ${esc(display)}`;\n}\n\nlet portfolioBlock = '';\nif (c.portfolio_url || c.portfolio_display) {\n  const display = getCleanDisplay(c.portfolio_url, c.portfolio_display, 'Portfolio');\n  const u = getValidUrl(c.portfolio_url, c.portfolio_display);\n  portfolioBlock = u ? `\\\\href{${url(u)}}{Portfolio: ${esc(display)}}` : `Portfolio: ${esc(display)}`;\n}\n\nlet row3Right = '';\nlet row4Left = '';\nif (portfolioBlock) {\n  row3Right = portfolioBlock;\n  row4Left = githubBlock;\n} else {\n  row3Right = githubBlock;\n  row4Left = '';\n}\n\nlet headerBlock = '\\\\begin{tabular*}{\\\\textwidth}{l@{\\\\extracolsep{\\\\fill}}r}\\n';\nheaderBlock += `  ${nameBlock} & ${emailBlock} \\\\\\\\\\n`;\nheaderBlock += `  ${taglineBlock} & ${phoneBlock} \\\\\\\\\\n`;\nheaderBlock += `  ${linkedinBlock} & ${row3Right} \\\\\\\\\\n`;\nif (row4Left) {\n  headerBlock += `  ${row4Left} &  \\\\\\\\\\n`;\n}\nheaderBlock += '\\\\end{tabular*}\\n';\n\n\nlet eduBlock = '';\n(p.education || []).forEach(e => {\n  eduBlock += `  ${esc(e.degree)} & ${esc(e.institution)} & ${esc(e.score)} & ${esc(e.year)} \\\\\\\\\\n  \\\\hline\\n`;\n});\n\nlet expBlock = '';\n(p.work_experience || []).forEach(w => {\n  expBlock += `  \\\\resumeSubheading{${esc(w.title)}}{${esc(w.location)}}{${esc(w.company)}}{${esc(w.start_date)} -- ${esc(w.end_date || 'Present')}}\\n`;\n  expBlock += `  \\\\resumeItemListStart\\n`;\n  (w.bullet_points || []).forEach(b => { expBlock += `    \\\\item {${esc(b)}}\\n`; });\n  expBlock += `  \\\\resumeItemListEnd\\n`;\n});\n\nlet projBlock = '';\n(p.projects || []).forEach(proj => {\n  let lTex = '';\n  const urls = [];\n  if (proj.link_url) urls.push(...extractUrls(proj.link_url));\n  if (urls.length === 0 && proj.link_display) urls.push(...extractUrls(proj.link_display));\n  if (urls.length > 0) {\n    let liveDemo = null;\n    let github = null;\n    for (let u of urls) {\n      if (!u.startsWith('http')) u = 'https://' + u;\n      if (/github\\.com/i.test(u)) github = u;\n      else liveDemo = u;\n    }\n    if (liveDemo) lTex = `\\\\href{${url(liveDemo)}}{Live Demo}`;\n    else if (github) lTex = `\\\\href{${url(github)}}{GitHub}`;\n  }\n  projBlock += `  \\\\resumeProject{${esc(proj.name)}}{${esc(proj.tech_stack)}}{${esc(proj.duration)}}{${lTex}}\\n`;\n  projBlock += `  \\\\resumeItemListStart\\n`;\n  (proj.bullet_points || []).forEach(b => { projBlock += `    \\\\item {${esc(b)}}\\n`; });\n  projBlock += `  \\\\resumeItemListEnd\\n`;\n});\n\nlet skillBlock = '';\n(p.skills || []).forEach(s => {\n  let items = '';\n  if (Array.isArray(s.items)) items = s.items.join(', ');\n  else if (typeof s.items === 'string') items = s.items;\n  else if (s.skills) items = Array.isArray(s.skills) ? s.skills.join(', ') : s.skills;\n  if (!items || !items.trim()) return;\n  const cat = s.category || s.name || 'Skills';\n  skillBlock += `  \\\\resumeSubItem{${esc(cat)}}{${esc(items)}}\\n`;\n});\n\nlet certBlock = '';\n(p.certifications || []).forEach(cert => {\n  certBlock += `  \\\\resumePOR{${esc(cert.issuer)}}{${esc(cert.name)}}{${esc(cert.year)}}\\n`;\n});\n\nconst tex = `\\\\documentclass[a4paper,11pt]{article}\n\\\\usepackage{latexsym}\n\\\\usepackage{xcolor}\n\\\\usepackage{float}\n\\\\usepackage{ragged2e}\n\\\\usepackage[empty]{fullpage}\n\\\\usepackage{wrapfig}\n\\\\usepackage{tabularx}\n\\\\usepackage{titlesec}\n\\\\usepackage{geometry}\n\\\\usepackage{marvosym}\n\\\\usepackage{verbatim}\n\\\\usepackage{enumitem}\n\\\\usepackage[hidelinks]{hyperref}\n\\\\usepackage{fancyhdr}\n\\\\usepackage{multicol}\n\\\\usepackage{graphicx}\n\\\\usepackage{cfr-lm}\n\\\\usepackage[T1]{fontenc}\n\\\\setlength{\\\\multicolsep}{0pt}\n\\\\pagestyle{fancy}\n\\\\fancyhf{}\n\\\\fancyfoot{}\n\\\\renewcommand{\\\\headrulewidth}{0pt}\n\\\\renewcommand{\\\\footrulewidth}{0pt}\n\\\\geometry{left=1.4cm, top=0.8cm, right=1.2cm, bottom=1cm}\n\\\\usepackage[most]{tcolorbox}\n\\\\tcbset{frame code={} center title, left=0pt, right=0pt, top=0pt, bottom=0pt, colback=gray!20, colframe=white, width=\\\\dimexpr\\\\textwidth\\\\relax, enlarge left by=-2mm, boxsep=4pt, arc=0pt, outer arc=0pt}\n\\\\urlstyle{same}\n\\\\raggedright\n\\\\setlength{\\\\tabcolsep}{0in}\n\\\\titleformat{\\\\section}{\\\\vspace{-4pt}\\\\scshape\\\\raggedright\\\\large}{}{0em}{}[\\\\color{black}\\\\titlerule \\\\vspace{-7pt}]\n\\\\newcommand{\\\\resumeItem}[2]{\\\\item{\\\\textbf{#1}{: #2 \\\\vspace{-0.5mm}}}}\n\\\\newcommand{\\\\resumePOR}[3]{\\\\vspace{0.5mm}\\\\item\\\\begin{tabular*}{0.97\\\\textwidth}[t]{l@{\\\\extracolsep{\\\\fill}}r}\\\\textbf{#1}: #2 & \\\\textit{\\\\small{#3}}\\\\end{tabular*}\\\\vspace{-2mm}}\n\\\\newcommand{\\\\resumeSubheading}[4]{\\\\vspace{0.5mm}\\\\item\\\\begin{tabular*}{0.98\\\\textwidth}[t]{l@{\\\\extracolsep{\\\\fill}}r}\\\\textbf{#1} & \\\\textit{\\\\footnotesize{#4}} \\\\\\\\ \\\\textit{\\\\footnotesize{#3}} & \\\\footnotesize{#2}\\\\\\\\\\\\end{tabular*}\\\\vspace{-2.4mm}}\n\\\\newcommand{\\\\resumeProject}[4]{\\\\vspace{0.5mm}\\\\item\\\\begin{tabular*}{0.98\\\\textwidth}[t]{l@{\\\\extracolsep{\\\\fill}}r}\\\\textbf{#1} & \\\\textit{\\\\footnotesize{#3}} \\\\\\\\ \\\\footnotesize{\\\\textit{#2}} & \\\\footnotesize{#4}\\\\end{tabular*}\\\\vspace{-2.4mm}}\n\\\\newcommand{\\\\resumeSubItem}[2]{\\\\resumeItem{#1}{#2}\\\\vspace{-4pt}}\n\\\\renewcommand{\\\\labelitemi}{$\\\\vcenter{\\\\hbox{\\\\tiny$\\\\bullet$}}$}\n\\\\newcommand{\\\\resumeSubHeadingListStart}{\\\\begin{itemize}[leftmargin=*,labelsep=0mm]}\n\\\\newcommand{\\\\resumeHeadingSkillStart}{\\\\begin{itemize}[leftmargin=*,itemsep=1.7mm, rightmargin=2ex]}\n\\\\newcommand{\\\\resumeItemListStart}{\\\\begin{justify}\\\\begin{itemize}[leftmargin=3ex, rightmargin=2ex, noitemsep,labelsep=1.2mm,itemsep=0mm]\\\\small}\n\\\\newcommand{\\\\resumeSubHeadingListEnd}{\\\\end{itemize}\\\\vspace{2mm}}\n\\\\newcommand{\\\\resumeHeadingSkillEnd}{\\\\end{itemize}\\\\vspace{-2mm}}\n\\\\newcommand{\\\\resumeItemListEnd}{\\\\end{itemize}\\\\end{justify}\\\\vspace{-2mm}}\n\\\\newcolumntype{L}{>{\\\\raggedright\\\\arraybackslash}X}\n\\\\newcolumntype{R}{>{\\\\raggedleft\\\\arraybackslash}X}\n\\\\newcolumntype{C}{>{\\\\centering\\\\arraybackslash}X}\n\n\\\\begin{document}\n\\\\fontfamily{cmr}\\\\selectfont\n\n${headerBlock}\n\n\\\\section{Profile Summary}\n\\\\vspace{1mm}\n{\\\\small \\\\begin{justify}\\n${esc(p.summary)}\\n\\\\end{justify}}\n\\\\vspace{1mm}\n\n\\\\section{Education}\n\\\\setlength{\\\\tabcolsep}{5pt}\n{\\\\small \\\\begin{tabularx}{\\\\linewidth}{|L|L|c|c|}\n  \\\\hline\n  \\\\textbf{Degree/Certificate} & \\\\textbf{Institute/Board} & \\\\textbf{Score} & \\\\textbf{Year}\\\\\\\\\n  \\\\hline\n${eduBlock}\\\\end{tabularx}}\n\\\\vspace{2mm}\n\n\\\\section{Experience}\n\\\\resumeSubHeadingListStart\n${expBlock}\\\\resumeSubHeadingListEnd\n\\\\vspace{-5.5mm}\n\n\\\\section{Projects}\n\\\\resumeSubHeadingListStart\n${projBlock}\\\\resumeSubHeadingListEnd\n\\\\vspace{-5.5mm}\n\n\\\\section{Technical Skills}\n\\\\resumeHeadingSkillStart\n${skillBlock}\\\\resumeHeadingSkillEnd\n\n\\\\section{Certifications}\n\\\\vspace{-0.2mm}\n\\\\resumeSubHeadingListStart\n${certBlock}\\\\resumeSubHeadingListEnd\n\n\\\\end{document}`;\n\nreturn [{\n  json: { success: true, tex_b64: Buffer.from(tex).toString('base64') },\n  binary: {\n    tex_file: {\n      data: Buffer.from(tex).toString('base64'),\n      mimeType: 'application/x-tex',\n      fileName: `resume_${($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id)}.tex`\n    }\n  }\n}];"
+      },
+      "id": "2e446cd5-78d0-4601-a31b-0a015e4e772f",
+      "name": "Generate LaTeX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34256,
+        139584
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=echo \"{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}\" > /tmp/chat_{{ $execution.id }}\necho \"{{ $('Generate LaTeX').item.json.tex_b64 }}\" | base64 -d > /tmp/resume_{{ $execution.id }}.tex\ncd /tmp\npdflatex -interaction=nonstopmode resume_{{ $execution.id }}.tex > /tmp/compile_{{ $execution.id }}.log 2>&1\npdflatex -interaction=nonstopmode resume_{{ $execution.id }}.tex >> /tmp/compile_{{ $execution.id }}.log 2>&1\nif [ $? -eq 0 ] && [ -f resume_{{ $execution.id }}.pdf ]; then\n  echo \"SUCCESS\"\nelse\n  echo \"COMPILE_ERROR\"\n  cat /tmp/compile_{{ $execution.id }}.log\nfi"
+      },
+      "id": "b44ccc5f-e7fb-441a-bda2-f4145704ad0a",
+      "name": "Write LaTeX File",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        34896,
+        139488
+      ],
+      "credentials": {
+        "sshPassword": {
+          "id": "E3zS3TopCpOFhIu5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const b64 = $input.item.json.stdout.trim();\nconst chatId = ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id);\nlet texB64 = '';\ntry {\n  texB64 = $('Base64 Encode Fixed LaTeX').first().json.fixed_tex_b64;\n} catch (e) {\n  try {\n    texB64 = $('Generate LaTeX').first().json.tex_b64;\n  } catch (err) {\n    texB64 = '';\n  }\n}\nconst msg = $('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.data : ($('Telegram Trigger').item.json.message.text || '');\nconst isOptimized = msg.toLowerCase().startsWith('/downloadoptimized');\nconst prefix = isOptimized ? 'resume_optimized' : 'resume';\nreturn [{\n  json: { success: true },\n  binary: {\n    pdf_doc: {\n      data: b64,\n      mimeType: 'application/pdf',\n      fileName: `${prefix}_${chatId}.pdf`\n    },\n    tex_file: {\n      data: texB64,\n      mimeType: 'application/x-tex',\n      fileName: `${prefix}_${chatId}.tex`\n    }\n  }\n}];"
+      },
+      "id": "a7f3d4b7-7b83-4431-a26b-3de9c030b2ec",
+      "name": "Decode PDF Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        37120,
+        139584
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "binaryData": true,
+        "binaryPropertyName": "pdf_doc",
+        "additionalFields": {
+          "caption": "Here is your compiled, ATS-friendly resume!",
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "5d2061b0-1767-403d-97ec-0d74f544e1b9",
+      "name": "Send PDF (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        37344,
+        139216
+      ],
+      "webhookId": "d53fcf7a-fa23-465d-a986-390f05874262",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "binaryData": true,
+        "binaryPropertyName": "tex_file",
+        "additionalFields": {
+          "caption": "Here is the editable LaTeX source (.tex). You can customize it in Overleaf or any LaTeX editor.",
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "31a12241-f462-475f-8e81-b64d2ff62ac1",
+      "name": "Send LaTeX Source (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        37344,
+        139680
+      ],
+      "webhookId": "latex-src-webhook-001",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const triggerItem = $('Telegram Trigger').item;\nreturn [{ json: $input.item.json, binary: triggerItem.binary }];"
+      },
+      "id": "08903e92-6392-42fd-8c9a-2828355d009f",
+      "name": "Reattach Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34544,
+        138448
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "638048c6-53f4-4d56-a396-0b5a39da84d3",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        34896,
+        138448
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { promptText: \"I have uploaded my existing resume. Please parse this unstructured text and carefully map it into my structured master_profile database object. Here is the raw PDF text:\\n\\n\" + $input.item.json.text } };"
+      },
+      "id": "5fd945e0-62c1-401a-a6f1-1590e2b73a98",
+      "name": "Format PDF Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35184,
+        138624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { promptText: $('Telegram Trigger').item.json.message.text } };"
+      },
+      "id": "25089ce7-f409-4f9e-9e81-8977f3dfdc42",
+      "name": "Format Chat Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35184,
+        139216
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.promptText }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are an expert AI Resume assistant. Your job is to extract user information and perfectly structure it for a LaTeX compiler.\n\n[USER CONTEXT FROM DATABASE]\n{{ $('Supabase Fetch').first().json.master_profile ? (typeof $('Supabase Fetch').first().json.master_profile === 'string' ? JSON.stringify(JSON.parse($('Supabase Fetch').first().json.master_profile), null, 2) : JSON.stringify($('Supabase Fetch').first().json.master_profile, null, 2)) : 'NO_PROFILE' }}\n\n\n[CRITICAL DATA PRESERVATION & MERGING RULES]\n- The data under `[USER CONTEXT FROM DATABASE]` represents the user's current master profile and is your absolute baseline.\n- **INCREMENTAL MERGING**: When the user chats to update their profile, you MUST only modify, add, or delete the specific fields/facts mentioned in their message. \n- **PRESERVE UNCHANGED DATA**: All other existing fields, bullet points, sections, and values in the `master_profile` that are not explicitly updated or removed by the user's current message MUST be copied and preserved EXACTLY.\n- **NEVER WIPE OUT EXISTING DATA**: If the user corrects a single field (e.g., their name or email), you must update only that specific field in `master_profile` while keeping the rest of their profile (e.g. contact, education, work experience, projects, skills, and certifications) completely intact. Never return a profile that only contains the new information while omitting the old.\n- **CONVERSATIONAL PROFILE QUERIES**: If the user asks a question about their saved profile or resume details (e.g., \"What was my Semester 1 mark?\", \"Did I add Python to my skills?\", \"What is my GPA?\", etc.), you MUST analyze their saved profile under `[USER CONTEXT FROM DATABASE]` to answer their question.\n  - Set `profile_updated` to `false` (since no new information is being added or updated).\n  - In `chat_reply`, provide a clear, direct, and concise answer to their question in a highly natural, human voice.\n  - Return `master_profile` exactly as-is without any modifications.\n  - If the profile is empty or does not contain the requested information, explain politely and clearly what is missing or that the profile has not been created yet.\n\n\n\n[TAGLINE RULE]\nThe `tagline` MUST strictly be a short role title ONLY (e.g., 'Full-stack developer and UI/UX designer', 'Software Engineer', 'Data Scientist'). Do NOT write descriptive sentences or add extra context (e.g., no 'building production-ready applications'). Keep it under 50 characters.\n\n[HUMAN WRITING STYLE & TONE RULES (CRITICAL ANTI-AI CONSTRAINTS)]\nTo ensure all generated resume content (summaries, tagline, bullet points), cover letters, and chat responses look and sound like highly natural, professional, human-written text rather than robotic AI-generated text, you MUST adhere to the following rules:\n\n1. HARD CONSTRAINT ON EM DASHES AND DOUBLE HYPHENS:\n   - Your final output MUST contain absolutely no em dashes (—), en dashes (–), or double hyphens (--, ---) inside text sentences.\n   - Replace each one using a period (to start a new sentence), a comma (for tight asides), a colon (introducing explanation), or parentheses (for true asides), or restructure the sentence entirely.\n\n2. COPULA AVOIDANCE (USE SIMPLE \"IS/ARE/HAS/HAVE\"):\n   - Do not replace simple copulas with elaborate constructions like \"serves as\", \"stands as\", \"boasts\", \"features\", \"offers\", or \"marks\".\n   - Use simple verbs like \"is\", \"are\", \"has\", \"have\", or direct active verbs (e.g., instead of \"boasts 5 years of experience\", write \"has 5 years of experience\").\n\n3. BANNED \"AI VOCABULARY\" WORDS:\n   - Do not use high-frequency AI words. Banned list: align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, highlight (verb), interplay, intricate, intricacies, key (adjective), landscape (abstract), pivotal, showcase, tapestry, testament, underscore (verb), valuable, vibrant, seamlessly, cutting-edge, revolutionary, leverage, leveraging, transformative, meticulously, expertly, proven track record, elevate, multifaceted, catalyst, passionate.\n\n4. NO SUPERFICIAL \"-ING\" ENDINGS:\n   - Do not tack present participle clauses onto the end of sentences to pad the length (e.g., avoid: \"...highlighting X\", \"...ensuring Y\", \"...reflecting Z\", \"...fostering W\", \"...encompassing K\"). Write these as independent clauses or separate sentences.\n\n5. AVOID PERSUASIVE AND NOTABILITY PUFFERY:\n   - Do not add artificial statements about legacy, significance, or broader trends (e.g., \"marking a pivotal moment\", \"setting the stage for\", \"indelible mark\", \"testament to\", \"deeply rooted\"). Keep it completely factual, direct, and grounded.\n   - Do not use persuasive tropes like \"At its core\", \"In reality\", \"What really matters is\", \"Fundamentally\".\n\n6. STRUCTURAL RULES (RULE OF THREE, BOLDING, NEGATIVE PARALLELISMS):\n   - Avoid forcing bullet points or lists into rigid groups of three (the \"rule of three\" tell). Let items have natural lengths.\n   - Avoid boldface overuse inside text blocks.\n   - Do not use negative parallelisms like \"Not only... but also...\" or tailing negation fragments (e.g. \"no guessing\"). Write clean, direct active clauses.\n   - Avoid passive voice; use clear, direct active voice.\n\n\n8. STRICTLY NO EMOJIS:\n   - You are completely banned from using any emojis anywhere in the profile data or chat reply. Do not use emojis in bullet points, project names, or summaries.\n\n7. NATURAL VOICE AND SOUL:\n   - Write with a grounded, calm, and understated voice. Avoid overly eager, sycophantic, or enthusiastic chatbot phrases (e.g., do not say \"Great! Here is X\", \"I hope this helps!\", \"Certainly!\").\n   - When writing cover letters, avoid generic, excited introductions. Start directly with a clear, calm statement of interest and alignment with the role.\n\n[RESUME CONTENT & QUALITY RULES (CRITICAL ATS & IMPACT IMPROVEMENTS)]\n1. QUANTIFY IMPACT: Ensure bullet points in work experience and projects include specific, tangible metrics (e.g., percentage increases, time saved, project outcomes, scale of data/traffic) where possible rather than just listing duties.\n2. ACTION-ORIENTED LANGUAGE: Use strong, varied active verbs at the start of bullet points. Avoid repeating the same verbs across different sections.\n3. CRISPNESS & CONCISENESS: Keep bullet points crisp, concise, and focused on key achievements. Avoid filler words and overly wordy descriptions.\n4. ATS KEYWORDS: Naturally integrate role-specific keywords and searchability terminology.\n5. FORMAL & CONSISTENT TONE: Maintain a professional, consistent third-person tone (no personal pronouns) and avoid clichés or buzzwords. Ensure uniform formatting and bullet styles across all sections.\n\n[PROFILE SUMMARY AUTO-REFRESH ON EVERY UPDATE]\nEvery time the user provides new information and profile_updated = true, you MUST rewrite the 'summary' field in master_profile to accurately reflect ALL current profile data — including any newly added or modified details such as updated CGPA, new certifications, new work experience, new projects, or new skills. Never leave the summary stale or contradicting the rest of the profile. The summary should be 3-5 concise sentences written in a professional third-person tone (NO first-person pronouns like 'I', 'me', 'my', 'we'). It must NOT start with 'I am [Name]' or similar. Start directly with the professional role/description (e.g., 'Computer Science undergraduate at CET (2027), focused on...'). Focus on key skills, engineering fundamentals, building reliable software, and notable projects. Apply all the Human Writing Style rules above when rewriting the summary.\n\n[MANDATORY PROFILE SUMMARY FORMAT (CRITICAL)]\n- The 'summary' field MUST NOT contain any first-person pronouns ('I', 'me', 'my', 'we', 'our') or name introductions (e.g., 'I am John Doe', 'John Doe is...').\n- The 'summary' field MUST strictly follow the third-person tone and start directly with a professional noun phrase describing the candidate (e.g., 'Computer Science undergraduate at CET (2027), focused on...').\n- Clean and rewrite the summary to enforce this format on EVERY parse, every update, and every optimization. Never copy a summary verbatim if it violates these rules.\n\n[CRITICAL INSTRUCTION: STRICT JSON SCHEMA]\nYou MUST output ONLY a raw JSON object and nothing else. The JSON must contain exactly these three keys:\n1. \"chat_reply\": Your friendly natural language response.\n2. \"profile_updated\": boolean. Set TRUE if ANY new info was added, FALSE if no new facts.\n3. \"master_profile\": { name, tagline, contact: { email, phone, linkedin_url, linkedin_display, github_url, github_display, portfolio_url, portfolio_display }, summary, skills: [{category, items}], work_experience: [{ title, company, location, start_date, end_date, bullet_points: [] }], education: [{ degree, institution, score, year }], projects: [{ name, tech_stack, duration, link_url, link_display, bullet_points: [] }], certifications: [{ issuer, name, year }] }"
+        }
+      },
+      "id": "443571ea-7597-46f6-97b7-50790ae7699f",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        35472,
+        138528
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}"
+      },
+      "id": "69cd0498-47ba-4969-8fa4-76367a72069b",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        35664,
+        138752
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = $input.item.json.output || \"\";\nlet parsed = {};\ntry {\n  let cleaned = rawText.replace(/```json|```/gi, \"\").trim();\n  const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) cleaned = jsonMatch[0];\n  parsed = JSON.parse(cleaned);\n  if (typeof parsed.profile_updated === \"string\") parsed.profile_updated = parsed.profile_updated.toLowerCase() === \"true\";\n  if (parsed.profile_updated === undefined) parsed.profile_updated = !!parsed.master_profile;\n\n  const existingRow = $(\"Supabase Fetch\").first().json;\n  const isNewUser = !existingRow || !existingRow.telegram_id;\n  const hasProfileData = parsed.master_profile && typeof parsed.master_profile === \"object\" && Object.keys(parsed.master_profile).length > 0;\n  if (isNewUser && hasProfileData) parsed.profile_updated = true;\n} catch (e) {\n  parsed = { chat_reply: \"Sorry, I had trouble parsing that. Could you try again?\", profile_updated: false, master_profile: null };\n}\n\nconst buildStatus = (profile) => {\n  const missing = [];\n  const addMissing = (label) => { if (!missing.includes(label)) missing.push(label); };\n  const hasProfile = profile && typeof profile === \"object\";\n\n  if (!hasProfile) {\n    addMissing(\"your resume data\");\n  } else {\n    if (!profile.name || !String(profile.name).trim()) addMissing(\"your full name\");\n    const contact = profile.contact || {};\n    if (!contact.email && !contact.phone) addMissing(\"a contact email or phone number\");\n    if (!profile.summary || !String(profile.summary).trim()) addMissing(\"a short professional summary\");\n    const hasSkills = Array.isArray(profile.skills) && profile.skills.some((s) => {\n      const items = Array.isArray(s?.items) ? s.items.join(\", \") : (s?.items ?? s?.skills);\n      return items && String(items).trim();\n    });\n    if (!hasSkills) addMissing(\"your key skills\");\n    if (!Array.isArray(profile.education) || profile.education.length === 0) addMissing(\"your education details\");\n    if (!Array.isArray(profile.work_experience) || profile.work_experience.length === 0) addMissing(\"your work experience\");\n    if (!Array.isArray(profile.projects) || profile.projects.length === 0) addMissing(\"your projects\");\n  }\n\n  const isSufficient = missing.length === 0;\n  let prompt = \"\";\n  if (!isSufficient) {\n    if (!hasProfile) {\n      prompt = \"Your profile is currently empty. Please upload your resume PDF or send your professional details (starting with your full name) to establish your baseline profile.\";\n    } else {\n      prompt = \"Your profile is incomplete. Please provide your \" + missing[0] + \" next to complete your profile. You can paste the text here or upload your resume PDF.\";\n    }\n  }\n\n  return { isSufficient, missing, prompt };\n};\n\nconst rawProfile = parsed.master_profile ?? $(\"Supabase Fetch\").first().json.master_profile;\nlet profile = null;\ntry { profile = typeof rawProfile === \"string\" ? JSON.parse(rawProfile) : rawProfile; } catch (e) { profile = null; }\n\nconst profile_status = buildStatus(profile);\nparsed.profile_status = profile_status;\n\n// Only append incomplete-profile nudge when the user just updated their profile\n// (not on every query/reply while profile is still being built up)\nif (profile_status.prompt && parsed.profile_updated === true) {\n  parsed.chat_reply = parsed.chat_reply ? parsed.chat_reply + \"\\n\\n\" + profile_status.prompt : profile_status.prompt;\n}\n\nreturn [{ json: parsed }];"
+      },
+      "id": "6e16fd29-888e-40cb-b14b-a836b7b503a1",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35936,
+        138624
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.profile_updated }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "6bfc3a0b-f3d4-4034-9621-d4cb4b2b1834",
+      "name": "Profile Updated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        36448,
+        138624
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Supabase Fetch').item.json.telegram_id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "57ab8fb2-7c6a-4630-aee3-b29014f83303",
+      "name": "Row Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        36672,
+        138560
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_id",
+              "condition": "eq",
+              "keyValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "master_profile",
+              "fieldValue": "={{ JSON.stringify($('Safe Profile Merge').item.json.master_profile) }}"
+            },
+            {
+              "fieldId": "telegram_username",
+              "fieldValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.from.username : $('Telegram Trigger').item.json.message.from.username) }}"
+            }
+          ]
+        }
+      },
+      "id": "14e8fe37-44f1-4ba2-b466-373dbd6bf5d6",
+      "name": "Supabase Update",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        36896,
+        138464
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "Profiles",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "telegram_id",
+              "fieldValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}"
+            },
+            {
+              "fieldId": "master_profile",
+              "fieldValue": "={{ JSON.stringify($('Safe Profile Merge').item.json.master_profile) }}"
+            },
+            {
+              "fieldId": "telegram_username",
+              "fieldValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.from.username : $('Telegram Trigger').item.json.message.from.username) }}"
+            }
+          ]
+        }
+      },
+      "id": "3bffce1e-6df4-49aa-8f06-f836001d2bfe",
+      "name": "Supabase Create",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        36896,
+        138800
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ $('Parse JSON').item.json.chat_reply.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>').replace(/\\*(?!\\s)(.*?)(?<!\\s)\\*/g, '<i>$1</i>').replace(/_(?!\\s)(.*?)(?<!\\s)_/g, '<i>$1</i>').replace(/\\`([^\\`]+)\\`/g, '<code>$1</code>') }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "View Profile",
+                    "additionalFields": {
+                      "callback_data": "/view"
+                    }
+                  },
+                  {
+                    "text": "Download PDF",
+                    "additionalFields": {
+                      "callback_data": "/download"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "95d946df-4147-4b7c-bcaa-1e5ae6059fb0",
+      "name": "Telegram Chat Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        37344,
+        138528
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=base64 -w 0 /tmp/resume_{{ $execution.id }}.pdf && rm -f /tmp/resume_{{ $execution.id }}.tex /tmp/resume_{{ $execution.id }}.pdf /tmp/resume_{{ $execution.id }}.log /tmp/resume_{{ $execution.id }}.aux /tmp/compile_{{ $execution.id }}.log /tmp/chat_{{ $execution.id }}"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        36896,
+        139584
+      ],
+      "id": "ee5a7b1a-f3e2-4df8-970c-835d0fbd3e94",
+      "name": "Read PDF Base64",
+      "credentials": {
+        "sshPassword": {
+          "id": "E3zS3TopCpOFhIu5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3-coder:480b",
+        "options": {}
+      },
+      "id": "057a2326-df6f-44a9-90f3-12f0028180ef",
+      "name": "Ollama",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        35408,
+        138752
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.data : ($('Telegram Trigger').item.json.message?.text || '');\nconst jd = msg.replace(/^\\/optimize\\s*/i, '').trim();\n\nif (!jd) {\n  return [{ json: { promptText: 'NO_JD' } }];\n}\n\nconst rawProfile = $('Supabase Fetch').first().json.master_profile;\nif (!rawProfile) {\n  return [{ json: { promptText: 'NO_PROFILE' } }];\n}\n\nlet profile;\ntry { profile = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile; }\ncatch(e) { return [{ json: { promptText: 'NO_PROFILE' } }]; }\n\nconst promptText = `OPTIMIZE my resume for this Job Description. Remember: COPY my name, contact, education, and certifications EXACTLY. Only rewrite summary, reorder skills, and rephrase bullet points.\n\nMY CURRENT PROFILE:\n${JSON.stringify(profile, null, 2)}\n\nTARGET JOB DESCRIPTION:\n${jd}`;\n\nreturn [{ json: { promptText } }];"
+      },
+      "id": "8a5a5a46-7c63-4b0e-9db3-2894bb96f181",
+      "name": "Format JD Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34256,
+        139952
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.promptText }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=EARLY EXIT RULES (check FIRST before doing any analysis):\n- If the user message is exactly 'NO_JD' → output EXACTLY:\n  {\"chat_reply\": \"⚠️ Please paste the full job description directly after /optimize in one message. Example: /optimize paste JD here\", \"tailored_profile\": null}\n- If the user message is exactly 'NO_PROFILE' → output EXACTLY:\n  {\"chat_reply\": \"⚠️ No profile found. Please upload your resume PDF first, then try /optimize again.\", \"tailored_profile\": null}\n\nYou are an expert AI Resume Optimizer.\n\n[USER'S MASTER PROFILE — THIS IS GROUND TRUTH]\n{{ $('Supabase Fetch').first().json.master_profile ? (typeof $('Supabase Fetch').first().json.master_profile === 'string' ? JSON.stringify(JSON.parse($('Supabase Fetch').first().json.master_profile), null, 2) : JSON.stringify($('Supabase Fetch').first().json.master_profile, null, 2)) : 'NO_PROFILE' }}\n\n[STRICT RULES]\n1. NEVER fabricate or invent ANY data. No fake degrees, no fake companies, no fake projects.\n2. COPY these fields EXACTLY from master_profile without ANY changes:\n   - name, contact (all fields), education (all entries), certifications (all entries)\n3. You MAY ONLY modify:\n   - summary: rewrite to target the JD role\n   - tagline: adjust to match the JD role, BUT it MUST be strictly a short role title ONLY (e.g., 'Full-Stack Developer'). Do not add descriptive sentences.\n   - skills: reorder categories so JD-relevant ones come first. Keep ALL existing items.\n   - work_experience.bullet_points: rephrase to emphasize JD-relevant keywords\n   - projects.bullet_points: rephrase to emphasize JD-relevant keywords\n   - projects order: put most JD-relevant projects first\n4. Every skill category MUST have a non-empty 'items' string. Never leave items blank.\n5. Every work_experience and project MUST keep ALL original bullet_points (rephrase, don't delete).\n\n\n[HUMAN WRITING STYLE & TONE RULES (CRITICAL ANTI-AI CONSTRAINTS)]\nTo ensure all generated resume content (summaries, tagline, bullet points), cover letters, and chat responses look and sound like highly natural, professional, human-written text rather than robotic AI-generated text, you MUST adhere to the following rules:\n\n1. HARD CONSTRAINT ON EM DASHES AND DOUBLE HYPHENS:\n   - Your final output MUST contain absolutely no em dashes (—), en dashes (–), or double hyphens (--, ---) inside text sentences.\n   - Replace each one using a period (to start a new sentence), a comma (for tight asides), a colon (introducing explanation), or parentheses (for true asides), or restructure the sentence entirely.\n\n2. COPULA AVOIDANCE (USE SIMPLE \"IS/ARE/HAS/HAVE\"):\n   - Do not replace simple copulas with elaborate constructions like \"serves as\", \"stands as\", \"boasts\", \"features\", \"offers\", or \"marks\".\n   - Use simple verbs like \"is\", \"are\", \"has\", \"have\", or direct active verbs (e.g., instead of \"boasts 5 years of experience\", write \"has 5 years of experience\").\n\n3. BANNED \"AI VOCABULARY\" WORDS:\n   - Do not use high-frequency AI words. Banned list: align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, highlight (verb), interplay, intricate, intricacies, key (adjective), landscape (abstract), pivotal, showcase, tapestry, testament, underscore (verb), valuable, vibrant, seamlessly, cutting-edge, revolutionary, leverage, leveraging, transformative, meticulously, expertly, proven track record, elevate, multifaceted, catalyst, passionate.\n\n4. NO SUPERFICIAL \"-ING\" ENDINGS:\n   - Do not tack present participle clauses onto the end of sentences to pad the length (e.g., avoid: \"...highlighting X\", \"...ensuring Y\", \"...reflecting Z\", \"...fostering W\", \"...encompassing K\"). Write these as independent clauses or separate sentences.\n\n5. AVOID PERSUASIVE AND NOTABILITY PUFFERY:\n   - Do not add artificial statements about legacy, significance, or broader trends (e.g., \"marking a pivotal moment\", \"setting the stage for\", \"indelible mark\", \"testament to\", \"deeply rooted\"). Keep it completely factual, direct, and grounded.\n   - Do not use persuasive tropes like \"At its core\", \"In reality\", \"What really matters is\", \"Fundamentally\".\n\n6. STRUCTURAL RULES (RULE OF THREE, BOLDING, NEGATIVE PARALLELISMS):\n   - Avoid forcing bullet points or lists into rigid groups of three (the \"rule of three\" tell). Let items have natural lengths.\n   - Avoid boldface overuse inside text blocks.\n   - Do not use negative parallelisms like \"Not only... but also...\" or tailing negation fragments (e.g. \"no guessing\"). Write clean, direct active clauses.\n   - Avoid passive voice; use clear, direct active voice.\n\n\n8. STRICTLY NO EMOJIS:\n   - You are completely banned from using any emojis anywhere in the profile data (bullet points, skills, etc.) or chat reply.\n\n7. NATURAL VOICE AND SOUL:\n   - Write with a grounded, calm, and understated voice. Avoid overly eager, sycophantic, or enthusiastic chatbot phrases (e.g., do not say \"Great! Here is X\", \"I hope this helps!\", \"Certainly!\").\n   - When writing cover letters, avoid generic, excited introductions. Start directly with a clear, calm statement of interest and alignment with the role.\n\n[RESUME CONTENT & QUALITY RULES (CRITICAL ATS & IMPACT IMPROVEMENTS)]\n1. QUANTIFY IMPACT: Ensure bullet points in work experience and projects include specific, tangible metrics (e.g., percentage increases, time saved, project outcomes, scale of data/traffic) where possible rather than just listing duties.\n2. ACTION-ORIENTED LANGUAGE: Use strong, varied active verbs at the start of bullet points. Avoid repeating the same verbs across different sections.\n3. CRISPNESS & CONCISENESS: Keep bullet points crisp, concise, and focused on key achievements. Avoid filler words and overly wordy descriptions.\n4. ATS KEYWORDS: Naturally integrate role-specific keywords and searchability terminology.\n5. FORMAL & CONSISTENT TONE: Maintain a professional, consistent third-person tone (no personal pronouns) and avoid clichés or buzzwords. Ensure uniform formatting and bullet styles across all sections.\n6. PROFILE SUMMARY TONE: The profile summary MUST be written in a professional third-person tone (no first-person pronouns like 'I', 'me', 'my', 'we'). It must NOT start with 'I am [Name]' or similar. Start directly with the professional role or description (e.g., 'Computer Science undergraduate at CET (2027), focused on...'). The 'summary' field MUST NOT contain any first-person pronouns ('I', 'me', 'my', 'we', 'our') or name introductions (e.g., 'I am John Doe', 'John Doe is...'). Clean and rewrite the summary to enforce this format on EVERY parse, update, and optimization.\n\n[YOUR TASK]\nThe user will paste a Job Description. You must:\n1. Identify skill gaps between the JD and the master_profile\n2. Construct a tailored_profile by reframing (not fabricating) existing data\n3. In chat_reply, list 2-3 key optimizations you made and any skill gaps found\n\n[OUTPUT FORMAT — RAW JSON ONLY]\n{\n  \"chat_reply\": \"string — gaps found + optimizations made\",\n  \"tailored_profile\": { EXACT same schema as master_profile with all fields populated }\n}"
+        }
+      },
+      "id": "1ade7087-b9f6-4c64-95a5-2ee4bf7ed7c8",
+      "name": "AI JD Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        34480,
+        139952
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "model": "qwen3-coder:480b",
+        "options": {}
+      },
+      "id": "bc92d912-6381-43f7-b651-44773d7a901d",
+      "name": "Ollama JD",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        34496,
+        140176
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = $input.item.json.output || '';\nlet parsed = {};\ntry {\n  let cleaned = rawText.replace(/```json|```/gi, '').trim();\n  const m = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (m) cleaned = m[0];\n  parsed = JSON.parse(cleaned);\n} catch(e) {\n  parsed = { chat_reply: \"Sorry, I had trouble optimizing your profile. Try again!\", tailored_profile: null };\n}\nreturn [{ json: parsed }];"
+      },
+      "id": "c5127de8-9e2b-43ed-ae18-f4c8e1b17a3f",
+      "name": "Parse JD JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34896,
+        139952
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_id",
+              "condition": "eq",
+              "keyValue": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.message.chat.id : $('Telegram Trigger').first().json.message.chat.id) }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "tailored_profile",
+              "fieldValue": "={{ $('Parse JD JSON').first().json.tailored_profile ? JSON.stringify($('Parse JD JSON').first().json.tailored_profile) : ($('Supabase Fetch').first().json.tailored_profile || null) }}"
+            }
+          ]
+        }
+      },
+      "id": "80c2da2e-a1dc-40be-ae9f-0d58800a8997",
+      "name": "Supabase Save Tailored",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        35184,
+        139952
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ '*Resume Optimization Complete*\\n━━━━━━━━━━━━━━━━━━━━\\n\\n' + $('Parse JD JSON').item.json.chat_reply + '' }}",
+        "replyMarkup": "={{ $('Parse JD JSON').item.json.tailored_profile ? 'inlineKeyboard' : 'none' }}",
+        "forceReply": {},
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "View Optimized Profile",
+                    "additionalFields": {
+                      "callback_data": "/viewOptimized"
+                    }
+                  },
+                  {
+                    "text": "Download PDF",
+                    "additionalFields": {
+                      "callback_data": "/downloadOptimized"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {},
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "d3f30aa8-dff8-46e8-a497-ad66e6bceb5a",
+      "name": "Telegram Optimize Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        35536,
+        139952
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.tailored_profile\n  ?? $('Supabase Fetch').first().json.tailored_profile;\n\nif (!raw) return [{ json: { text: \"No optimized profile exists\" } }];\n\nlet p;\ntry { p = typeof raw === 'string' ? JSON.parse(raw) : raw; }\ncatch(e) { return [{ json: { text: \"❌ Could not read tailored profile. Try running /optimize again.\" } }]; }\n\nconst hasData = p.name || p.summary || p.tagline\n  || (p.skills && p.skills.length > 0)\n  || (p.work_experience && p.work_experience.length > 0);\n\nif (!hasData) return [{ json: { text: \"No optimized profile exists\" } }];\n\nlet msg = `*Tailored Resume Profile*\\n━━━━━━━━━━━━━━━━━━━━\\n\\n`;\n\nif (p.name) msg += `*${p.name}*\\n`;\nif (p.tagline) msg += `_${p.tagline}_\\n`;\nif (p.name || p.tagline) msg += `\\n`;\n\nif (p.contact) {\n  const c = p.contact;\n  const hasContact = c.email || c.phone || c.linkedin_display || c.linkedin_url || c.github_display || c.github_url || c.portfolio_display || c.portfolio_url;\n  if (hasContact) {\n    msg += `*Contact Details*\\n`;\n    if (c.email) msg += `  Email: ${c.email}\\n`;\n    if (c.phone) msg += `  Phone: ${c.phone}\\n`;\n    if (c.linkedin_display || c.linkedin_url) msg += `  LinkedIn: ${c.linkedin_display || c.linkedin_url}\\n`;\n    if (c.github_display || c.github_url) msg += `  GitHub: ${c.github_display || c.github_url}\\n`;\n    if (c.portfolio_display || c.portfolio_url) msg += `  Portfolio: ${c.portfolio_display || c.portfolio_url}\\n`;\n    msg += `\\n`;\n  }\n}\n\nif (p.summary) msg += `*Professional Summary*\\n${p.summary}\\n\\n`;\n\nif (p.education && p.education.length > 0) {\n  msg += `*Education*\\n`;\n  p.education.forEach(e => {\n    msg += `    - *${e.degree}*\\n    ${e.institution}\\n`;\n    if (e.score) msg += `    Score: ${e.score}\\n`;\n    if (e.year) msg += `    Year: ${e.year}\\n`;\n  });\n  msg += `\\n`;\n}\n\nif (p.work_experience && p.work_experience.length > 0) {\n  msg += `*Work Experience*\\n`;\n  p.work_experience.forEach(w => {\n    msg += `\\n  *${w.title}* at ${w.company}`;\n    if (w.location) msg += `, ${w.location}`;\n    msg += `\\n`;\n    if (w.start_date) msg += `  _${w.start_date}${w.end_date ? ' – ' + w.end_date : ' – Present'}_\\n`;\n    if (w.bullet_points && w.bullet_points.length > 0)\n      w.bullet_points.forEach(b => msg += `        - ${b}\\n`);\n  });\n  msg += `\\n`;\n}\n\nif (p.projects && p.projects.length > 0) {\n  msg += `*Projects*\\n`;\n  p.projects.forEach(proj => {\n    msg += `\\n  *${proj.name}*\\n`;\n    if (proj.tech_stack) msg += `  _${proj.tech_stack}_\\n`;\n    if (proj.duration) msg += `  _${proj.duration}_\\n`;\n    if (proj.link_display || proj.link_url) msg += `  🔗 ${proj.link_display || proj.link_url}\\n`;\n    if (proj.bullet_points && proj.bullet_points.length > 0)\n      proj.bullet_points.forEach(b => msg += `        - ${b}\\n`);\n  });\n  msg += `\\n`;\n}\n\nif (p.skills && p.skills.length > 0) {\n  msg += `*Technical Skills*\\n`;\n  p.skills.forEach(s => msg += `    - *${s.category || 'Skill'}:* ${s.items || s}\\n`);\n  msg += `\\n`;\n}\n\nif (p.certifications && p.certifications.length > 0) {\n  msg += `*Certifications*\\n`;\n  p.certifications.forEach(cert => {\n    msg += `    - *${cert.name}*\\n    ${cert.issuer}`;\n    if (cert.year) msg += ` (${cert.year})`;\n    msg += `\\n`;\n  });\n  msg += `\\n`;\n}\n\n\nif (msg.length <= 4096) return [{ json: { text: msg, isLast: true } }];\nconst chunks = []; let current = '';\nfor (const line of msg.split('\\n')) {\n  if ((current + line + '\\n').length > 4000) { chunks.push(current.trim()); current = line + '\\n'; }\n  else current += line + '\\n';\n}\nif (current.trim()) chunks.push(current.trim());\nreturn chunks.map((text, index) => ({ json: { text, isLast: index === chunks.length - 1 } }));"
+      },
+      "id": "54085c60-cac2-408c-ae2b-aa79c7be5077",
+      "name": "Format JD View",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33968,
+        140144
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "={{ $json.isLast ? 'inlineKeyboard' : 'none' }}",
+        "forceReply": {},
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Download PDF",
+                    "additionalFields": {
+                      "callback_data": "/downloadOptimized"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {},
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "4f1e3f4f-8d59-4fb6-8a2c-7898da4d14f3",
+      "name": "Telegram JD View Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34256,
+        140144
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "<b>Welcome to ResumeBot</b>\n\nResumeBot manages your professional profile, allowing you to update your information through natural conversation and generate tailored, ATS-friendly PDF resumes and cover letters for specific job descriptions.\n\n<b>How it works:</b>\n\n1. <b>Upload Resume:</b> Send your current resume as a PDF. The bot will parse the text and establish your baseline <b>Master Profile</b>.\n2. <b>Conversational Updates:</b> Update your details at any time by messaging naturally (e.g., <i>\"I just completed a Python certification\"</i>).\n3. <b>Target a Job:</b> Use <code>/optimize [paste job description]</code> to generate a temporary <b>Tailored Profile</b> optimized for that role.\n\n<b>Command Menu:</b>\n\n<code>/view</code> — Preview your master profile\n<code>/download</code> — Download your master resume as a PDF\n<code>/optimize [JD]</code> — Tailor your profile to a job description\n<code>/viewOptimized</code> — Preview your tailored profile\n<code>/downloadOptimized</code> — Download your tailored resume as a PDF\n<code>/coverletter</code> — Download your tailored cover letter as a PDF\n<code>/analyze [JD]</code> — ATS keyword gap analysis against a job description\n<code>/clear</code> — ⚠️ Permanently delete your entire profile\n<code>/start</code> — View this menu again\n\n<i>Note: Running <code>/optimize</code> only modifies a temporary profile for your current application; your Master Profile is always preserved.</i>",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "View Profile",
+                    "additionalFields": {
+                      "callback_data": "/view"
+                    }
+                  },
+                  {
+                    "text": "Download PDF",
+                    "additionalFields": {
+                      "callback_data": "/download"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "View Optimized",
+                    "additionalFields": {
+                      "callback_data": "/viewOptimized"
+                    }
+                  },
+                  {
+                    "text": "Download Optimized",
+                    "additionalFields": {
+                      "callback_data": "/downloadOptimized"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Generate Cover Letter",
+                    "additionalFields": {
+                      "callback_data": "/coverletter"
+                    }
+                  },
+                  {
+                    "text": "Analyze ATS Score",
+                    "additionalFields": {
+                      "callback_data": "/analyze"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🗑️ Clear Profile",
+                    "additionalFields": {
+                      "callback_data": "/clear"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "0c12e37e-7656-4eef-b315-c1a7bc0edec5",
+      "name": "Telegram Info Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        137488
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Hang on. I'm updating your profile. This might take a few seconds.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_notification": true,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        34896,
+        139216
+      ],
+      "id": "2bb908ba-9f91-46f8-bdc5-dcc9b6902b4a",
+      "name": "Send Update Wait Msg",
+      "webhookId": "320a3c2c-185f-4ff2-b47d-ef92625ddc2e",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.stdout }}",
+              "operation": "contains",
+              "value2": "SUCCESS"
+            }
+          ]
+        }
+      },
+      "id": "93dc3171-3cdd-48ce-baa6-b4a147a09480",
+      "name": "If Compile Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        35184,
+        139488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $('Write LaTeX File').item.json.stdout;\nconst rawTex = Buffer.from($('Generate LaTeX').item.json.tex_b64, 'base64').toString('utf8');\n\nconst promptText = `The following LaTeX code failed to compile with pdflatex. Here is the compile log:\n\n[COMPILE LOG]\n${stdout}\n\n[ORIGINAL LATEX CODE]\n${rawTex}\n\nFix the compilation error (especially check for unescaped special characters like %, &, $, _, #, etc. inside text blocks, missing packages, or table columns mismatches). Return ONLY the corrected raw LaTeX code.`;\n\nreturn [{ json: { promptText } }];"
+      },
+      "id": "2cb8dc2e-a6eb-4cc4-8019-37b33c3da82a",
+      "name": "Format Fix LaTeX Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35536,
+        139376
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.promptText }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a LaTeX expert. Fix any pdflatex compilation errors in the provided LaTeX code. Return ONLY the corrected raw LaTeX code, starting with \\documentclass and ending with \\end{document}. No explanation, no markdown, no backticks."
+        }
+      },
+      "id": "9b780d12-d9ff-418f-9338-ea02a996a064",
+      "name": "AI Fix LaTeX Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        35872,
+        139376
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "model": "qwen3-coder:480b",
+        "options": {}
+      },
+      "id": "2b54a255-6b44-4e86-83ed-24ccbc72a192",
+      "name": "Ollama Fix LaTeX Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        35888,
+        139600
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawTex = $input.item.json.output || '';\nconst cleaned = rawTex.replace(/```latex|```/gi, '').trim();\nreturn [{ json: { fixed_tex_b64: Buffer.from(cleaned).toString('base64') } }];"
+      },
+      "id": "67a18c0d-569f-4c9e-91fc-4f0cfef9bd54",
+      "name": "Base64 Encode Fixed LaTeX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        36224,
+        139376
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=echo \"{{ $json.fixed_tex_b64 }}\" | base64 -d > /tmp/resume_{{ $execution.id }}.tex\ncd /tmp\npdflatex -interaction=nonstopmode resume_{{ $execution.id }}.tex > /tmp/compile_retry_{{ $execution.id }}.log 2>&1\npdflatex -interaction=nonstopmode resume_{{ $execution.id }}.tex >> /tmp/compile_retry_{{ $execution.id }}.log 2>&1\nif [ $? -eq 0 ] && [ -f resume_{{ $execution.id }}.pdf ]; then\n  echo \"SUCCESS\"\nelse\n  echo \"RETRY_FAILED\"\n  cat /tmp/compile_retry_{{ $execution.id }}.log\nfi"
+      },
+      "id": "2b4187b0-3564-4f69-bb42-9ee239f6cf0e",
+      "name": "Write LaTeX File (Retry)",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        36448,
+        139376
+      ],
+      "credentials": {
+        "sshPassword": {
+          "id": "E3zS3TopCpOFhIu5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.stdout }}",
+              "operation": "contains",
+              "value2": "SUCCESS"
+            }
+          ]
+        }
+      },
+      "id": "f20b8a52-da3e-423c-81c8-fa39aa6aa4c8",
+      "name": "If Retry Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        36672,
+        139376
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Oops! I ran into a formatting error while compiling your PDF. Try removing any special math characters and try again.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "04badc77-0af6-420a-811a-61becb625071",
+      "name": "Send Compile Error Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        36896,
+        139088
+      ],
+      "webhookId": "3f3de8d4-fc5e-477e-8a60-49d00e24298e",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.data : ($('Telegram Trigger').item.json.message?.text || '');\nconst jdText = msg.replace(/^\\/coverletter\\s*/i, '').trim();\n// Require at least 80 chars — single words/phrases are not a real JD\nconst hasValidJd = jdText.length >= 80;\nconst rawTailored = $('Supabase Fetch').first().json.tailored_profile;\nconst rawMaster = $('Supabase Fetch').first().json.master_profile;\nif (hasValidJd) {\n  if (!rawMaster) {\n    return [{ json: { success: false, text: \"📭 No profile found. Please upload your resume PDF first before generating a cover letter!\" } }];\n  }\n  let profile;\n  try { profile = typeof rawMaster === 'string' ? JSON.parse(rawMaster) : rawMaster; }\n  catch(e) { return [{ json: { success: false, text: \"❌ Could not read profile data.\" } }]; }\n  return [{ json: { success: true, profile, jd: jdText, mode: 'jd' } }];\n} else {\n  const raw = rawTailored || rawMaster;\n  if (!raw) {\n    return [{ json: { success: false, text: \"📭 No profile found. Please upload your resume PDF or run /optimize first before generating a cover letter!\" } }];\n  }\n  let profile;\n  try { profile = typeof raw === 'string' ? JSON.parse(raw) : raw; }\n  catch(e) { return [{ json: { success: false, text: \"❌ Could not read profile data.\" } }]; }\n  const mode = rawTailored ? 'tailored' : 'master';\n  return [{ json: { success: true, profile, jd: null, mode } }];\n}"
+      },
+      "id": "a21cdc38-66d9-4c64-a8f4-30408b3febc7",
+      "name": "Check Cover Letter Profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        33968,
+        140528
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "f2329db5-378f-4b24-9675-dcd1e60263a3",
+      "name": "If CL Profile Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        34256,
+        140528
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ $json.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "4750ce21-5bcc-405a-ad28-7dc59513c4b3",
+      "name": "Send CL Error Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34544,
+        140624
+      ],
+      "webhookId": "284197df-db4f-4a91-9cc0-9ab94f67fc05",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Please write a professional, highly-tailored cover letter based on the candidate's profile. Focus on the candidate's fit for the target role.\n\n[CRITICAL: HUMAN WRITING STYLE & TONE RULES]\n\n1. HARD CONSTRAINT ON EM DASHES AND DOUBLE HYPHENS:\n   - Your final output MUST contain absolutely no em dashes (—), en dashes (–), or double hyphens (--, ---) inside text sentences.\n   - Replace each one using a period (to start a new sentence), a comma (for tight asides), a colon (introducing explanation), or parentheses (for true asides), or restructure the sentence entirely.\n\n2. COPULA AVOIDANCE (USE SIMPLE \"IS/ARE/HAS/HAVE\"):\n   - Do not replace simple copulas with elaborate constructions like \"serves as\", \"stands as\", \"boasts\", \"features\", \"offers\", or \"marks\".\n   - Use simple verbs like \"is\", \"are\", \"has\", \"have\", or direct active verbs (e.g., instead of \"boasts 5 years of experience\", write \"has 5 years of experience\").\n\n3. BANNED \"AI VOCABULARY\" WORDS:\n   - Do not use high-frequency AI words. Banned list: align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, highlight (verb), interplay, intricate, intricacies, key (adjective), landscape (abstract), pivotal, showcase, tapestry, testament, underscore (verb), valuable, vibrant, seamlessly, cutting-edge, revolutionary, leverage, leveraging, transformative, meticulously, expertly, proven track record, elevate, multifaceted, catalyst, passionate.\n\n4. NO SUPERFICIAL \"-ING\" ENDINGS:\n   - Do not tack present participle clauses onto the end of sentences to pad the length (e.g., avoid: \"...highlighting X\", \"...ensuring Y\", \"...reflecting Z\", \"...fostering W\", \"...encompassing K\"). Write these as independent clauses or separate sentences.\n\n5. AVOID PERSUASIVE AND NOTABILITY PUFFERY:\n   - Do not add artificial statements about legacy, significance, or broader trends (e.g., \"marking a pivotal moment\", \"setting the stage for\", \"indelible mark\", \"testament to\", \"deeply rooted\"). Keep it completely factual, direct, and grounded.\n   - Do not use persuasive tropes like \"At its core\", \"In reality\", \"What really matters is\", \"Fundamentally\".\n\n6. STRUCTURAL RULES (RULE OF THREE, BOLDING, NEGATIVE PARALLELISMS):\n   - Avoid forcing bullet points or lists into rigid groups of three (the \"rule of three\" tell). Let items have natural lengths.\n   - Avoid boldface overuse inside text blocks.\n   - Do not use negative parallelisms like \"Not only... but also...\" or tailing negation fragments (e.g. \"no guessing\"). Write clean, direct active clauses.\n   - Avoid passive voice; use clear, direct active voice.\n\n7. NATURAL VOICE AND SOUL:\n   - Write with a grounded, calm, and understated voice. Avoid overly eager, sycophantic, or enthusiastic chatbot phrases (e.g., do not say \"Great! Here is X\", \"I hope this helps!\", \"Certainly!\").\n   - When writing cover letters, avoid generic, excited introductions. Start directly with a clear, calm statement of interest and alignment with the role.\n\nYour response must be a JSON object containing exactly the \"cover_letter\" key with the following structure:\n{\n  \"cover_letter\": {\n    \"subject_role\": \"string - target role name, e.g. UI/UX Designer & AI Tools Specialist\",\n    \"recipient\": \"string - e.g. Hiring Manager\",\n    \"paragraph_1\": \"string - introduction paragraph (3-4 sentences)\",\n    \"paragraph_2\": \"string - second paragraph highlighting key experiences (3-4 sentences)\",\n    \"bullet_points\": [\n      {\n        \"title\": \"string - brief highlight category (e.g., Full-Stack Development)\",\n        \"detail\": \"string - 1-2 sentence detailed accomplishment\"\n      }\n    ],\n    \"paragraph_3\": \"string - concluding paragraph and call to action\"\n  }\n}\n\nDo not include any explanation, markdown formatting, or backticks outside the JSON. Return only the raw JSON.",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "={{ \"You are a professional cover letter writer. Write in a natural, understated, human-like voice, avoiding AI clichés. Here is the candidate's profile: \" + JSON.stringify($('Check Cover Letter Profile').item.json.profile) + ($('Check Cover Letter Profile').item.json.jd ? \"\\n\\nTarget Job Description:\\n\" + $('Check Cover Letter Profile').item.json.jd : '') }}"
+        }
+      },
+      "id": "106bfa90-9ebd-46d6-b007-5dd7f5db8ec4",
+      "name": "AI Cover Letter Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        34832,
+        140384
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "model": "qwen3-coder:480b",
+        "options": {}
+      },
+      "id": "2b10d9d7-aa76-4687-bd70-a7c13cfff5ce",
+      "name": "Ollama CL Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        34848,
+        140608
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Check Cover Letter Profile').item.json.profile;\nconst p = typeof raw === 'string' ? JSON.parse(raw) : raw;\nconst rawOutput = $input.item.json.output || '';\n\nfunction esc(str) {\n  if (!str) return '';\n  return String(str)\n    .replace(/\\\\/g, '\\\\textbackslash{}')\n    .replace(/([&%$#{}])/g, '\\\\$1')\n    .replace(/~/g, '\\\\textasciitilde{}')\n    .replace(/\\^/g, '\\\\textasciicircum{}')\n    .replace(/_/g, '\\\\_');\n}\n\nfunction url(str) {\n  if (!str) return '';\n  // Only encode characters that would actually break LaTeX href parsing.\n  // Do NOT apply esc() to URLs — it breaks underscores and # anchors.\n  return String(str).replace(/%/g, '\\\\%').replace(/\\\\/g, '/');\n}\n\n\n\nfunction extractUrls(text) {\n  if (!text) return [];\n  const regex = /(?:https?:\\/\\/|www\\.)[^\\s,\\|'\"]+|[a-zA-Z0-9.-]+\\.(?:com|app|net|io|me|dev|tech|co|org)(?:\\/[^\\s,\\|'\"]*)?/gi;\n  return text.match(regex) || [];\n}\n\nfunction getValidUrl(urlStr, displayStr) {\n  const urls = [];\n  if (urlStr) urls.push(...extractUrls(urlStr));\n  if (urls.length === 0 && displayStr) urls.push(...extractUrls(displayStr));\n  if (urls.length > 0) {\n      let u = urls[0];\n      if (!u.startsWith('http')) u = 'https://' + u;\n      return u;\n  }\n  return null;\n}\n\nconst c = p.contact || {};\n\nconst nameBlock = `{\\\\LARGE \\\\textbf{${esc(p.name)}}}`;\nconst taglineBlock = p.tagline ? `\\\\textit{${esc(p.tagline.substring(0, 100))}}` : '';\nconst emailBlock = c.email ? `\\\\href{mailto:${url(c.email)}}{${esc(c.email)}}` : '';\n\nlet phoneBlock = '';\nif (c.phone) {\n  const cleanPhone = c.phone.replace(/[^+\\d]/g, '');\n  phoneBlock = `\\\\href{tel:${cleanPhone}}{${esc(c.phone)}}`;\n}\n\nfunction getCleanDisplay(urlStr, displayVal, defaultLabel) {\n  if (displayVal && displayVal.trim() && displayVal.trim().toLowerCase() !== defaultLabel.toLowerCase()) {\n    return displayVal.trim();\n  }\n  if (urlStr) {\n    return urlStr.trim().replace(/^(https?:\\/\\/)?(www\\.)?/, '').replace(/\\/$/, '');\n  }\n  return defaultLabel;\n}\n\nlet linkedinBlock = '';\nif (c.linkedin_url || c.linkedin_display) {\n  const display = getCleanDisplay(c.linkedin_url, c.linkedin_display, 'LinkedIn');\n  const u = getValidUrl(c.linkedin_url, c.linkedin_display);\n  linkedinBlock = u ? `\\\\href{${url(u)}}{LinkedIn: ${esc(display)}}` : `LinkedIn: ${esc(display)}`;\n}\n\nlet githubBlock = '';\nif (c.github_url || c.github_display) {\n  const display = getCleanDisplay(c.github_url, c.github_display, 'GitHub');\n  const u = getValidUrl(c.github_url, c.github_display);\n  githubBlock = u ? `\\\\href{${url(u)}}{GitHub: ${esc(display)}}` : `GitHub: ${esc(display)}`;\n}\n\nlet portfolioBlock = '';\nif (c.portfolio_url || c.portfolio_display) {\n  const display = getCleanDisplay(c.portfolio_url, c.portfolio_display, 'Portfolio');\n  const u = getValidUrl(c.portfolio_url, c.portfolio_display);\n  portfolioBlock = u ? `\\\\href{${url(u)}}{Portfolio: ${esc(display)}}` : `Portfolio: ${esc(display)}`;\n}\n\nlet row3Right = '';\nlet row4Left = '';\nif (portfolioBlock) {\n  row3Right = portfolioBlock;\n  row4Left = githubBlock;\n} else {\n  row3Right = githubBlock;\n  row4Left = '';\n}\n\nlet headerBlock = '\\\\begin{tabular*}{\\\\textwidth}{l@{\\\\extracolsep{\\\\fill}}r}\\\\n';\nheaderBlock += `  ${nameBlock} & ${emailBlock} \\\\\\\\\\\\\\\\\\\\n`;\nheaderBlock += `  ${taglineBlock} & ${phoneBlock} \\\\\\\\\\\\\\\\\\\\n`;\nheaderBlock += `  ${linkedinBlock} & ${row3Right} \\\\\\\\\\\\\\\\\\\\n`;\nif (row4Left) {\n  headerBlock += `  ${row4Left} &  \\\\\\\\\\\\\\\\\\\\n`;\n}\nheaderBlock += '\\\\end{tabular*}\\\\n';\n\n\nlet cl = {};\ntry {\n  const cleaned = rawOutput.replace(/\\`\\`\\`json|\\`\\`\\`/gi, '').trim();\n  const parsed = JSON.parse(cleaned);\n  cl = parsed.cover_letter || parsed;\n} catch (e) {\n  console.warn('Failed to parse cover letter JSON output, falling back to plain text parsing:', e);\n  cl = {\n    subject_role: p.tagline || 'Software Developer',\n    recipient: 'Hiring Manager',\n    paragraph_1: rawOutput || 'I am excited to apply for this position.',\n    paragraph_2: '',\n    bullet_points: [],\n    paragraph_3: ''\n  };\n}\n\nlet bulletsTex = '';\nif (cl.bullet_points && Array.isArray(cl.bullet_points)) {\n  cl.bullet_points.forEach(b => {\n    if (b && (b.title || b.detail)) {\n      bulletsTex += `    \\\\item \\\\textbf{${esc(b.title || '')}:} ${esc(b.detail || '')}\\n`;\n    }\n  });\n}\n\nconst tex = `\\\\documentclass[a4paper,11pt]{article}\n\\\\usepackage{latexsym}\n\\\\usepackage{ragged2e}\n\\\\usepackage[empty]{fullpage}\n\\\\usepackage{titlesec}\n\\\\usepackage{geometry}\n\\\\usepackage{verbatim}\n\\\\usepackage{enumitem}\n\\\\usepackage[hidelinks]{hyperref}\n\\\\usepackage{fancyhdr}\n\\\\usepackage{cfr-lm}\n\\\\usepackage[T1]{fontenc}\n\\\\pagestyle{fancy}\n\\\\fancyhf{}\n\\\\fancyfoot{}\n\\\\renewcommand{\\\\headrulewidth}{0pt}\n\\\\renewcommand{\\\\footrulewidth}{0pt}\n\\\\geometry{left=1.4cm, top=0.8cm, right=1.2cm, bottom=1cm}\n\\\\urlstyle{same}\n\\\\raggedright\n\\\\setlength{\\\\tabcolsep}{0in}\n\n\\\\begin{document}\n\\\\fontfamily{cmr}\\\\selectfont\n\n%--- RESUME-MATCHING HEADER ---\n${headerBlock}\n\n\\\\vspace{2.5em}\n\n\\\\hfill \\\\today\n\n\\\\vspace{1.5em}\n\n\\\\textbf{Subject: Application for ${esc(cl.subject_role || 'Software Developer')}}\n\n\\\\vspace{1em}\n\nDear ${esc(cl.recipient || 'Hiring Manager')},\n\n${esc(cl.paragraph_1 || '')}\n\n${cl.paragraph_2 ? '\\\\vspace{0.5em}\\n' + esc(cl.paragraph_2) : ''}\n\n${bulletsTex ? '\\\\vspace{0.5em}\\nKey highlights of my technical experience include:\\n\\n\\\\begin{itemize}[leftmargin=*, itemsep=3pt, topsep=4pt]\\n' + bulletsTex + '\\\\end{itemize}' : ''}\n\n${cl.paragraph_3 ? '\\\\vspace{0.5em}\\n' + esc(cl.paragraph_3) : ''}\n\n\\\\vspace{2em}\nSincerely,\\n\\n\\\\vspace{0.5em}\n${esc(p.name)}\n\n\\\\end{document}`;\n\nreturn [{ json: { success: true, cl_tex_b64: Buffer.from(tex).toString('base64') } }];"
+      },
+      "id": "bab4e150-cde2-458c-8968-5b3c20c7b615",
+      "name": "Generate LaTeX Cover Letter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35184,
+        140384
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=echo \"{{ $json.cl_tex_b64 }}\" | base64 -d > /tmp/cl_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.tex\ncd /tmp\npdflatex -interaction=nonstopmode cl_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.tex > /tmp/cl_compile_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.log 2>&1\nif [ $? -eq 0 ] && [ -f cl_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.pdf ]; then\n  echo -n \"SUCCESS:\"\n  base64 -w 0 cl_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.pdf\n  rm -f cl_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.*\nelse\n  echo \"COMPILE_ERROR\"\n  cat /tmp/cl_compile_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.log\n  rm -f cl_{{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}.*\nfi"
+      },
+      "id": "f1b47b6a-ea05-4d8a-be41-91a196b99561",
+      "name": "Compile Cover Letter",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        35536,
+        140384
+      ],
+      "credentials": {
+        "sshPassword": {
+          "id": "E3zS3TopCpOFhIu5",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.stdout }}",
+              "operation": "contains",
+              "value2": "SUCCESS:"
+            }
+          ]
+        }
+      },
+      "id": "55e7efa5-9cce-4009-a7ea-98de8ae865ff",
+      "name": "If CL Compile Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        35936,
+        140384
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Oops! I ran into an error while compiling your Cover Letter PDF. Try checking your profile details for formatting issues.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "4a985668-c978-416f-8f8c-ad7c387cf05c",
+      "name": "Send CL Compile Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        36224,
+        140480
+      ],
+      "webhookId": "681762b9-0696-4eae-8b5c-98d4743d50ce",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.item.json.stdout || '';\nconst match = stdout.match(/SUCCESS:\\s*([A-Za-z0-9+/=\\s\\r\\n]+)/);\nconst b64 = match ? match[1].replace(/[\\s\\r\\n]/g, '') : '';\nconst chatId = ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id);\nreturn [{\n  json: { success: !!b64 },\n  binary: {\n    pdf_doc: {\n      data: b64,\n      mimeType: 'application/pdf',\n      fileName: `cover_letter_${chatId}.pdf`\n    }\n  }\n}];"
+      },
+      "id": "37351e4f-76f4-4717-add2-3d2a4aebbb5a",
+      "name": "Decode CL PDF Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        36224,
+        140064
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "binaryData": true,
+        "binaryPropertyName": "pdf_doc",
+        "additionalFields": {
+          "caption": "Here is your tailored cover letter!",
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "22e2cbbf-1c9f-4bab-bdee-ecbd9140355e",
+      "name": "Send CL PDF (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        36448,
+        140064
+      ],
+      "webhookId": "d53fcf7a-fa23-465d-a986-390f05874262",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Compiling your resume PDF. Please wait a moment...",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "8b7850c7-6bdf-4a7d-8e47-ecd1fd4ddedf",
+      "name": "Send Resume Compile Wait Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        139584
+      ],
+      "webhookId": "49d82bbe-e7b2-4dad-87fc-d9799487f88a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Analyzing the job description and tailoring your profile. This will take a few seconds...",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "c005de50-5c1b-48b0-9049-1c15905604ab",
+      "name": "Send Optimize Wait Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        139952
+      ],
+      "webhookId": "be604e86-7f9a-483f-a54f-c68048a5336c",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Drafting and compiling your tailored cover letter PDF. Please wait...",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "eb70b41e-617e-44e3-acf2-388751f9a0fa",
+      "name": "Send CL Wait Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34544,
+        140384
+      ],
+      "webhookId": "594eca53-6f4d-4c00-9966-363b51ca8642",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('Parse JSON').item.json.profile_status.isSufficient }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c0e6d0a9-f3fd-4979-aaf1-ffae464f881c",
+      "name": "Chat Profile Sufficient?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        37120,
+        138624
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ $('Parse JSON').item.json.chat_reply.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>').replace(/\\*(?!\\s)(.*?)(?<!\\s)\\*/g, '<i>$1</i>').replace(/_(?!\\s)(.*?)(?<!\\s)_/g, '<i>$1</i>').replace(/\\`([^\\`]+)\\`/g, '<code>$1</code>') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "50c16893-9e45-42ec-92ad-e164f25171d8",
+      "name": "Telegram Chat Reply (No Buttons)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        37344,
+        139024
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ (() => { const prompt = $('Assess Master Profile').item.json.profile_status.prompt; const res = prompt ? '👋 Hi! ' + prompt : '👋 Hi! I\\'m ready to help. Type /start to see what I can do.'; return res.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); })() }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "6852b7b3-d028-454a-80c2-90118715086d",
+      "name": "Greeting Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        137296
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ ($('Assess Master Profile').item.json.profile_status.prompt || '📭 Please upload your resume PDF or tell me about yourself to build your profile.').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "d4a1dd9b-7930-4d12-b54a-613161ece240",
+      "name": "Profile Incomplete Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        137680
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Profiles",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_username",
+              "condition": "eq",
+              "keyValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.from.username : $('Telegram Trigger').item.json.message.from.username) }}"
+            }
+          ]
+        }
+      },
+      "id": "d8380fe5-bc13-4fcf-ad4c-7c0f2ab202a2",
+      "name": "Supabase Fetch by Username",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        32560,
+        138832
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const byId = $('Supabase Fetch by ID').first().json;\nconst byUsername = $('Supabase Fetch by Username').first().json;\n\nconst foundById = byId && byId.telegram_id;\nconst foundByUsername = byUsername && byUsername.telegram_id;\n\nconst found = foundById ? byId : (foundByUsername ? byUsername : {});\nreturn [{ json: found }];"
+      },
+      "id": "2fe14467-2df8-4123-974f-7ef0643db93f",
+      "name": "Supabase Fetch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32784,
+        138832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Supabase Fetch by ID').first().json.telegram_id }}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{ $('Supabase Fetch by Username').first().json.telegram_id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "fcfe1cc5-ed27-49ba-8b61-5d79b16419dd",
+      "name": "Check Migration Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        33008,
+        138832
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_username",
+              "condition": "eq",
+              "keyValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.from.username : $('Telegram Trigger').item.json.message.from.username) }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "telegram_id",
+              "fieldValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}"
+            }
+          ]
+        }
+      },
+      "id": "366d46b1-868d-479b-bc95-eb066fc4ddef",
+      "name": "Supabase Migrate ID",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        33232,
+        138896
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Received your resume PDF! 📄 I am now extracting, analyzing, and structuring your profile details. This will take a few seconds...",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "c43183c9-5761-4d2a-ae92-d931a2c06f8b",
+      "name": "Send PDF Wait Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34256,
+        138448
+      ],
+      "webhookId": "594eca53-6f4d-4c00-9966-363b51ca8643",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "rnj-1:8b",
+        "options": {}
+      },
+      "id": "3a26eb43-67b0-442f-ad14-0abdd03ab40a",
+      "name": "Classifier Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        35472,
+        139152
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "needsFallback": true,
+        "options": {}
+      },
+      "id": "4d62ce7d-95da-4201-91de-0808a76232ac",
+      "name": "Intent Classifier",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        33904,
+        139040
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Heuristic-first intent classification ─────────────────────────────────\n// Run a fast local check before trusting the LLM classifier output.\n// If the message clearly looks like a QUERY, short-circuit to QUERY.\n// If it clearly looks like an UPDATE, short-circuit to UPDATE.\n// Only fall back to the LLM's answer when neither heuristic matches.\n\nconst msg = ($('Telegram Trigger').first().json.message?.text || '').trim().toLowerCase();\n\nconst queryStarters = [\n  'what', 'which', 'who', 'where', 'when', 'how', 'show', 'how many', 'how much',\n  'do i have', 'did i', 'is my', 'are my', 'can you tell', 'show me',\n  'list my', 'what are', 'what is', 'what was', 'what were',\n  'tell me', 'give me', 'find my', 'check my', 'do i',\n];\n\nconst updateStarters = [\n  'add', 'update', 'change', 'set', 'remove', 'delete', 'fix', 'correct',\n  'edit', 'replace', 'my new', 'i have', 'i got', 'i just', 'i completed',\n  'i finished', 'i am working', 'i joined', 'i started', 'i built',\n  'i created', 'i made', 'i earned', 'i received', 'my current',\n];\n\nconst isLikelyQuery  = queryStarters.some(s  => msg.startsWith(s) || msg.includes(' ' + s + ' '));\nconst isLikelyUpdate = updateStarters.some(s => msg.startsWith(s));\n\n// Heuristic: QUERY wins if no update-starter detected; UPDATE wins if explicit update language\nlet heuristicIntent = null;\nif (isLikelyQuery && !isLikelyUpdate)  heuristicIntent = 'QUERY';\nif (isLikelyUpdate && !isLikelyQuery)  heuristicIntent = 'UPDATE';\n\n// Parse the LLM's output regardless (it's already been called upstream)\nlet rawText = $input.item.json.output || '';\nlet parsed = {};\ntry {\n  let cleaned = rawText.replace(/```json|```/gi, '').trim();\n  const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) cleaned = jsonMatch[0];\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parsed = { intent: 'UPDATE' };\n}\n\n// Apply heuristic override when confident\nif (heuristicIntent) {\n  parsed.intent = heuristicIntent;\n}\n\n// Sanitise: intent must be either QUERY or UPDATE\nif (!['QUERY', 'UPDATE'].includes(parsed.intent)) {\n  parsed.intent = 'UPDATE';\n}\n\nreturn [{ json: parsed }];"
+      },
+      "id": "cef03a03-94b2-4ea7-8425-439e73adf60c",
+      "name": "Parse Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34256,
+        139040
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.intent }}",
+              "value2": "QUERY"
+            }
+          ]
+        }
+      },
+      "id": "3f7d7e29-01e8-44df-ad97-aec0b017da18",
+      "name": "Is Query Intent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        34544,
+        139040
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Reviewing your profile details...",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_notification": true,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "e4c71ce2-5d6c-4ee1-b920-56b52aa2ddda",
+      "name": "Send Query Wait Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        34896,
+        139024
+      ],
+      "webhookId": "320a3c2c-185f-4ff2-b47d-ef92625ddc2f",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userQuestion }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=You are an expert AI Resume assistant. Your job is to answer the user's question about their professional profile using ONLY their saved master profile context.\n\n[USER PROFILE]\n{{ $json.profileContext }}\n\n[STRICT RULES]\n1. Answer the question directly, accurately, and concisely in a professional, human voice.\n2. Do not invent or assume any facts. Use ONLY the data shown above.\n3. If the information is not present in the profile above, say so clearly.\n\n[TONE]\n- Write with a grounded, calm, understated voice.\n- No em dashes, no en dashes, no double hyphens.\n- Use direct active voice."
+        }
+      },
+      "id": "8ba04557-9156-45ac-bcdf-a318d017990d",
+      "name": "Query Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        35472,
+        138928
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.message.chat.id : $('Telegram Trigger').first().json.message.chat.id) }}",
+        "text": "={{ $json.output.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>').replace(/\\*(?!\\s)(.*?)(?<!\\s)\\*/g, '<i>$1</i>').replace(/_(?!\\s)(.*?)(?<!\\s)_/g, '<i>$1</i>').replace(/\\`([^\\`]+)\\`/g, '<code>$1</code>') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "66844331-cfc1-459e-91e8-3a65b74c4de3",
+      "name": "Send Query Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        36224,
+        139024
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "rnj-1:8b",
+        "options": {}
+      },
+      "id": "25272731-12b5-402c-b2b9-5d0db1110077",
+      "name": "Classifier Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        33920,
+        139264
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $('Supabase Fetch').first().json.master_profile;\nif (!raw) return [{ json: { profileContext: 'NO PROFILE DATA FOUND. The user has not uploaded a resume yet.', userQuestion: $('Telegram Trigger').item.json.message.text } }];\n\nlet p;\ntry { p = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e) { return [{ json: { profileContext: 'ERROR: Could not parse profile data.', userQuestion: $('Telegram Trigger').item.json.message.text } }]; }\n\nlet ctx = '';\n\nif (p.name) ctx += 'Name: ' + p.name + '\\n';\nif (p.tagline) ctx += 'Tagline: ' + p.tagline + '\\n';\n\nif (p.contact) {\n  const c = p.contact;\n  if (c.email) ctx += 'Email: ' + c.email + '\\n';\n  if (c.phone) ctx += 'Phone: ' + c.phone + '\\n';\n  if (c.linkedin_url) ctx += 'LinkedIn: ' + (c.linkedin_display || c.linkedin_url) + '\\n';\n  if (c.github_url) ctx += 'GitHub: ' + (c.github_display || c.github_url) + '\\n';\n  if (c.portfolio_url) ctx += 'Portfolio: ' + (c.portfolio_display || c.portfolio_url) + '\\n';\n}\n\nif (p.summary) ctx += '\\nProfessional Summary: ' + p.summary + '\\n';\n\nif (p.education && p.education.length > 0) {\n  ctx += '\\nEducation:\\n';\n  p.education.forEach(e => {\n    ctx += '  - ' + (e.degree || '') + ' from ' + (e.institution || '');\n    if (e.score) ctx += ', Score: ' + e.score;\n    if (e.year) ctx += ', Year: ' + e.year;\n    ctx += '\\n';\n  });\n}\n\nif (p.work_experience && p.work_experience.length > 0) {\n  ctx += '\\nWork Experience:\\n';\n  p.work_experience.forEach(w => {\n    ctx += '  - ' + (w.title || '') + ' at ' + (w.company || '');\n    if (w.location) ctx += ', ' + w.location;\n    if (w.start_date) ctx += ' (' + w.start_date + ' to ' + (w.end_date || 'Present') + ')';\n    ctx += '\\n';\n    if (w.bullet_points && w.bullet_points.length > 0)\n      w.bullet_points.forEach(b => ctx += '    * ' + b + '\\n');\n  });\n}\n\nif (p.projects && p.projects.length > 0) {\n  ctx += '\\nProjects:\\n';\n  p.projects.forEach(proj => {\n    ctx += '  - ' + (proj.name || '');\n    if (proj.tech_stack) ctx += ' (' + proj.tech_stack + ')';\n    if (proj.duration) ctx += ' [' + proj.duration + ']';\n    ctx += '\\n';\n    if (proj.bullet_points && proj.bullet_points.length > 0)\n      proj.bullet_points.forEach(b => ctx += '    * ' + b + '\\n');\n  });\n}\n\nif (p.skills && p.skills.length > 0) {\n  ctx += '\\nSkills:\\n';\n  p.skills.forEach(s => {\n    const cat = s.category || s.name || 'General';\n    const items = Array.isArray(s.items) ? s.items.join(', ') : (s.items || '');\n    if (items) ctx += '  - ' + cat + ': ' + items + '\\n';\n  });\n}\n\nif (p.certifications && p.certifications.length > 0) {\n  ctx += '\\nCertifications:\\n';\n  p.certifications.forEach(cert => {\n    ctx += '  - ' + (cert.name || '') + ' by ' + (cert.issuer || '');\n    if (cert.year) ctx += ' (' + cert.year + ')';\n    ctx += '\\n';\n  });\n}\n\nreturn [{ json: { profileContext: ctx.trim(), userQuestion: $('Telegram Trigger').item.json.message.text } }];"
+      },
+      "id": "95971ff3-fbd7-42b0-aafc-72c9f5c4e3d0",
+      "name": "Format Query Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35184,
+        139024
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Analyzing your profile against the job description. This will take a moment...",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "00c8a266-2e83-4218-8955-a34ed538bdc6",
+      "name": "Send Analyze Wait Msg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        140928
+      ],
+      "webhookId": "f1e2d3c4-b5a6-7890-fedc-ba9876543210",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.data : ($('Telegram Trigger').first().json.message?.text || '');\nconst jd = msg.replace(/^\\/analyze\\s*/i, '').trim();\n\nif (!jd) {\n  return [{ json: {\n    profileText: '',\n    jdText: '',\n    error: 'NO_JD'\n  }}];\n}\n\nconst raw = $('Supabase Fetch').first().json.master_profile;\nif (!raw) {\n  return [{ json: {\n    profileText: '',\n    jdText: jd,\n    error: 'NO_PROFILE'\n  }}];\n}\n\nlet p;\ntry { p = typeof raw === 'string' ? JSON.parse(raw) : raw; }\ncatch(e) { return [{ json: { profileText: '', jdText: jd, error: 'PARSE_ERROR' } }]; }\n\n// Build a compact plain-text representation of the profile\nlet profile = '';\nif (p.name)    profile += 'Name: ' + p.name + '\\n';\nif (p.tagline) profile += 'Tagline: ' + p.tagline + '\\n';\nif (p.summary) profile += 'Summary: ' + p.summary + '\\n';\n\nif (p.skills && p.skills.length > 0) {\n  profile += '\\nSkills:\\n';\n  p.skills.forEach(s => {\n    const cat = s.category || s.name || 'General';\n    const items = Array.isArray(s.items) ? s.items.join(', ') : (s.items || '');\n    if (items) profile += '  - ' + cat + ': ' + items + '\\n';\n  });\n}\n\nif (p.work_experience && p.work_experience.length > 0) {\n  profile += '\\nWork Experience:\\n';\n  p.work_experience.forEach(w => {\n    profile += '  - ' + (w.title || '') + ' at ' + (w.company || '') + '\\n';\n    if (w.bullet_points && w.bullet_points.length > 0)\n      w.bullet_points.forEach(b => profile += '    * ' + b + '\\n');\n  });\n}\n\nif (p.projects && p.projects.length > 0) {\n  profile += '\\nProjects:\\n';\n  p.projects.forEach(proj => {\n    profile += '  - ' + (proj.name || '');\n    if (proj.tech_stack) profile += ' (' + proj.tech_stack + ')';\n    profile += '\\n';\n    if (proj.bullet_points && proj.bullet_points.length > 0)\n      proj.bullet_points.forEach(b => profile += '    * ' + b + '\\n');\n  });\n}\n\nif (p.certifications && p.certifications.length > 0) {\n  profile += '\\nCertifications:\\n';\n  p.certifications.forEach(c => {\n    profile += '  - ' + (c.name || '') + ' by ' + (c.issuer || '') + '\\n';\n  });\n}\n\nif (p.education && p.education.length > 0) {\n  profile += '\\nEducation:\\n';\n  p.education.forEach(e => {\n    profile += '  - ' + (e.degree || '') + ' from ' + (e.institution || '') + '\\n';\n  });\n}\n\nreturn [{ json: { profileText: profile.trim(), jdText: jd, error: null } }];"
+      },
+      "id": "19388d1c-094e-4db4-80af-b8909995b06a",
+      "name": "Format ATS Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34256,
+        140928
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.error === 'NO_JD' ? 'No job description provided.' : ($json.error === 'NO_PROFILE' ? 'No profile found.' : 'Analyze the profile against the job description and return the ATS gap analysis.') }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=EARLY EXIT RULES (check FIRST before doing any analysis):\n- If the user message is exactly 'No job description provided.' → reply ONLY: '⚠️ Please include a job description after /analyze. Example:\\n/analyze [paste full job description here]'\n- If the user message is exactly 'No profile found.' → reply ONLY: '⚠️ No profile found. Please upload your resume PDF first, then try /analyze again.'\n- For any other error message starting with 'Error:' → reply ONLY with a short apology and the error.\n\nYou are an expert ATS (Applicant Tracking System) analyst and career coach. You will receive a candidate's profile and a job description. Your job is to:\n\n1. Calculate an overall ATS match percentage (0-100%) based on keyword and skill alignment.\n2. List the hard/technical skills mentioned in the JD that are MISSING from the profile.\n3. List the soft skills or competencies mentioned in the JD that are MISSING from the profile.\n4. List the keywords and buzzwords from the JD that should appear in the resume.\n5. Give 3 to 5 specific, actionable recommendations to improve the match score.\n\n[CANDIDATE PROFILE]\n{{ $json.profileText }}\n\n[JOB DESCRIPTION]\n{{ $json.jdText }}\n\n[RULES]\n- Be direct, honest, and concise. No filler.\n- If the profile text is empty, say so.\n- Use plain text only. No JSON. No markdown headers with #.\n- Structure your response exactly like this:\n\nMatch Score: [X%]\n\nMissing Hard Skills:\n- [skill 1]\n- [skill 2]\n\nMissing Soft Skills / Competencies:\n- [skill 1]\n\nKeywords to Add:\n- [keyword 1]\n- [keyword 2]\n\nRecommendations:\n1. [recommendation 1]\n2. [recommendation 2]\n\n[TONE]\n- Direct, calm, professional voice.\n- No em dashes, no en dashes.\n- Short sentences.\n- Do not invent information not present in the profile or JD."
+        }
+      },
+      "id": "92f3095c-5b84-4893-9de2-e82316db3f79",
+      "name": "ATS Gap Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        34480,
+        140928
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "model": "rnj-1:8b",
+        "options": {}
+      },
+      "id": "f6075a73-273b-4ccf-b746-5d7a6ebffc9b",
+      "name": "Ollama ATS Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        34496,
+        141152
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ULmeiabvCrdrvhgq",
+          "name": "Ollama API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.message.chat.id : $('Telegram Trigger').first().json.message.chat.id) }}",
+        "text": "={{ $json.output.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>').replace(/\\*(?!\\s)(.*?)(?<!\\s)\\*/g, '<i>$1</i>').replace(/_(?!\\s)(.*?)(?<!\\s)_/g, '<i>$1</i>').replace(/\\`([^\\`]+)\\`/g, '<code>$1</code>') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "fcf8b8ed-4150-476d-8359-fd2073612c58",
+      "name": "Send ATS Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        35184,
+        140928
+      ],
+      "webhookId": "e2d3c4b5-a6f7-8901-edcb-a98765432109",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Safe Profile Merge ──────────────────────────────────────────────────────\n// Guard against the AI returning a partial/wiped profile.\n// We deep-merge the AI's master_profile with what's actually in Supabase,\n// so no field can be silently erased by an incomplete LLM response.\n\nconst aiData = $input.item.json;\nconst aiProfile = aiData.master_profile;\n\n// Fetch existing profile from Supabase\nconst rawExisting = $('Supabase Fetch').first().json.master_profile;\nlet existing = {};\ntry {\n  existing = rawExisting\n    ? (typeof rawExisting === 'string' ? JSON.parse(rawExisting) : rawExisting)\n    : {};\n} catch (e) {\n  existing = {};\n}\n\n// If AI returned no profile or an empty object, keep existing and bail early\nif (!aiProfile || typeof aiProfile !== 'object' || Object.keys(aiProfile).length === 0) {\n  return [{ json: { ...aiData, profile_updated: false, master_profile: existing } }];\n}\n\n// ── Field-by-field merge ────────────────────────────────────────────────────\nconst merged = JSON.parse(JSON.stringify(existing)); // deep clone of existing\n\n// Scalar fields: AI value wins only when it is a non-empty, non-whitespace string\nconst scalars = ['name', 'tagline', 'summary'];\nfor (const field of scalars) {\n  if (aiProfile[field] != null && String(aiProfile[field]).trim() !== '' && String(aiProfile[field]).trim() !== 'NO_PROFILE') {\n    merged[field] = aiProfile[field];\n  }\n}\n\n// Contact sub-fields: merge at the sub-field level\nif (aiProfile.contact && typeof aiProfile.contact === 'object') {\n  merged.contact = merged.contact || {};\n  for (const [key, val] of Object.entries(aiProfile.contact)) {\n    if (val != null && String(val).trim() !== '') {\n      merged.contact[key] = val;\n    }\n  }\n}\n\n// Fetch user message to check for explicit deletion intent\nconst userMessage = ($('Telegram Trigger').first().json.message?.text || '').trim().toLowerCase();\nconst deleteKeywords = ['delete', 'remove', 'clear', 'erase', 'wipe', 'discard', 'exclude', 'omit'];\nconst isDeletion = deleteKeywords.some(kw => userMessage.includes(kw));\n\nconst isProjectDeletion = isDeletion && userMessage.includes('project');\nconst isExperienceDeletion = isDeletion && (userMessage.includes('work') || userMessage.includes('job') || userMessage.includes('experience') || userMessage.includes('intern') || userMessage.includes('company'));\nconst isEducationDeletion = isDeletion && (userMessage.includes('education') || userMessage.includes('degree') || userMessage.includes('college') || userMessage.includes('university') || userMessage.includes('school'));\nconst isCertificationDeletion = isDeletion && (userMessage.includes('cert') || userMessage.includes('license'));\n\n// Array fields: merge or overwrite depending on deletion intent\nconst arrays = ['skills', 'work_experience', 'education', 'projects', 'certifications'];\nfor (const field of arrays) {\n  if (Array.isArray(aiProfile[field])) {\n    if (field === 'skills') {\n      // Skills category items are short strings. Overwrite the items for matched categories to support direct additions/deletions.\n      const mergedSkills = [...(merged.skills || [])];\n      for (const newSkill of aiProfile.skills) {\n        const cat = (newSkill.category || newSkill.name || '').trim().toLowerCase();\n        const existingIdx = mergedSkills.findIndex(s => (s.category || s.name || '').trim().toLowerCase() === cat);\n        if (existingIdx > -1) {\n          mergedSkills[existingIdx].items = newSkill.items;\n        } else {\n          mergedSkills.push(newSkill);\n        }\n      }\n      merged.skills = mergedSkills;\n    } else {\n      // Check if we should overwrite this specific array due to deletion intent\n      let shouldOverwrite = false;\n      if (field === 'projects' && isProjectDeletion) shouldOverwrite = true;\n      if (field === 'work_experience' && isExperienceDeletion) shouldOverwrite = true;\n      if (field === 'education' && isEducationDeletion) shouldOverwrite = true;\n      if (field === 'certifications' && isCertificationDeletion) shouldOverwrite = true;\n\n      if (shouldOverwrite) {\n        merged[field] = aiProfile[field];\n      } else {\n        // Perform incremental merging to protect against silent LLM wipes\n        if (aiProfile[field].length > 0) {\n          if (field === 'work_experience') {\n            const mergedExp = [...(merged.work_experience || [])];\n            for (const newExp of aiProfile.work_experience) {\n              const key = `${(newExp.company || '').trim()}|${(newExp.title || '').trim()}`.toLowerCase();\n              const existingIdx = mergedExp.findIndex(e => `${(e.company || '').trim()}|${(e.title || '').trim()}`.toLowerCase() === key);\n              if (existingIdx > -1) {\n                mergedExp[existingIdx] = { ...mergedExp[existingIdx], ...newExp };\n              } else {\n                mergedExp.push(newExp);\n              }\n            }\n            merged.work_experience = mergedExp;\n          } else if (field === 'education') {\n            const mergedEdu = [...(merged.education || [])];\n            for (const newEdu of aiProfile.education) {\n              const key = `${(newEdu.degree || '').trim()}|${(newEdu.institution || '').trim()}`.toLowerCase();\n              const existingIdx = mergedEdu.findIndex(e => `${(e.degree || '').trim()}|${(e.institution || '').trim()}`.toLowerCase() === key);\n              if (existingIdx > -1) {\n                mergedEdu[existingIdx] = { ...mergedEdu[existingIdx], ...newEdu };\n              } else {\n                mergedEdu.push(newEdu);\n              }\n            }\n            merged.education = mergedEdu;\n          } else if (field === 'projects') {\n            const mergedProj = [...(merged.projects || [])];\n            for (const newProj of aiProfile.projects) {\n              const key = (newProj.name || '').trim().toLowerCase();\n              const existingIdx = mergedProj.findIndex(p => (p.name || '').trim().toLowerCase() === key);\n              if (existingIdx > -1) {\n                mergedProj[existingIdx] = { ...mergedProj[existingIdx], ...newProj };\n              } else {\n                mergedProj.push(newProj);\n              }\n            }\n            merged.projects = mergedProj;\n          } else if (field === 'certifications') {\n            const mergedCert = [...(merged.certifications || [])];\n            for (const newCert of aiProfile.certifications) {\n              const key = `${(newCert.name || '').trim()}|${(newCert.issuer || '').trim()}`.toLowerCase();\n              const existingIdx = mergedCert.findIndex(c => `${(c.name || '').trim()}|${(c.issuer || '').trim()}`.toLowerCase() === key);\n              if (existingIdx > -1) {\n                mergedCert[existingIdx] = { ...mergedCert[existingIdx], ...newCert };\n              } else {\n                mergedCert.push(newCert);\n              }\n            }\n            merged.certifications = mergedCert;\n          }\n        }\n      }\n    }\n  }\n}\n\n// Dynamically determine if the profile was updated by comparing merged with existing\nconst isDifferent = JSON.stringify(merged) !== JSON.stringify(existing);\n\n// Pass through all other ai output fields unchanged (chat_reply, profile_status, etc.)\nreturn [{ json: { ...aiData, profile_updated: isDifferent, master_profile: merged } }];"
+      },
+      "id": "112594cc-863c-4377-bf7e-b26507c7ac7c",
+      "name": "Safe Profile Merge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        36224,
+        138624
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success === true && !!$json.tex_b64 }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "6a8daa15-8f39-4812-b24f-2de23e739cf0",
+      "name": "Has LaTeX Content?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        34544,
+        139584
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "={{ ($json.text || '📭 No profile data found to generate a PDF.').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "3a4dd7b3-cd80-417f-8d6c-b4cce6772be8",
+      "name": "Send LaTeX Error Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34896,
+        139712
+      ],
+      "webhookId": "f2e3d4c5-b6a7-8901-fedc-ba0987654321",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "Please send a text message or a PDF document. I cannot process photos, stickers, voice notes, or other media.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "6ae701fa-9a0c-4977-8ad8-917cdb2cebfc",
+      "name": "Send Media Guard Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        137872
+      ],
+      "webhookId": "d4c5b6a7-f8e9-0123-dcba-987654321098",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "Profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_id",
+              "condition": "eq",
+              "keyValue": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}"
+            }
+          ]
+        }
+      },
+      "id": "9c59df9b-a3a8-42d1-9333-9c0059e01d58",
+      "name": "Supabase Clear Profile",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        33968,
+        138256
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "nc9cyvCFuivX90d4",
+          "name": "Resume Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').item.json.callback_query ? $('Telegram Trigger').item.json.callback_query.message.chat.id : $('Telegram Trigger').item.json.message.chat.id) }}",
+        "text": "🗑️ Your profile has been completely cleared. Send me a new PDF or tell me about yourself to start fresh!",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "4a542d76-8e32-420c-8229-1843437dada1",
+      "name": "Send Telegram Clear Success",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        34256,
+        138256
+      ],
+      "webhookId": "39b080ba-2187-40c4-a3d2-88e49ee5bdf5",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        35536,
+        138752
+      ],
+      "id": "3e243a31-9aea-4150-ab27-971fbd0d19ef",
+      "name": "Cerebras Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        35600,
+        139152
+      ],
+      "id": "9afae5e0-78c6-4779-b075-14de33791782",
+      "name": "Cerebras Query Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        34048,
+        139264
+      ],
+      "id": "0e6e012f-3c3c-4f73-a7dc-bb7dc124e383",
+      "name": "Cerebras Classifier Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        36016,
+        139600
+      ],
+      "id": "1b001fcb-4ef1-4c1e-8012-678b3094dd38",
+      "name": "Cerebras LaTeX Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        34624,
+        140176
+      ],
+      "id": "70efa41a-adac-4ba7-b5a7-8ca9627ad87f",
+      "name": "Cerebras JD Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        34976,
+        140608
+      ],
+      "id": "2492a63e-64cf-414c-be00-a644a97a0387",
+      "name": "Cerebras CL Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "zai-glm-4.7",
+          "mode": "list",
+          "cachedResultName": "zai-glm-4.7"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        34624,
+        141152
+      ],
+      "id": "78b6b4bf-e030-4548-a468-cfa087d7e3a8",
+      "name": "Cerebras ATS Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.item.json.output || '';\nif (output.length <= 4000) {\n  return [{ json: { output } }];\n}\n\nconst chunks = [];\nlet current = '';\nfor (const line of output.split('\\n')) {\n  if ((current + line + '\\n').length > 4000) {\n    if (current.trim()) chunks.push(current.trim());\n    current = line + '\\n';\n  } else {\n    current += line + '\\n';\n  }\n}\nif (current.trim()) chunks.push(current.trim());\n\nconst finalChunks = [];\nfor (let chunk of chunks) {\n  while (chunk.length > 4000) {\n    finalChunks.push(chunk.substring(0, 4000));\n    chunk = chunk.substring(4000);\n  }\n  if (chunk) finalChunks.push(chunk);\n}\n\nreturn finalChunks.map(text => ({ json: { output: text } }));"
+      },
+      "id": "84130682-9697-4fef-a044-69ee0bc527fc",
+      "name": "Split Query Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        35936,
+        139024
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.item.json.output || '';\nif (output.length <= 4000) {\n  return [{ json: { output } }];\n}\n\nconst chunks = [];\nlet current = '';\nfor (const line of output.split('\\n')) {\n  if ((current + line + '\\n').length > 4000) {\n    if (current.trim()) chunks.push(current.trim());\n    current = line + '\\n';\n  } else {\n    current += line + '\\n';\n  }\n}\nif (current.trim()) chunks.push(current.trim());\n\nconst finalChunks = [];\nfor (let chunk of chunks) {\n  while (chunk.length > 4000) {\n    finalChunks.push(chunk.substring(0, 4000));\n    chunk = chunk.substring(4000);\n  }\n  if (chunk) finalChunks.push(chunk);\n}\n\nreturn finalChunks.map(text => ({ json: { output: text } }));"
+      },
+      "id": "8cc0f702-277e-4b33-8c61-fb6ba6c716a3",
+      "name": "Split ATS Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        34896,
+        140928
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.message.chat.id : $('Telegram Trigger').first().json.message.chat.id) }}",
+        "text": "⚠️ Please paste the full job description directly after /optimize in one message. Example: /optimize paste JD here",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "ff4e575d-bab7-4a8a-b8b7-b4fcd509d93e",
+      "name": "Send Optimize Warning",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        140336
+      ],
+      "webhookId": "4c259a21-b8ae-4725-bfd8-fad039f14906",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ ($('Telegram Trigger').first().json.callback_query ? $('Telegram Trigger').first().json.callback_query.message.chat.id : $('Telegram Trigger').first().json.message.chat.id) }}",
+        "text": "⚠️ Please include a job description after /analyze. Example:\n/analyze [paste full job description here]",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "b5e24404-344b-4959-a146-09a4d4bc0b77",
+      "name": "Send Analyze Warning",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        33968,
+        141120
+      ],
+      "webhookId": "e2d3c4b5-a6f7-8901-edcb-a98765432109",
+      "credentials": {
+        "telegramApi": {
+          "id": "C4WFoCaBCTYvtSS5",
+          "name": "AI Agent Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Supabase Fetch by ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Fetch by ID": {
+      "main": [
+        [
+          {
+            "node": "Supabase Fetch by Username",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess Master Profile": {
+      "main": [
+        [
+          {
+            "node": "Command Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command Router": {
+      "main": [
+        [
+          {
+            "node": "Greeting Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Info Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Profile Incomplete Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Media Guard Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Profile View",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase Clear Profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send PDF Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Resume Compile Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Resume Compile Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Optimize Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format JD View",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Cover Letter Profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Analyze Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Optimize Warning",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Analyze Warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Profile View": {
+      "main": [
+        [
+          {
+            "node": "Telegram View Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate LaTeX": {
+      "main": [
+        [
+          {
+            "node": "Has LaTeX Content?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write LaTeX File": {
+      "main": [
+        [
+          {
+            "node": "If Compile Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode PDF Binary": {
+      "main": [
+        [
+          {
+            "node": "Send PDF (Telegram)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send LaTeX Source (Telegram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reattach Binary": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Format PDF Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send PDF Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format PDF Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Chat Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Safe Profile Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Profile Updated?": {
+      "main": [
+        [
+          {
+            "node": "Row Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat Profile Sufficient?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row Exists?": {
+      "main": [
+        [
+          {
+            "node": "Supabase Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Update": {
+      "main": [
+        [
+          {
+            "node": "Chat Profile Sufficient?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Create": {
+      "main": [
+        [
+          {
+            "node": "Chat Profile Sufficient?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read PDF Base64": {
+      "main": [
+        [
+          {
+            "node": "Decode PDF Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format JD Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI JD Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI JD Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse JD JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama JD": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI JD Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JD JSON": {
+      "main": [
+        [
+          {
+            "node": "Supabase Save Tailored",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Save Tailored": {
+      "main": [
+        [
+          {
+            "node": "Telegram Optimize Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format JD View": {
+      "main": [
+        [
+          {
+            "node": "Telegram JD View Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Update Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Format Chat Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Compile Success": {
+      "main": [
+        [
+          {
+            "node": "Read PDF Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Fix LaTeX Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Fix LaTeX Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Fix LaTeX Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Fix LaTeX Agent": {
+      "main": [
+        [
+          {
+            "node": "Base64 Encode Fixed LaTeX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Fix LaTeX Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Fix LaTeX Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 Encode Fixed LaTeX": {
+      "main": [
+        [
+          {
+            "node": "Write LaTeX File (Retry)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write LaTeX File (Retry)": {
+      "main": [
+        [
+          {
+            "node": "If Retry Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Retry Success": {
+      "main": [
+        [
+          {
+            "node": "Read PDF Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Compile Error Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Cover Letter Profile": {
+      "main": [
+        [
+          {
+            "node": "If CL Profile Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If CL Profile Exists": {
+      "main": [
+        [
+          {
+            "node": "Send CL Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send CL Error Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Cover Letter Agent": {
+      "main": [
+        [
+          {
+            "node": "Generate LaTeX Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama CL Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Cover Letter Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate LaTeX Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "Compile Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "If CL Compile Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If CL Compile Success": {
+      "main": [
+        [
+          {
+            "node": "Decode CL PDF Binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send CL Compile Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode CL PDF Binary": {
+      "main": [
+        [
+          {
+            "node": "Send CL PDF (Telegram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Resume Compile Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Generate LaTeX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Optimize Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Format JD Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send CL Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "AI Cover Letter Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Profile Sufficient?": {
+      "main": [
+        [
+          {
+            "node": "Telegram Chat Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Chat Reply (No Buttons)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Fetch by Username": {
+      "main": [
+        [
+          {
+            "node": "Supabase Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Fetch": {
+      "main": [
+        [
+          {
+            "node": "Check Migration Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Migration Needed": {
+      "main": [
+        [
+          {
+            "node": "Supabase Migrate ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assess Master Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Migrate ID": {
+      "main": [
+        [
+          {
+            "node": "Assess Master Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send PDF Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Reattach Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classifier Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Query Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Parse Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Intent": {
+      "main": [
+        [
+          {
+            "node": "Is Query Intent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Query Intent?": {
+      "main": [
+        [
+          {
+            "node": "Send Query Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Update Wait Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Query Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Format Query Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Query Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classifier Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Query Context": {
+      "main": [
+        [
+          {
+            "node": "Query Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Analyze Wait Msg": {
+      "main": [
+        [
+          {
+            "node": "Format ATS Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format ATS Context": {
+      "main": [
+        [
+          {
+            "node": "ATS Gap Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ATS Gap Agent": {
+      "main": [
+        [
+          {
+            "node": "Split ATS Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama ATS Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ATS Gap Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe Profile Merge": {
+      "main": [
+        [
+          {
+            "node": "Profile Updated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has LaTeX Content?": {
+      "main": [
+        [
+          {
+            "node": "Write LaTeX File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send LaTeX Error Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Clear Profile": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Clear Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cerebras Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cerebras Query Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Query Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cerebras Classifier Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cerebras LaTeX Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Fix LaTeX Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cerebras JD Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI JD Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cerebras CL Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Cover Letter Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cerebras ATS Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ATS Gap Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Split Query Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Query Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split ATS Reply": {
+      "main": [
+        [
+          {
+            "node": "Send ATS Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "19921415bac6b77b91e822c3e97165800ced3a4d6f63d204500fd50a2d359050"
+  }
+}

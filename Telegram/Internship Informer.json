@@ -1,0 +1,1335 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -13632,
+        1584
+      ],
+      "id": "cbb919ec-160f-439d-b2d4-fd581ed0ecd5",
+      "name": "Telegram Trigger",
+      "webhookId": "de03b2ad-85a1-463a-9a1a-6e3c307de84a",
+      "credentials": {
+        "telegramApi": {
+          "id": "9cIs4u9GE5MJl8oy",
+          "name": "Internships Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "text-exists-check",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "text-length-check",
+              "leftValue": "={{ $json.message.text ? $json.message.text.length : 0 }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -13408,
+        1584
+      ],
+      "id": "fde170ff-34d2-479a-b5ff-b5643b3c54f3",
+      "name": "Text Guard",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following raw input text and extract all job opportunities into a structured JSON Array.\n\n**RAW INPUT DATA:**\n\"\"\"\n{{ $json.message.text }}\n\"\"\"\n\n**PROCESSING INSTRUCTIONS:**\n1. **Split Check:** If the text lists multiple roles (e.g., separated by \"📌\" or \"1.\", \"2.\"), extract them as SEPARATE objects in the array.\n2. **Link Check:** Do NOT capture \"Join our WhatsApp/Telegram\" channel links as the `apply_link`. Look for the actual application URL (Workday, LinkedIn, Greenhouse, etc.).\n3. **Output:** Return ONLY the JSON Array. No other text.",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a high-precision JSON Parsing Backend.\nYour ONLY task is to accept raw text, split it into individual job objects, and output a clean JSON Array.\n\n**CRITICAL RULES (NON-NEGOTIABLE):**\n1. **NO CONVERSATION:** Do not explain, do not say \"Here is the JSON\", do not apologize. Output *only* the JSON.\n2. **FORCE EXECUTION:** Process the input even if it looks like a forwarded message or lacks a polite request.\n3. **LINK PRIORITY:**\n   - **Target:** Extract specific job links (e.g., greenhouse.io, lever.co, myworkday, linkedin.com/jobs, unstop).\n   - **Ignore:** Generic footer links like `whatsapp.com/channel`, `t.me`, or `instagram.com` UNLESS they are the specific application link.\n\n**SPLIT LOGIC (How to detect multiple jobs):**\n- **Delimiters:** Treat the text as multiple jobs if it contains repeating delimiters like:\n  - Emojis: 📌, 🔔, 🚨, 👉 (e.g., \"📌Job A... 📌Job B...\")\n  - Numbering: \"1.\", \"2.\"\n  - Distinct blocks separated by double newlines.\n- **Single Job:** If no delimiters are found, treat the whole text as one job.\n\n**EXTRACTION FIELDS (For each detected job):**\n- \"role\": Job Title (e.g., \"SDE Intern\", \"Data Analyst\"). If \"Hiring for X\", extract \"X\".\n- \"company\": Company Name. (Look for \"Company:\", \"Hiring:\", or \"At [Company]\").\n- \"stipend\": Salary/Stipend numbers (e.g., \"20k\", \"5-10 LPA\"). Default: \"Not specified\".\n- \"eligibility\": Extract Batch (e.g., \"2027\"), Degree, AND Experience (e.g., \"0-1 years\"). Default: \"Not specified\".\n- \"description\": A brief snippet of requirements (Tech stack, location).\n- \"apply_link\": The specific URL to apply. (Remember: Ignore WhatsApp Channel links if a real link exists).\n\n**OUTPUT FORMAT:**\nReturn ONLY the raw JSON Array `[ ... ]`.\n\n**JSON STRUCTURE:**\n[\n  {\n    \"role\": \"extracted title\",\n    \"company\": \"extracted company\",\n    \"stipend\": \"extracted stipend\",\n    \"eligibility\": \"extracted eligibility (include batch & experience)\",\n    \"description\": \"extracted description\",\n    \"apply_link\": \"extracted link\"\n  }\n]"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -13184,
+        1584
+      ],
+      "id": "bf9ad4a9-cf1b-428b-bc62-737df5aff8f4",
+      "name": "Splitter Agent",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get the raw output from the AI model\nconst rawContent = $input.first().json.output || \"\";\n\n// 2. Clean the string: Remove Markdown code blocks (```json ... ```)\nconst cleanJson = rawContent.replace(/^```json\\s*/i, \"\").replace(/\\s*```$/, \"\");\n\n// 3. Parse the string into a real JavaScript Array\nlet jobsArray = [];\ntry {\n  jobsArray = JSON.parse(cleanJson);\n} catch (error) {\n  console.log(\"JSON Parse Error:\", error);\n  jobsArray = [];\n}\n\n// 4. Return separate items for n8n to process\nreturn jobsArray.map(job => {\n  return {\n    json: job\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12784,
+        1392
+      ],
+      "id": "f2cad12a-b8fb-4e8f-9581-7336506396fe",
+      "name": "JSON Format Fixer"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -12560,
+        1392
+      ],
+      "id": "07919b5e-6d52-48a6-8595-da5c507edcf2",
+      "name": "Loop Over Each Link"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-deployment/firecrawl/v1/scrape",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.apply_link }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9741bff9-9ec1-487b-9721-558d395497dd",
+      "name": "Firecrawl Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -12336,
+        1056
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Pre-Check Node — FIXED for blocked ATS sites (Workday etc.)\n// ============================================================\n\nconst CONFIG = {\n  wrong_years: /\\b(2020|2021|2022|2023|2024|2025|2026)\\b/,\n  target_year: /2027/,\n  blocked_domains: []\n};\n\nreturn items.map(item => {\n  const rawMarkdown = (item.json.data?.markdown || \"\").substring(0, 30000);\n  const telegramText = $('Telegram Trigger').first().json.message.text || \"\";\n  const url = (item.json.apply_link || \"\").toLowerCase();\n  const isBlockedDomain = CONFIG.blocked_domains.some(domain => url.includes(domain));\n  const scrapeSucceeded = rawMarkdown.length > 150 && !isBlockedDomain;\n  const scrape_failed = !scrapeSucceeded;\n\n  const scraped_markdown = scrapeSucceeded\n    ? rawMarkdown\n    : `[Scraping unavailable — site blocked automated access (${isBlockedDomain ? 'known blocked ATS domain' : 'empty response'}). Using original Telegram job post for analysis below.]\\n\\n${telegramText}`;\n\n  const combinedText = [\n    item.json.role,\n    item.json.company,\n    item.json.eligibility,\n    scraped_markdown,\n    telegramText\n  ].filter(Boolean).join(\" \").toLowerCase();\n\n  let status = \"PASS\";\n  let rejectReason = \"N/A\";\n\n  if (CONFIG.wrong_years.test(combinedText) && !CONFIG.target_year.test(combinedText)) {\n    status = \"REJECT\";\n    rejectReason = \"Hard Filter: Explicit Old Batch (Mentioned older years but not 2027)\";\n  }\n\n  const debug = {\n    markdown_length: rawMarkdown.length,\n    scrape_failed: scrape_failed,\n    using_fallback: scrape_failed,\n    is_blocked_domain: isBlockedDomain,\n    apply_link: item.json.apply_link || \"\",\n    telegram_text_found: !!telegramText,\n    years_found: combinedText.match(CONFIG.wrong_years) || \"None\",\n    target_found: CONFIG.target_year.test(combinedText)\n  };\n\n  return {\n    json: {\n      ...item.json,\n      scraped_markdown: scraped_markdown,\n      pre_filter_status: status,\n      rejection_reason: rejectReason,\n      debug_log: debug\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12112,
+        1056
+      ],
+      "id": "755eddf9-3ba6-47a6-a746-538ae602757c",
+      "name": "Pre-Check",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "42b354f7-17d1-462e-bed7-54a0d225053c",
+              "leftValue": "={{ $json.pre_filter_status }}",
+              "rightValue": "PASS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -11888,
+        1056
+      ],
+      "id": "7fa4777f-cc53-453d-9a96-9a79465241ad",
+      "name": "For 2027?",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Process the following job opportunity data and extract the structured output.\n\n**TASK:**\n1. Analyze the \"JOB PAGE MARKDOWN\" below to determine eligibility.\n2. IF the text is missing the Batch Year (e.g., just says \"Student\" or \"Intern\"), use `serpapi_search` to verify if it is for 2027 graduates.\n3. NOTE: If the JOB PAGE MARKDOWN starts with \"[Scraping unavailable\", it means the job page could not be scraped (blocked ATS like Workday/Greenhouse). In this case, rely entirely on the Telegram text provided after that label and the INPUT DATA fields above.\n\n**INPUT DATA:**\nTitle: {{ $('JSON Format Fixer').item.json.role }}\nCompany: {{ $('JSON Format Fixer').item.json.company }}\nEligibilty : {{ $('JSON Format Fixer').item.json.eligibility }}\nStipend : {{ $('JSON Format Fixer').item.json.stipend }}\nLink: {{ $('JSON Format Fixer').item.json.apply_link }}\n\n**JOB PAGE MARKDOWN (SOURCE):**\n\"\"\"\n{{ $json.scraped_markdown }}\n\"\"\"\n\n**OUTPUT REQUIREMENTS:**\n- Verify strict eligibility for **Batch of 2027** (Pre-final year).\n- Return the final JSON using the \"Final Answer\" format defined in the system message.",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are a backend JSON Data Processing Engine.\nYour ONLY function is to analyze job data and output a JSON response.\n\n**CORE OBJECTIVE:**\nIdentify valid **TECHNICAL** internship opportunities for **Pre-final Year Students (Batch of 2027)**.\n\n**STRICT DEFINITIONS:**\n- **Valid Role:** \"Intern\", \"Summer Analyst\", \"Trainee\" (only if <1 yr exp).\n- **Invalid Role:** \"Full Time\", \"FTE\", \"Software Engineer\" (without 'Intern'), \"Associate\", \"SDE-1\".\n- **Valid Batch:** 2027, Pre-final year, Penultimate year.\n\n**SCRAPING FAILURE HANDLING:**\n- If the JOB PAGE MARKDOWN starts with \"[Scraping unavailable\", the job site blocked automated access (common for Workday, Greenhouse, Lever).\n- In this case, base your analysis ONLY on the INPUT DATA fields (Title, Company, Eligibility, Stipend, Link) and the Telegram text included in the fallback message.\n- Do NOT reject a job solely because the page couldn't be scraped. Apply the same eligibility logic using available text.\n\n**EXECUTION PROTOCOL (STRICT ORDER - DO NOT SKIP):**\n\n**STEP 1: MANDATORY DUPLICATE CHECK (BLOCKING)**\n- **Action:** You MUST call the tool `check_duplicate` first.\n- **Input:** Use the job link provided in the prompt.\n- **Logic:**\n  - If tool returns `true`: **STOP IMMEDIATELY.** Output `{\"send_whatsapp\": false, \"reason\": \"Duplicate\"}`.\n\n**STEP 2: EXCLUSION LOGIC (THE \"KILL SWITCH\")**\n- Read the Markdown text. If ANY of these are true, **STOP and REJECT**.\n\n  - **A. DOMAIN FILTER:**\n    - Is the role Finance, HR, Sales, Marketing, Operations, Customer Support?\n    - -> **REJECT** (Reason: \"Non-technical\").\n\n  - **B. EXPLICIT WRONG BATCH (CRITICAL):**\n    - Does the text mention specific years (e.g., \"2023\", \"2024\", \"2025\", \"2026\") BUT NOT \"2027\"?\n    - *Example:* \"Hiring 2025 & 2026 grads\" -> **REJECT**.\n    - *Example:* \"For 2023/24 batch\" -> **REJECT**.\n    - *Logic:* If years are present, 2027 MUST be one of them.\n\n  - **C. EXPERIENCE FILTER:**\n    - Does it require \"1+ years\", \"1-3 years\", or \"Graduates from [past year]\"?\n    - -> **REJECT** (Reason: \"Experience required\").\n\n  - **D. FTE TRAP:**\n    - Is the title \"Software Engineer\", \"Developer\", or \"SDE\" (with NO mention of \"Intern\" or \"Trainee\")?\n    - -> **REJECT** (Reason: \"Full-time role\").\n\n**STEP 3: VALIDATION SCAN (POSITIVE MATCH)**\n- *Only runs if Step 2 passed.*\n- **CHECK A:** Does text contain \"2027\"? -> **VALID**.\n- **CHECK B:** Does text contain \"Pre-final\" or \"Penultimate\"? -> **VALID**.\n- **CHECK C:** Is it a generic \"Intern\" role (e.g., \"SDE Intern\") with NO year mentioned? -> **SEARCH REQUIRED** (Go to Step 4).\n\n**STEP 4: FALLBACK SEARCH (LAST RESORT)**\n- *Only runs if text is ambiguous (e.g., \"SDE Intern\" with no year).*\n- **Action:** Call `serpapi_request`.\n- **Input Schema:** `{ \"query\": \"Company Role 2027 eligibility\" }`\n\n**STEP 5: DEADLINE EXTRACTION**\n- Scan the text for keywords like \"Apply by\", \"Deadline\", \"Last Date\", \"Closes on\", or \"Test Date\".\n- If a date is found, convert it strictly to `YYYY-MM-DD` format (e.g., \"March 15th 2026\" becomes \"2026-03-15\").\n- If no specific date is mentioned, set the JSON value to `null`.\n\n**WHATSAPP MESSAGE TEMPLATE:**\n   `*New Internship Alert!*`\n   ` `\n   `*Title:* <Job Title>`\n   `*Company:* <Company Name>`\n   `*Eligibility:* <Short Batch Info>`\n   `*Deadline:* <Date or 'Not Specified'>`\n   ` `\n   `*Apply Link:* <Link>`\n\n**OUTPUT INSTRUCTION:**\nReturn ONLY the raw JSON object inside a code block.\nFinal Answer:\n```json\n{\n  \"send_whatsapp\": boolean,\n  \"reason\": \"...\",\n  \"whatsapp_message\": \"...\",\n  \"deadline\": \"YYYY-MM-DD or Not Specified\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -11568,
+        880
+      ],
+      "id": "20e9bdf4-9b99-465a-99a7-528476ee5797",
+      "name": "Analyst Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "maxTries": 5,
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Performs a Google search to verify internship eligibility. Use this ONLY when the provided text is ambiguous or missing the batch year (e.g., '2027'). CRITICAL: You must provide a specific query string (e.g., 'Google Software Engineer Intern 2027 eligibility').",
+        "method": "POST",
+        "url": "https://your-deployment/webhook/serpapi_search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', `The search query string (e.g. 'Company Role 2027 eligibility')`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -11408,
+        1104
+      ],
+      "id": "0699c870-4176-44bb-b1c7-25fa0dbd5318",
+      "name": "serpapi_request"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -11536,
+        1104
+      ],
+      "id": "91a1f7de-e8ee-4234-ad74-b8311e8d9651",
+      "name": "Analyst Fallback",
+      "credentials": {
+        "groqApi": {
+          "id": "M7r8ohirlJtFA0vi",
+          "name": "API KEY 1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "CRITICAL: Call this FIRST. Checks if the job link is already in the database. If it returns any valid item as output, you must STOP immediately and return send_whatsapp: false.",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "yOfWQK9CB3soT3Ai",
+          "mode": "list",
+          "cachedResultName": "Internship Alerts",
+          "cachedResultUrl": "/projects/0aENaaiAf9dL9Hyo/datatables/yOfWQK9CB3soT3Ai"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "Application_Link",
+              "keyValue": "={{ $('Loop Over Each Link').item.json.apply_link }}"
+            }
+          ]
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}"
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        -11280,
+        1104
+      ],
+      "id": "e67b2d61-a383-4ea7-b00c-a111ba9d4313",
+      "name": "check_duplicate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get the raw text output safely\nconst rawText = items[0]?.json?.output;\n\nif (!rawText) {\n  return [{ json: { error: \"No output received from Analyst Agent\" } }];\n}\n\n// 2. Try to find JSON inside markdown blocks\nconst markdownMatch = rawText.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n\n// 3. Robust JSON Extraction\nconst firstOpen = rawText.indexOf('{');\nconst lastClose = rawText.lastIndexOf('}');\n\nlet finalJson = {};\n\ntry {\n  if (markdownMatch) {\n    finalJson = JSON.parse(markdownMatch[1]);\n  } else if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {\n    const jsonString = rawText.substring(firstOpen, lastClose + 1);\n    finalJson = JSON.parse(jsonString);\n  } else {\n    throw new Error(\"No JSON structure found\");\n  }\n} catch (error) {\n  finalJson = {\n    send_whatsapp: false,\n    reason: \"JSON Parsing Failed\",\n    org_text: $('Telegram Trigger').first().json.message.text || \"Text unavailable\",\n    error_details: error.message,\n    raw_output: rawText\n  };\n}\n\nreturn [{ json: finalJson }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11072,
+        784
+      ],
+      "id": "2284da05-a867-4a6d-8542-00cd1aadf2c4",
+      "name": "Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "yOfWQK9CB3soT3Ai",
+          "mode": "list",
+          "cachedResultName": "Internship Alerts",
+          "cachedResultUrl": "/projects/0aENaaiAf9dL9Hyo/datatables/yOfWQK9CB3soT3Ai"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "Application_Link",
+              "keyValue": "={{ $('Loop Over Each Link').item.json.apply_link }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -10848,
+        784
+      ],
+      "id": "9c97d24f-d88e-46e5-b045-246329c09890",
+      "name": "Check for duplicate valid",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7c4709a1-e1dd-4021-99f2-f636a049bedd",
+              "leftValue": "={{ $('Output Parser').item.json.send_whatsapp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "9fd508d8-b394-442c-9dca-f730575edb3e",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -10624,
+        784
+      ],
+      "id": "bd5f96e5-51ca-4bb6-89a3-ccde9e80aca5",
+      "name": "Not Duplicate?",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a4622224-cc41-4d61-9b80-1bfd67e03422",
+              "leftValue": "={{ $('Output Parser').item.json.deadline }}",
+              "rightValue": "Not Specified",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -10400,
+        736
+      ],
+      "id": "6874a22f-a2da-4d37-a9fb-380f63896a7f",
+      "name": "Deadline Exists?",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "your-email@gmail.com",
+          "mode": "list",
+          "cachedResultName": "your-email@gmail.com"
+        },
+        "start": "={{ $('Output Parser').item.json.deadline }}T09:00:00Z",
+        "end": "={{ $('Output Parser').item.json.deadline }}T10:00:00Z",
+        "additionalFields": {
+          "description": "=Link : {{ $('JSON Format Fixer').item.json.apply_link }}",
+          "summary": "=🚨 APPLY TODAY: {{ $('JSON Format Fixer').item.json.role }} at {{ $('JSON Format Fixer').item.json.company }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -10176,
+        816
+      ],
+      "id": "0c5e1fa9-97c1-4ac7-95ae-f8225f688412",
+      "name": "Add event reminder",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "rheZ1Rri6A3ktbm1",
+          "name": "your-email@gmail.com"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "InternshipSites",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 198098392,
+          "mode": "list",
+          "cachedResultName": "Mobile Numbers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit#gid=198098392"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -9952,
+        736
+      ],
+      "id": "1f81c312-7f1d-4ffd-966d-05f00e845f8c",
+      "name": "Get Mobile Numbers",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IlUP2Ct5qrErA6VN",
+          "name": "Mojo Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -9728,
+        736
+      ],
+      "id": "33af2cb8-d657-4bce-ac02-060390d4da00",
+      "name": "Loop Over Items",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "InternshipSites",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 607067211,
+          "mode": "list",
+          "cachedResultName": "True Classification",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit#gid=607067211"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now }}",
+            "Telegram Message": "={{ $('Telegram Trigger').item.json.message.text }}",
+            "Title": "={{ $('Loop Over Each Link').item.json.role }}",
+            "Company Name": "={{ $('Loop Over Each Link').item.json.company }}",
+            "Eligibility": "={{ $('Loop Over Each Link').item.json.eligibility }}",
+            "Application Link": "={{ $('Loop Over Each Link').item.json.apply_link }}",
+            "Status": "Pending"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telegram Message",
+              "displayName": "Telegram Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Eligibility",
+              "displayName": "Eligibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Application Link",
+              "displayName": "Application Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -9504,
+        688
+      ],
+      "id": "373e5443-4fb4-49dc-993e-bd8eda903a73",
+      "name": "Append Valid",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IlUP2Ct5qrErA6VN",
+          "name": "Mojo Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-deployment/send",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "=+{{ $json['Phone Number'] }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $('Output Parser').item.json.whatsapp_message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -9504,
+        880
+      ],
+      "id": "e4dd311a-1bf9-4bf4-bdb0-3fff91a9c8a1",
+      "name": "Send Whatsapp Message",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "yOfWQK9CB3soT3Ai",
+          "mode": "list",
+          "cachedResultName": "Internship Alerts",
+          "cachedResultUrl": "/projects/0aENaaiAf9dL9Hyo/datatables/yOfWQK9CB3soT3Ai"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Loop Over Each Link').item.json.role }}",
+            "Eligibilty": "={{ $('Loop Over Each Link').item.json.eligibility }}",
+            "Application_Link": "={{ $('Loop Over Each Link').item.json.apply_link }}",
+            "Company_Name": "={{ $('Loop Over Each Link').item.json.company }}"
+          },
+          "matchingColumns": [
+            "Internship"
+          ],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Company_Name",
+              "displayName": "Company_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Eligibilty",
+              "displayName": "Eligibilty",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Application_Link",
+              "displayName": "Application_Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -9280,
+        1040
+      ],
+      "id": "67351f4f-5686-4cf2-b57a-c4bbf670864c",
+      "name": "Insert row",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "InternshipSites",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 181431973,
+          "mode": "list",
+          "cachedResultName": "False Classification",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit#gid=181431973"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now }}",
+            "Rejection Reason": "={{ $json.rejection_reason || $('Output Parser').item.json.reason || \"duplicate found\" }}",
+            "Application Link": "={{ $('Loop Over Each Link').item.json.apply_link }}",
+            "Telegram Message": "={{ $('Telegram Trigger').item.json.message.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Telegram Message",
+              "displayName": "Telegram Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Application Link",
+              "displayName": "Application Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rejection Reason",
+              "displayName": "Rejection Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -10176,
+        1184
+      ],
+      "id": "07323133-d68c-4483-a1ae-95381e1f0041",
+      "name": "Append Rejected",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IlUP2Ct5qrErA6VN",
+          "name": "Mojo Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -10400,
+        1184
+      ],
+      "id": "084d50ce-3aba-4914-9ec6-fe39d0f98f55",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -11072,
+        1024
+      ],
+      "id": "fce9265d-6fa0-4dea-bc53-98b5162bc9de",
+      "name": "Wait",
+      "webhookId": "a5c5ca9f-a438-4c43-945a-2a7022f120a9"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -10848,
+        1024
+      ],
+      "id": "487e9495-046d-4c77-8d2c-65d0411fcbce",
+      "name": "Resend failed message",
+      "webhookId": "067167a9-8b4e-4ede-8f50-d726d993cd7e",
+      "credentials": {
+        "telegramApi": {
+          "id": "9cIs4u9GE5MJl8oy",
+          "name": "Internships Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "llama3.1-8b",
+          "mode": "list",
+          "cachedResultName": "llama3.1-8b"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -13024,
+        1808
+      ],
+      "id": "3b446cda-24c8-429f-beb2-1141552bf37e",
+      "name": "Splitter Fallback",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -13152,
+        1808
+      ],
+      "id": "bcc54c5f-13b4-472b-a4c5-28de9a8587a9",
+      "name": "Splitter Main",
+      "credentials": {
+        "groqApi": {
+          "id": "FkhyWZc9SiOUnDIJ",
+          "name": "API KEY 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "qwen-3-235b-a22b-instruct-2507",
+          "mode": "list",
+          "cachedResultName": "qwen-3-235b-a22b-instruct-2507"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -11664,
+        1104
+      ],
+      "id": "578b86fc-8db2-4837-8d54-d3a085abcb4b",
+      "name": "Analyst Main",
+      "credentials": {
+        "openAiApi": {
+          "id": "rE0ktKj6dyd5ekSS",
+          "name": "Cerebras API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Lw76eTw28vUAiCBb",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Lw76eTw28vUAiCBb",
+          "cachedResultName": "Agent Error"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -12784,
+        1584
+      ],
+      "id": "97378688-b520-40ba-80f9-74671bc658e7",
+      "name": "Notify User"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Guard": {
+      "main": [
+        [
+          {
+            "node": "Splitter Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter Agent": {
+      "main": [
+        [
+          {
+            "node": "JSON Format Fixer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Format Fixer": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Each Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Each Link": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Firecrawl Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Firecrawl Scrape": {
+      "main": [
+        [
+          {
+            "node": "Pre-Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-Check": {
+      "main": [
+        [
+          {
+            "node": "For 2027?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "For 2027?": {
+      "main": [
+        [
+          {
+            "node": "Analyst Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Analyst Agent": {
+      "main": [
+        [
+          {
+            "node": "Output Parser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "serpapi_request": {
+      "ai_tool": [
+        [
+          {
+            "node": "Analyst Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyst Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyst Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "check_duplicate": {
+      "ai_tool": [
+        [
+          {
+            "node": "Analyst Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Parser": {
+      "main": [
+        [
+          {
+            "node": "Check for duplicate valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for duplicate valid": {
+      "main": [
+        [
+          {
+            "node": "Not Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Deadline Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deadline Exists?": {
+      "main": [
+        [
+          {
+            "node": "Add event reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Mobile Numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add event reminder": {
+      "main": [
+        [
+          {
+            "node": "Get Mobile Numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Mobile Numbers": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Append Valid",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Whatsapp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Valid": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Whatsapp Message": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Each Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Rejected": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Each Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Append Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Resend failed message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resend failed message": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Each Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitter Fallback": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Splitter Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Splitter Main": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Splitter Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyst Main": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyst Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "19921415bac6b77b91e822c3e97165800ced3a4d6f63d204500fd50a2d359050"
+  }
+}

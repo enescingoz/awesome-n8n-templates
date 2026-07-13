@@ -65,7 +65,7 @@ description: "The largest curated collection of 280+ free, ready-to-use n8n auto
 
   <div class="category-card">
     <h3><a href="{{ site.baseurl }}/categories/telegram-bots">Telegram Bots</a></h3>
-    <span class="count">18 templates</span>
+    <span class="count">20 templates</span>
     <p>AI chatbots with LangChain, voice-to-text in 55 languages, PDF chat, and Spotify integration.</p>
   </div>
 

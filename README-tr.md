@@ -128,7 +128,7 @@ Bu koleksiyon, Gmail, Outlook ve IMAP'i kapsayan 9 adet n8n e-posta otomasyon ş
 
 ### n8n ile Telegram botları nasıl otomatikleştirilir?
 
-LangChain ve OpenAI ile yapay zeka sohbet botları, 55 dilde sesli metin çevirisi, PDF sohbet işlevi, görüntü analizi botları ve Spotify entegrasyonu dahil 18 adet n8n Telegram otomasyon şablonunu keşfedin. Bu şablonlar; destek, pazarlama ve içerik moderasyonu kullanım alanlarını kapsar.
+LangChain ve OpenAI ile yapay zeka sohbet botları, 55 dilde sesli metin çevirisi, PDF sohbet işlevi, görüntü analizi botları ve Spotify entegrasyonu dahil 20 adet n8n Telegram otomasyon şablonunu keşfedin. Bu şablonlar; destek, pazarlama ve içerik moderasyonu kullanım alanlarını kapsar.
 
 | Başlık | Açıklama | Departman | Bağlantı |
 |-------|-------------|------------|------|
@@ -138,6 +138,8 @@ LangChain ve OpenAI ile yapay zeka sohbet botları, 55 dilde sesli metin çeviri
 | Automated AI image analysis and response via Telegram | Telegram'a gönderilen görselleri yapay zeka ile analiz eder ve geri bildirim döndürür. | Operasyon | [Link to Template](Telegram/Automated%20AI%20image%20analysis%20and%20response%20via%20Telegram.json) |
 | Angie, Personal AI Assistant with Telegram Voice and Text | Sesli ve metin tabanlı kişisel asistan botu. Sorulara yanıt verir ve görevleri yönetir. | Destek | [Link to Template](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | Kullanıcı mesajlarını GPT'ye ileten ve yapay zeka yanıtları döndüren minimal Telegram botu. | Destek | [Link to Template](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
+| Internship Informer | Yapay zeka kullanarak Telegram kanallarından staj gönderilerini ayıklar ve analiz eder, başvuru sayfalarını Firecrawl ile tarar, uygunluğa göre filtreler ve WhatsApp üzerinden uyarılar gönderir. | İK/Operasyon | [Şablona Bağlantı](Telegram/Internship%20Informer.json) |
+| Resume Bot | Telegram'da PDF özgeçmişleri ayrıştıran, Supabase'deki kullanıcı profillerini güncelleyen ve SSH üzerinden özel LaTeX özgeçmişleri derleyen yapay zeka destekli bir özgeçmiş ve ön yazı asistanı. | İK/Operasyon | [Şablona Bağlantı](Telegram/ResumeBot.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | Ses ve metin girişlerini işleyen, yapay zeka ile akıllı sohbet yanıtları sağlayan hazır asistan botu. | Destek | [Link to Template](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | Telegram içinde metin ve görüntü üretimi için NeurochainAI API'sini entegre eder. | Pazarlama | [Link to Template](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | Telegram'da gelişmiş yapay zeka sohbetleri ve araç kullanımı için LangChain düğümlerini kullanır. | Destek | [Link to Template](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |

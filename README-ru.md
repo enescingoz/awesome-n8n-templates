@@ -128,7 +128,7 @@
 
 ### Как автоматизировать Telegram-ботов с помощью n8n?
 
-18 шаблонов автоматизации Telegram для n8n: AI-чат-боты с LangChain и OpenAI, голосовой перевод на 55 языков, чат с PDF, анализ изображений, интеграция со Spotify. Шаблоны охватывают поддержку, маркетинг и модерацию контента в Telegram.
+20 шаблонов автоматизации Telegram для n8n: AI-чат-боты с LangChain и OpenAI, голосовой перевод на 55 языков, чат с PDF, анализ изображений, интеграция со Spotify. Шаблоны охватывают поддержку, маркетинг и модерацию контента в Telegram.
 
 | Title | Описание | Отдел | Ссылка |
 |-------|----------|-------|--------|
@@ -138,6 +138,8 @@
 | Automated AI image analysis and response via Telegram | Позволяет отправлять изображения в Telegram и получать AI-анализ и обратную связь автоматически. | Операции | [Ссылка на шаблон](Telegram/Automated%20AI%20image%20analysis%20and%20response%20via%20Telegram.json) |
 | Angie, Personal AI Assistant with Telegram Voice and Text | Персональный голосовой и текстовый ассистент-бот для управления задачами и ответов на запросы через AI. | Поддержка | [Ссылка на шаблон](Telegram/Angie,%20Personal%20AI%20Assistant%20with%20Telegram%20Voice%20and%20Text.json) |
 | Chat with OpenAI's GPT via a simple Telegram Bot | Минимальный Telegram-бот, пересылающий сообщения в GPT и возвращающий AI-ответы. Идеальная точка входа в AI-чат. | Поддержка | [Ссылка на шаблон](Telegram/Chat%20with%20OpenAIs%20GPT%20via%20a%20simple%20Telegram%20Bot.json) |
+| Internship Informer | Извлекает и анализирует публикации о стажировках из каналов Telegram с помощью ИИ, сканирует страницы подачи заявок через Firecrawl, фильтрует по критериям и отправляет оповещения в WhatsApp. | HR/Ops | [Ссылка на шаблон](Telegram/Internship%20Informer.json) |
+| Resume Bot | Помощник по созданию резюме и сопроводительных писем на базе ИИ в Telegram, который анализирует резюме в формате PDF, обновляет профили пользователей в Supabase и компилирует персонализированные резюме в LaTeX через SSH. | HR/Операции | [Ссылка на шаблон](Telegram/ResumeBot.json) |
 | Telegram AI bot assistant: ready-made template for voice & text messages | Готовый ассистент-бот для работы с голосовыми и текстовыми сообщениями в Telegram через AI. | Поддержка | [Ссылка на шаблон](Telegram/Telegram%20AI%20bot%20assistant_%20ready-made%20template%20for%20voice%20&%20text%20messages.json) |
 | Telegram AI Bot: NeurochainAI Text & Image | Интегрирует NeurochainAI API для генерации текста и изображений в Telegram. | Маркетинг | [Ссылка на шаблон](Telegram/Telegram%20AI%20Bot_%20NeurochainAI%20Text%20&%20Image%20-%20NeurochainAI%20Basic%20API%20Integration.json) |
 | Telegram AI bot with LangChain nodes | Использует узлы LangChain для продвинутых AI-диалогов и работы с инструментами в Telegram. | Поддержка | [Ссылка на шаблон](Telegram/Telegram%20AI%20bot%20with%20LangChain%20nodes.json) |
