@@ -1,0 +1,152 @@
+{
+  "id": "fiwano-unified-receive-send-starter",
+  "name": "Receive and Send Messages Across WhatsApp, Instagram and Facebook Messenger with Fiwano",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Receive → Any Logic → Send\n### WhatsApp · Instagram DM · Facebook Messenger\n\n**One Trigger/Action node set for three channels.** Fiwano normalizes messages received over the official Meta APIs, so the same n8n fields and nodes work across all three channels.\n\nThis workflow is a minimal integration example:\n\n`Fiwano Trigger → your logic → Fiwano Send`\n\nThe included text and attachment branches only demonstrate receiving, reading the normalized payload, and sending a reply. Replace the middle with any routing, CRM, helpdesk, business-rule, database, or AI logic.\n\n### Before you start\nConnect at least one channel through the [Fiwano portal](https://fiwano.com) or Fiwano's channel-connection API. The authorization flow simplifies connecting your own or client channels without creating and reviewing a separate Meta app for the workflow.\n\n### Setup\n1. Install the verified **n8n-nodes-fiwano** community package from the n8n editor.\n2. Add your **Fiwano API** credential to the Trigger and both example send nodes.\n3. *(Recommended)* Set a **Webhook Secret** on that credential so the Trigger can verify incoming signatures.\n4. **Save and activate** the workflow.\n\nThe Trigger uses **Auto-Setup → All Active Channels** to register this workflow for every active channel. Re-activate after connecting another channel. Keep **Event Types** on *Message Received*. n8n must be publicly reachable.\n\n[Fiwano n8n documentation](https://fiwano.com/documentation/n8n)",
+        "height": 1030,
+        "width": 520,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        192
+      ],
+      "id": "bb2c0002-0002-4000-8000-000000000001",
+      "name": "About this workflow"
+    },
+    {
+      "parameters": {
+        "autoSetup": "all"
+      },
+      "type": "n8n-nodes-fiwano.fiwanoTrigger",
+      "typeVersion": 1,
+      "position": [
+        128,
+        432
+      ],
+      "id": "bb2c0002-0002-4000-8000-000000000002",
+      "name": "Fiwano Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "is-text",
+              "leftValue": "={{ $json.data.type }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        400,
+        432
+      ],
+      "id": "bb2c0002-0002-4000-8000-000000000003",
+      "name": "Example — route by message type"
+    },
+    {
+      "parameters": {
+        "channelId": "={{ $json.channel_id }}",
+        "recipient": "={{ $json.data.from }}",
+        "text": "=You said: \"{{ $json.data.text }}\" 👋"
+      },
+      "type": "n8n-nodes-fiwano.fiwano",
+      "typeVersion": 1,
+      "position": [
+        688,
+        304
+      ],
+      "id": "bb2c0002-0002-4000-8000-000000000004",
+      "name": "Example — send text reply"
+    },
+    {
+      "parameters": {
+        "channelId": "={{ $json.channel_id }}",
+        "recipient": "={{ $json.data.from }}",
+        "text": "=Got your {{ $json.data.type }} 📎 — {{ ($json.data.media || {}).mime_type || 'attachment' }}. Thanks!"
+      },
+      "type": "n8n-nodes-fiwano.fiwano",
+      "typeVersion": 1,
+      "position": [
+        688,
+        544
+      ],
+      "id": "bb2c0002-0002-4000-8000-000000000005",
+      "name": "Example — send attachment reply"
+    },
+    {
+      "parameters": {
+        "content": "### Same inbound shape for all three channels\n\nRead these fields from `$json` on the trigger:\n\n- `channel_id` — connected channel; pass it to the send node\n- `channel_type` — `whatsapp`, `instagram`, or `messenger`\n- `data.from` — sender; pass it as the reply recipient\n- `data.from_name` — sender name when available\n- `data.type` — `text`, `image`, `audio`, `video`, `document`…\n- `data.text` — message text when `type = text`\n- `data.media` — media metadata for attachments\n\nYou normally do not need to branch by `channel_type`. Use it only when your business logic or channel-specific UI requires it.",
+        "height": 490,
+        "width": 430,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        768
+      ],
+      "id": "bb2c0002-0002-4000-8000-000000000006",
+      "name": "Normalized payload"
+    }
+  ],
+  "connections": {
+    "Fiwano Trigger": {
+      "main": [
+        [
+          {
+            "node": "Example — route by message type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Example — route by message type": {
+      "main": [
+        [
+          {
+            "node": "Example — send text reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Example — send attachment reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": [],
+  "pinData": {}
+}
