@@ -1,0 +1,116 @@
+{
+  "name": "02 - Promemoria scadenze pagamenti",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURAZIONE (5 min)\n\n1. **Google Sheets**: prepara un foglio 'Fatture' con le colonne:\n   `Numero | Cliente | Email | Importo | Scadenza (gg/mm/aaaa) | Stato`\n   Lo Stato deve essere `Pagata` oppure `Da pagare`.\n2. Collega le credenziali Google nel nodo 'Leggi fatture' e seleziona il foglio.\n3. **Gmail**: collega l'account che invierà i solleciti.\n4. Il controllo parte ogni mattina alle 8:00. Invia il promemoria se la scadenza è tra 3 giorni o se è già passata.\n\n💡 Personalizza il testo dell'email nel nodo 'Invia sollecito' con il tono della tua azienda.",
+        "height": 380,
+        "width": 400
+      },
+      "id": "nota-setup",
+      "name": "Nota di setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, -200]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-mattina",
+      "name": "Ogni mattina alle 8 (lun-ven)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "sheets-leggi",
+      "name": "Leggi fatture",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [620, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtra le fatture non pagate in scadenza entro 3 giorni o già scadute\nconst oggi = new Date();\noggi.setHours(0, 0, 0, 0);\n\nconst daAvvisare = [];\n\nfor (const item of $input.all()) {\n  const f = item.json;\n  const stato = String(f.Stato || '').trim().toLowerCase();\n  if (stato === 'pagata') continue;\n\n  // Data in formato gg/mm/aaaa\n  const parti = String(f.Scadenza || '').split('/');\n  if (parti.length !== 3) continue;\n  const scadenza = new Date(Number(parti[2]), Number(parti[1]) - 1, Number(parti[0]));\n\n  const giorniMancanti = Math.round((scadenza - oggi) / 86400000);\n\n  if (giorniMancanti <= 3) {\n    daAvvisare.push({\n      json: {\n        ...f,\n        giorniMancanti,\n        scaduta: giorniMancanti < 0,\n        scadenzaTesto: `${parti[0]}/${parti[1]}/${parti[2]}`\n      }\n    });\n  }\n}\n\nreturn daAvvisare;"
+      },
+      "id": "code-filtra",
+      "name": "Trova scadenze imminenti",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "={{ $json.scaduta ? 'Promemoria: fattura ' + $json.Numero + ' scaduta' : 'Promemoria: fattura ' + $json.Numero + ' in scadenza' }}",
+        "message": "=Gentile {{ $json.Cliente }},\n\nle ricordiamo che la fattura n. {{ $json.Numero }} di € {{ $json.Importo }} {{ $json.scaduta ? 'risulta scaduta il' : 'è in scadenza il' }} {{ $json.scadenzaTesto }}.\n\nSe il pagamento è già stato effettuato, la preghiamo di ignorare questo messaggio.\n\nPer qualsiasi chiarimento siamo a disposizione.\n\nCordiali saluti,\n[LA TUA AZIENDA]",
+        "options": {}
+      },
+      "id": "gmail-sollecito",
+      "name": "Invia sollecito",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1060, 0]
+    }
+  ],
+  "connections": {
+    "Ogni mattina alle 8 (lun-ven)": {
+      "main": [
+        [
+          {
+            "node": "Leggi fatture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leggi fatture": {
+      "main": [
+        [
+          {
+            "node": "Trova scadenze imminenti",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trova scadenze imminenti": {
+      "main": [
+        [
+          {
+            "node": "Invia sollecito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

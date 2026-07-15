@@ -1,0 +1,176 @@
+{
+  "name": "01 - Lead dal sito → Registro + Notifiche",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURAZIONE (5 min)\n\n1. **Webhook**: copia l'URL di produzione del nodo 'Nuovo lead dal sito' e usalo come destinazione del form del tuo sito (WordPress: plugin WPForms/Elementor → webhook; oppure azione POST custom).\n   Il form deve inviare i campi: `nome`, `email`, `telefono`, `messaggio`.\n2. **Google Sheets**: collega le credenziali Google e indica il tuo foglio 'Registro Lead' con le colonne: Data | Nome | Email | Telefono | Messaggio | Stato.\n3. **Telegram**: crea un bot con @BotFather, incolla il token nelle credenziali e inserisci il tuo Chat ID.\n4. **Gmail**: collega l'account che invierà l'email di cortesia al cliente.\n\nPoi ATTIVA il workflow (interruttore in alto a destra).",
+        "height": 420,
+        "width": 400
+      },
+      "id": "nota-setup",
+      "name": "Nota di setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, -220]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nuovo-lead",
+        "options": {}
+      },
+      "id": "webhook-lead",
+      "name": "Nuovo lead dal sito",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "nome",
+              "value": "={{ $json.body.nome || $json.body.name || 'Non indicato' }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "email",
+              "value": "={{ $json.body.email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "telefono",
+              "value": "={{ $json.body.telefono || $json.body.phone || 'Non indicato' }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "messaggio",
+              "value": "={{ $json.body.messaggio || $json.body.message || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "data",
+              "value": "={{ $now.format('dd/MM/yyyy HH:mm') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-campi",
+      "name": "Estrai campi del lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [620, 0]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data": "={{ $json.data }}",
+            "Nome": "={{ $json.nome }}",
+            "Email": "={{ $json.email }}",
+            "Telefono": "={{ $json.telefono }}",
+            "Messaggio": "={{ $json.messaggio }}",
+            "Stato": "Nuovo"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-append",
+      "name": "Salva nel Registro Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [840, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "INSERISCI-CHAT-ID",
+        "text": "=🔔 *Nuovo lead dal sito!*\n\n👤 {{ $json.Nome }}\n📧 {{ $json.Email }}\n📞 {{ $json.Telefono }}\n\n💬 {{ $json.Messaggio }}\n\n_Rispondi entro 1 ora: i lead caldi si chiudono 7 volte di più._",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-notifica",
+      "name": "Avvisami su Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1060, -120]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Estrai campi del lead').item.json.email }}",
+        "subject": "Abbiamo ricevuto la tua richiesta ✔",
+        "message": "=Ciao {{ $('Estrai campi del lead').item.json.nome }},\n\ngrazie per averci contattato! Abbiamo ricevuto la tua richiesta e ti risponderemo entro poche ore lavorative.\n\nNel frattempo, se la cosa è urgente, puoi chiamarci direttamente.\n\nA presto,\n[IL TUO NOME / AZIENDA]",
+        "options": {}
+      },
+      "id": "gmail-cortesia",
+      "name": "Email di cortesia al cliente",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1060, 120]
+    }
+  ],
+  "connections": {
+    "Nuovo lead dal sito": {
+      "main": [
+        [
+          {
+            "node": "Estrai campi del lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estrai campi del lead": {
+      "main": [
+        [
+          {
+            "node": "Salva nel Registro Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva nel Registro Lead": {
+      "main": [
+        [
+          {
+            "node": "Avvisami su Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email di cortesia al cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
