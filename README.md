@@ -373,6 +373,7 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 | AI Social Media Content Generator with Ollama | Generates optimized posts for Twitter, LinkedIn, Reddit, and Instagram from a single topic using Ollama local AI with built-in quality review. | Marketing/AI/Content | [Link to Template](Instagram_Twitter_Social_Media/AI%20Social%20Media%20Content%20Generator%20with%20Ollama.json) |
 | FlowScribe Lite - AI Content Repurposing (4 Platforms) | Converts one blog post into four optimized social media posts for Twitter, LinkedIn, Instagram, and Facebook using OpenAI. | Marketing/Content | [Link to Template](Instagram_Twitter_Social_Media/FlowScribe%20Lite%20-%20AI%20Content%20Repurposing%204%20Platforms.json) |
 | Monitor X Search with Xquik | Searches X with Xquik, normalizes matching posts, and builds an email-ready social listening digest. | Marketing/Analytics | [Link to Template](Instagram_Twitter_Social_Media/Monitor%20X%20Search%20with%20Xquik.json) |
+| Grounded Article to Thread and LinkedIn Post | Turns a pasted article or transcript into a numbered X/Twitter thread and a LinkedIn post, with every fact grounded in the source text. Flags thin input for human review instead of padding filler. | Marketing/Content/AI | [Link to Template](Instagram_Twitter_Social_Media/Grounded%20Article%20to%20Thread%20and%20LinkedIn%20Post.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
