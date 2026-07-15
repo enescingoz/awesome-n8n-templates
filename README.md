@@ -345,13 +345,14 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 
 ### How do I build WhatsApp chatbots with n8n?
 
-This section includes 4 WhatsApp automation templates for n8n. Automate sales meeting preparation with AI and Apify, build your first WhatsApp chatbot, create a full business RAG chatbot powered by OpenAI, or set up professional AI-powered message responses. Ideal for customer service, sales, and business communication workflows.
+This section includes 5 WhatsApp and cross-channel messaging automation templates for n8n. Automate sales meeting preparation with AI and Apify, build WhatsApp chatbots, or use one workflow to receive and send messages across WhatsApp, Instagram DM, and Facebook Messenger. Ideal for customer service, sales, and business communication workflows.
 
 | Title | Description | Department | Link |
 |---|---|---|---|
 | Automate Sales Meeting Prep with AI & APIFY Sent To WhatsApp | This workflow automates sales meeting preparation using AI and Apify, sending relevant information to WhatsApp. | Sales/AI/Automation | [Link to Template](./WhatsApp/Automate%20Sales%20Meeting%20Prep%20with%20AI%20&%20APIFY%20Sent%20To%20WhatsApp.json) |
 | Building Your First WhatsApp Chatbot | This workflow guides you through building your first WhatsApp chatbot. | Customer Service/Development | [Link to Template](./WhatsApp/Building%20Your%20First%20WhatsApp%20Chatbot.json) |
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | This workflow builds a complete business WhatsApp AI-powered RAG chatbot using OpenAI. | Customer Service/AI/Development | [Link to Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
+| Receive and Send Messages Across WhatsApp, Instagram and Facebook Messenger with Fiwano | Demonstrates a minimal receive → custom logic → send pattern across three official Meta APIs. Fiwano unifies the channels into one Trigger/Action node set and normalized payload; replace the middle with any routing, CRM, helpdesk, or AI logic. | Customer Service/Development | [Link to Template](./WhatsApp/Receive%20and%20Send%20Messages%20Across%20WhatsApp%2C%20Instagram%20and%20Facebook%20Messenger%20with%20Fiwano.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | This workflow enables professional AI-powered responses to WhatsApp messages. | Customer Service/AI/Communication | [Link to Template](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
