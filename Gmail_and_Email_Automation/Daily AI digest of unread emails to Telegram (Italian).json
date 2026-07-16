@@ -1,0 +1,190 @@
+{
+  "name": "03 - Rassegna email mattutina con AI",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURAZIONE (5 min)\n\n1. **Gmail**: collega l'account da monitorare nel nodo 'Prendi email non lette'.\n2. **OpenAI**: inserisci la tua API key nel nodo 'Riassumi con AI' (funziona anche con altri provider cambiando nodo: Claude, Gemini, Ollama in locale a costo zero).\n3. **Telegram**: crea un bot con @BotFather e inserisci token + Chat ID nel nodo finale.\n\nOgni mattina alle 8:00 ricevi su Telegram un riassunto delle email non lette delle ultime 24 ore, ordinate per urgenza.\n\n💰 Costo AI: ~1 centesimo al giorno con gpt-4o-mini.",
+        "height": 360,
+        "width": 400
+      },
+      "id": "nota-setup",
+      "name": "Nota di setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, -200]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-8",
+      "name": "Ogni mattina alle 8 (lun-ven)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 25,
+        "filters": {
+          "q": "is:unread newer_than:1d -category:promotions -category:social"
+        },
+        "options": {}
+      },
+      "id": "gmail-getall",
+      "name": "Prendi email non lette",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [620, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compatta le email in un unico testo per l'AI\nconst righe = [];\n\nfor (const item of $input.all()) {\n  const e = item.json;\n  const da = e.from?.value?.[0]?.name || e.from?.value?.[0]?.address || e.From || 'Sconosciuto';\n  const oggetto = e.subject || e.Subject || '(senza oggetto)';\n  const anteprima = String(e.snippet || e.text || '').slice(0, 200).replace(/\\s+/g, ' ');\n  righe.push(`DA: ${da}\\nOGGETTO: ${oggetto}\\nANTEPRIMA: ${anteprima}\\n---`);\n}\n\nif (righe.length === 0) {\n  return [{ json: { vuoto: true, testoEmail: '' } }];\n}\n\nreturn [{ json: { vuoto: false, totale: righe.length, testoEmail: righe.join('\\n') } }];"
+      },
+      "id": "code-compatta",
+      "name": "Prepara testo per AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.vuoto }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-ci-sono-email",
+      "name": "Ci sono email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1060, 0]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Sei l'assistente di un imprenditore italiano. Ricevi l'elenco delle email non lette e produci una rassegna mattutina in italiano, breve e pratica, in questo formato:\n\n🔴 URGENTI (rispondere oggi):\n- [mittente]: [cosa vuole in max 10 parole]\n\n🟡 IMPORTANTI (questa settimana):\n- ...\n\n⚪ IL RESTO:\n- una riga sola che raggruppa il resto\n\nSii sintetico. Se qualcosa sembra un cliente arrabbiato o un'opportunità di vendita, segnalalo per primo."
+            },
+            {
+              "content": "=Ecco le {{ $json.totale }} email non lette:\n\n{{ $json.testoEmail }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "openai-riassunto",
+      "name": "Riassumi con AI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [1280, -100]
+    },
+    {
+      "parameters": {
+        "chatId": "INSERISCI-CHAT-ID",
+        "text": "=☕ *Rassegna email del {{ $now.format('dd/MM') }}*\n\n{{ $json.message?.content || $json.output || $json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-rassegna",
+      "name": "Invia rassegna su Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1500, -100]
+    }
+  ],
+  "connections": {
+    "Ogni mattina alle 8 (lun-ven)": {
+      "main": [
+        [
+          {
+            "node": "Prendi email non lette",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prendi email non lette": {
+      "main": [
+        [
+          {
+            "node": "Prepara testo per AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara testo per AI": {
+      "main": [
+        [
+          {
+            "node": "Ci sono email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ci sono email?": {
+      "main": [
+        [
+          {
+            "node": "Riassumi con AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Riassumi con AI": {
+      "main": [
+        [
+          {
+            "node": "Invia rassegna su Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
