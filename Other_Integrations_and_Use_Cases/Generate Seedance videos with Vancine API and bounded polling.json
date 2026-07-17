@@ -1,0 +1,764 @@
+{
+ "id": "vancine-seedance-starter",
+ "name": "Generate Seedance videos with Vancine API and bounded polling",
+ "active": false,
+ "nodes": [
+  {
+   "name": "manualTrigger",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    240,
+    300
+   ],
+   "parameters": {},
+   "id": "mt_06aa62101478b04e"
+  },
+  {
+   "name": "setFields",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    460,
+    300
+   ],
+   "id": "sf_ce466658d13cf5de",
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "model",
+       "name": "model",
+       "value": "Doubao-Seedance-1.5-pro",
+       "type": "string"
+      },
+      {
+       "id": "prompt",
+       "name": "prompt",
+       "value": "A timelapse of a flower blooming at sunrise",
+       "type": "string"
+      },
+      {
+       "id": "size",
+       "name": "size",
+       "value": "1280x720",
+       "type": "string"
+      },
+      {
+       "id": "base_url",
+       "name": "base_url",
+       "value": "https://vancine.com",
+       "type": "string"
+      },
+      {
+       "id": "intervalSeconds",
+       "name": "intervalSeconds",
+       "value": 5,
+       "type": "number"
+      },
+      {
+       "id": "maxPolls",
+       "name": "maxPolls",
+       "value": 120,
+       "type": "number"
+      }
+     ]
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "submitTask",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    680,
+    300
+   ],
+   "id": "st_017726b463a0f380",
+   "parameters": {
+    "method": "POST",
+    "url": "={{$json.base_url}}/v1/video/generations",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "model",
+       "value": "={{$json.model}}"
+      },
+      {
+       "name": "prompt",
+       "value": "={{$json.prompt}}"
+      },
+      {
+       "name": "size",
+       "value": "={{$json.size}}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "nodeCredentialType": "httpHeaderAuth",
+   "credentials": {}
+  },
+  {
+   "name": "saveTaskId",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    900,
+    300
+   ],
+   "id": "sv_e9f9b7cde8c72b43",
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "task_id",
+       "name": "task_id",
+       "value": "={{$json.task_id || $json.id || ($json.data && $json.data.task_id) || ($json.data && $json.data.id)}}",
+       "type": "string"
+      },
+      {
+       "id": "base_url",
+       "name": "base_url",
+       "value": "={{$('setFields').first().json.base_url || 'https://vancine.com'}}",
+       "type": "string"
+      },
+      {
+       "id": "intervalSeconds",
+       "name": "intervalSeconds",
+       "value": "={{$('setFields').first().json.intervalSeconds || 5}}",
+       "type": "number"
+      },
+      {
+       "id": "maxPolls",
+       "name": "maxPolls",
+       "value": "={{$('setFields').first().json.maxPolls || 120}}",
+       "type": "number"
+      },
+      {
+       "id": "poll_index",
+       "name": "poll_index",
+       "value": 0,
+       "type": "number"
+      }
+     ]
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "waitInterval",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    1120,
+    300
+   ],
+   "id": "wt_617d429b0526fd9e",
+   "parameters": {
+    "amount": "={{$json.intervalSeconds || 5}}",
+    "unit": "seconds"
+   }
+  },
+  {
+   "name": "pollTask",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1340,
+    200
+   ],
+   "id": "pt_182f5f47f46f88d4",
+   "parameters": {
+    "method": "GET",
+    "url": "={{$json.base_url}}/v1/video/generations/{{$json.task_id}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {}
+   },
+   "nodeCredentialType": "httpHeaderAuth",
+   "credentials": {}
+  },
+  {
+   "name": "carryState",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    1340,
+    400
+   ],
+   "id": "cs_3f26bc9f90379a38",
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "task_id",
+       "name": "task_id",
+       "value": "={{$json.task_id}}",
+       "type": "string"
+      },
+      {
+       "id": "poll_index",
+       "name": "poll_index",
+       "value": "={{$json.poll_index || 0}}",
+       "type": "number"
+      },
+      {
+       "id": "maxPolls",
+       "name": "maxPolls",
+       "value": "={{$json.maxPolls || 120}}",
+       "type": "number"
+      },
+      {
+       "id": "intervalSeconds",
+       "name": "intervalSeconds",
+       "value": "={{$json.intervalSeconds || 5}}",
+       "type": "number"
+      },
+      {
+       "id": "base_url",
+       "name": "base_url",
+       "value": "={{$json.base_url || 'https://vancine.com'}}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "mergeResults",
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    1560,
+    300
+   ],
+   "id": "mr_a5d808a609f555e2",
+   "parameters": {
+    "mode": "append",
+    "options": {}
+   }
+  },
+  {
+   "name": "mergeState",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1780,
+    300
+   ],
+   "id": "ms_aeaaa2c69144e9df",
+   "parameters": {
+    "language": "javaScript",
+    "mode": "runOnceForAllItems",
+    "jsCode": "// Merge the HTTP poll response with the carried loop state. NO network calls.\n// Items arrive via Merge(append): one from pollTask (response), one from carryState.\nconst items = $input.all();\nconst response = items.find(i => i.json.status !== undefined && i.json.object !== undefined) || items[0];\nconst carried = items.find(i => i.json.poll_index !== undefined) || items[items.length > 1 ? 1 : 0] || items[0];\nconst pollIndex = (carried.json.poll_index || 0) + 1;\nconst taskId = response.json.task_id || response.json.id || (response.json.data && response.json.data.task_id) || (response.json.data && response.json.data.id) || carried.json.task_id;\nconst status = response.json.status || (response.json.data && response.json.data.status);\nconst metadata = response.json.metadata || (response.json.data && response.json.data.metadata);\nconst data = response.json.data;\nconst error = response.json.error || (response.json.data && response.json.data.error);\nconst resultUrl = (metadata && metadata.url)\n  || (data && data.result_url)\n  || (data && data.data && data.data.content && data.data.content.video_url)\n  || '';\nreturn [{ json: {\n  task_id: taskId,\n  status: status,\n  metadata: metadata,\n  data: data,\n  error: error,\n  poll_index: pollIndex,\n  maxPolls: carried.json.maxPolls || 120,\n  intervalSeconds: carried.json.intervalSeconds || 5,\n  base_url: carried.json.base_url || 'https://vancine.com',\n  result_url: resultUrl\n}}];"
+   }
+  },
+  {
+   "name": "ifCompleted",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    2000,
+    300
+   ],
+   "id": "ic_6855f0082483c663",
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "type": "expression"
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "leftValue": "={{$json.status === 'completed' || $json.status === 'SUCCESS' || ($json.data && ($json.data.status === 'completed' || $json.data.status === 'SUCCESS'))}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "outputResult",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2220,
+    200
+   ],
+   "id": "or_89fefec94b364a33",
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "result_url",
+       "name": "result_url",
+       "value": "={{$json.result_url}}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "ifFailed",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    2220,
+    400
+   ],
+   "id": "if_26951f656456684f",
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "type": "expression"
+     },
+     "conditions": [
+      {
+       "id": "c2",
+       "leftValue": "={{$json.status === 'failed' || $json.status === 'FAILURE' || ($json.data && ($json.data.status === 'failed' || $json.data.status === 'FAILURE'))}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "failNode",
+   "type": "n8n-nodes-base.stopAndError",
+   "typeVersion": 1,
+   "position": [
+    2440,
+    400
+   ],
+   "id": "fn_8d300061d1186ab7",
+   "parameters": {
+    "errorMessage": "={{'Seedance task ' + $json.task_id + ' failed: ' + (($json.error && $json.error.message) || ($json.data && $json.data.fail_reason) || 'unknown')}}"
+   }
+  },
+  {
+   "name": "ifTimeout",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2,
+   "position": [
+    2220,
+    560
+   ],
+   "id": "it_7f93fd8947db9b09",
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "type": "expression"
+     },
+     "conditions": [
+      {
+       "id": "c3",
+       "leftValue": "={{($json.poll_index || 0) >= ($json.maxPolls || 120)}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "name": "timeoutFail",
+   "type": "n8n-nodes-base.stopAndError",
+   "typeVersion": 1,
+   "position": [
+    2440,
+    560
+   ],
+   "id": "tf_8302289baf1ddf07",
+   "parameters": {
+    "errorMessage": "={{'Polling exceeded ' + ($json.maxPolls || 120) + ' attempts for task ' + $json.task_id}}"
+   }
+  },
+  {
+   "name": "continuePolling",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2000,
+    560
+   ],
+   "id": "cp_ff301842a4e8ea83",
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "task_id",
+       "name": "task_id",
+       "value": "={{$json.task_id}}",
+       "type": "string"
+      },
+      {
+       "id": "poll_index",
+       "name": "poll_index",
+       "value": "={{$json.poll_index}}",
+       "type": "number"
+      },
+      {
+       "id": "maxPolls",
+       "name": "maxPolls",
+       "value": "={{$json.maxPolls || 120}}",
+       "type": "number"
+      },
+      {
+       "id": "intervalSeconds",
+       "name": "intervalSeconds",
+       "value": "={{$json.intervalSeconds || 5}}",
+       "type": "number"
+      },
+      {
+       "id": "base_url",
+       "name": "base_url",
+       "value": "={{$json.base_url || 'https://vancine.com'}}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   }
+  },
+  {
+   "parameters": {
+    "content": "## Seedance\n\n### How it works\n\nThis workflow manually starts a Seedance video generation request, submits the configured prompt and model to a video generation API, then polls for completion. It carries loop state through each wait-and-poll cycle, merges the API response with that state, and routes the result to success, failure, timeout, or another polling iteration.\n\n### Setup steps\n\n- Configure the HTTP Request nodes with the required API authentication for the Seedance-compatible video generation service.\n- Update the setFields node with the desired model, prompt, output size, and base_url.\n- Adjust intervalSeconds and maxPolls in saveTaskId or related loop-state Set nodes to control polling frequency and timeout behavior.\n- Run the workflow manually from the manualTrigger node to test the full generation and polling flow.\n\n### Customization\n\nChange the prompt, model, size, polling interval, and maximum poll count to match the desired video output and service limits.",
+    "width": 480,
+    "height": 896
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -368,
+    48
+   ],
+   "id": "82ebe33f-4cdd-4ee4-9300-c5e5eb7fe099",
+   "name": "Sticky Note"
+  },
+  {
+   "parameters": {
+    "content": "## Start and configure\n\nManual entry point and initial request configuration, including the model, prompt, size, and API base URL.",
+    "width": 416,
+    "height": 320,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    192,
+    144
+   ],
+   "id": "3fd1e53a-a10c-475d-aa5f-6ad12c6a4e48",
+   "name": "Sticky Note1"
+  },
+  {
+   "parameters": {
+    "content": "## Submit generation job\n\nSends the video generation POST request and extracts the task metadata needed for later polling.",
+    "width": 416,
+    "height": 320,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    640,
+    144
+   ],
+   "id": "f2c2ab13-014e-406c-85e6-381571095925",
+   "name": "Sticky Note2"
+  },
+  {
+   "parameters": {
+    "content": "## Wait before polling\n\nPauses between task submission or retry iterations before checking the generation status again.",
+    "width": 240,
+    "height": 336,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1104,
+    128
+   ],
+   "id": "58fa6799-eba0-44d0-acb2-a0413de3fb59",
+   "name": "Sticky Note3"
+  },
+  {
+   "parameters": {
+    "content": "## Poll and merge state\n\nFetches the current task status, carries loop counters and configuration alongside it, then merges the API response with the retained polling state.",
+    "width": 640,
+    "height": 512,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1376,
+    48
+   ],
+   "id": "abd0c0cf-d6db-482d-9033-489a57194439",
+   "name": "Sticky Note4"
+  },
+  {
+   "parameters": {
+    "content": "## Completion output routing\n\nChecks whether the generation completed and, if so, outputs the final result URL.",
+    "width": 416,
+    "height": 400,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2048,
+    64
+   ],
+   "id": "18c689d3-5066-4114-992a-703eb0b04c39",
+   "name": "Sticky Note5"
+  },
+  {
+   "parameters": {
+    "content": "## Failure error handling\n\nEvaluates failed task states and stops the workflow with an error when the API reports generation failure.",
+    "width": 416,
+    "height": 320,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2176,
+    496
+   ],
+   "id": "54645c99-32f4-4f96-b1bf-1dc11a0a41e6",
+   "name": "Sticky Note6"
+  },
+  {
+   "parameters": {
+    "content": "## Timeout and retry\n\nDetermines whether polling has exceeded the maximum number of attempts, raises a timeout error if needed, or updates state to continue polling.",
+    "width": 640,
+    "height": 320,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2048,
+    848
+   ],
+   "id": "65f1bc33-fe8d-4996-ab7c-d3ac248ff3cc",
+   "name": "Sticky Note7"
+  }
+ ],
+ "connections": {
+  "manualTrigger": {
+   "main": [
+    [
+     {
+      "node": "setFields",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "setFields": {
+   "main": [
+    [
+     {
+      "node": "submitTask",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "submitTask": {
+   "main": [
+    [
+     {
+      "node": "saveTaskId",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "saveTaskId": {
+   "main": [
+    [
+     {
+      "node": "waitInterval",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "waitInterval": {
+   "main": [
+    [
+     {
+      "node": "pollTask",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "carryState",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "pollTask": {
+   "main": [
+    [
+     {
+      "node": "mergeResults",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "carryState": {
+   "main": [
+    [
+     {
+      "node": "mergeResults",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "mergeResults": {
+   "main": [
+    [
+     {
+      "node": "mergeState",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "mergeState": {
+   "main": [
+    [
+     {
+      "node": "ifCompleted",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "ifCompleted": {
+   "main": [
+    [
+     {
+      "node": "outputResult",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "ifFailed",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "ifFailed": {
+   "main": [
+    [
+     {
+      "node": "failNode",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "ifTimeout",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "ifTimeout": {
+   "main": [
+    [
+     {
+      "node": "timeoutFail",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "continuePolling",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "continuePolling": {
+   "main": [
+    [
+     {
+      "node": "waitInterval",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {},
+ "staticData": null
+}
