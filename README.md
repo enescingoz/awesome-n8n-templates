@@ -343,6 +343,7 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 | SupportFlow Lite - Simple AI Customer Support Chatbot | A lightweight AI chatbot that answers customer questions using company info and OpenAI gpt-4o-mini. Easy single-workflow setup with Google Sheets knowledge base. | Customer Support/AI | [Link to Template](OpenAI_and_LLMs/SupportFlow%20Lite%20-%20Simple%20AI%20Customer%20Support%20Chatbot.json) |
 | GCF Token Optimization for LLM Tool Responses | Fetches GitHub contributors, batches into an array, encodes to GCF (Graph Compact Format) for 53-71% fewer tokens, then decodes back to JSON losslessly. Uses the n8n-nodes-gcf community node. | AI/DevOps/Optimization | [Link to Template](OpenAI_and_LLMs/GCF%20Token%20Optimization%20for%20LLM%20Tool%20Responses.json) |
 | n8n + Local LLM (Ollama) Basic Setup | Connect n8n with local LLMs (Llama 3, Mistral, Phi-3) for 100% free AI automation. No API keys required. | AI/Automation | [Link to Template](./OpenAI_and_LLMs/Ollama_Basic_Workflow.json) |
+| DaoXE Multi-Model Chat with Automatic Fallback | Calls a primary model and, if it errors, automatically retries the same prompt on a fallback model — all through one OpenAI-compatible API key (DaoXE gateway). Pure HTTP nodes, so it runs on any n8n version. | AI/Development | [Link to Template](OpenAI_and_LLMs/DaoXE%20Multi-Model%20Chat%20with%20Automatic%20Fallback.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 

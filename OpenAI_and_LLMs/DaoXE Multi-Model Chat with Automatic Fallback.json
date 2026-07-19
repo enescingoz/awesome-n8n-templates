@@ -1,0 +1,280 @@
+{
+  "name": "DaoXE Multi-Model Chat with Automatic Fallback",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## DaoXE multi-model fallback (one API key)\n\n**What it does:** calls a primary model on DaoXE; if that request errors, it automatically retries the same prompt on a fallback model — all through **one** OpenAI-compatible key and **one** Base URL (`https://daoxe.com/v1`).\n\n### Setup (2 minutes)\n1. **Credentials → New → Header Auth** — Name: `Authorization`, Value: `Bearer <YOUR_DAOXE_API_KEY>`. Select it in both HTTP nodes.\n2. Open **Set inputs** and replace `YOUR_DAOXE_MODEL_ID` / `YOUR_DAOXE_FALLBACK_MODEL_ID` with two exact model IDs available to your account (from your DaoXE dashboard or `GET /v1/models` — do not hardcode a list from a blog post).\n3. Click **Test workflow**.\n\nDaoXE is a multi-model, multi-protocol gateway. Not available in mainland China.\nhttps://daoxe.com/?utm_source=n8n&utm_medium=template&utm_campaign=nocode_multimodel",
+        "height": 460,
+        "width": 420,
+        "color": 4
+      },
+      "id": "11111111-0000-4000-8000-000000000001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -120
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "11111111-0000-4000-8000-000000000002",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0000000-0000-0000-0000-000000000001",
+              "name": "prompt",
+              "value": "Give me three punchy blog-post titles about honest, no-swapping AI API gateways.",
+              "type": "string"
+            },
+            {
+              "id": "a0000000-0000-0000-0000-000000000002",
+              "name": "system",
+              "value": "You are a concise, helpful assistant. Answer in plain text.",
+              "type": "string"
+            },
+            {
+              "id": "a0000000-0000-0000-0000-000000000003",
+              "name": "primary_model",
+              "value": "YOUR_DAOXE_MODEL_ID",
+              "type": "string"
+            },
+            {
+              "id": "a0000000-0000-0000-0000-000000000004",
+              "name": "fallback_model",
+              "value": "YOUR_DAOXE_FALLBACK_MODEL_ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11111111-0000-4000-8000-000000000003",
+      "name": "Set inputs",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://daoxe.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": {{ JSON.stringify($json.primary_model) }},\n  \"messages\": [\n    { \"role\": \"system\", \"content\": {{ JSON.stringify($json.system) }} },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($json.prompt) }} }\n  ]\n}",
+        "options": {}
+      },
+      "id": "11111111-0000-4000-8000-000000000004",
+      "name": "Primary model (DaoXE)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        120
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "DaoXE (Header Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://daoxe.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": {{ JSON.stringify($('Set inputs').item.json.fallback_model) }},\n  \"messages\": [\n    { \"role\": \"system\", \"content\": {{ JSON.stringify($('Set inputs').item.json.system) }} },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($('Set inputs').item.json.prompt) }} }\n  ]\n}",
+        "options": {}
+      },
+      "id": "11111111-0000-4000-8000-000000000005",
+      "name": "Fallback model (DaoXE)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "DaoXE (Header Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b0000000-0000-0000-0000-000000000001",
+              "name": "answer",
+              "value": "={{ $json.choices[0].message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "b0000000-0000-0000-0000-000000000002",
+              "name": "served_model",
+              "value": "={{ $json.model }}",
+              "type": "string"
+            },
+            {
+              "id": "b0000000-0000-0000-0000-000000000003",
+              "name": "via",
+              "value": "primary",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11111111-0000-4000-8000-000000000006",
+      "name": "Answer (primary)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0000000-0000-0000-0000-000000000001",
+              "name": "answer",
+              "value": "={{ $json.choices[0].message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "c0000000-0000-0000-0000-000000000002",
+              "name": "served_model",
+              "value": "={{ $json.model }}",
+              "type": "string"
+            },
+            {
+              "id": "c0000000-0000-0000-0000-000000000003",
+              "name": "via",
+              "value": "fallback",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11111111-0000-4000-8000-000000000007",
+      "name": "Answer (fallback)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        900,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set inputs": {
+      "main": [
+        [
+          {
+            "node": "Primary model (DaoXE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primary model (DaoXE)": {
+      "main": [
+        [
+          {
+            "node": "Answer (primary)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback model (DaoXE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback model (DaoXE)": {
+      "main": [
+        [
+          {
+            "node": "Answer (fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "DaoXE"
+    }
+  ]
+}
