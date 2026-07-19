@@ -90,7 +90,7 @@
     },
     {
       "parameters": {
-        "content": "### Add the credential before the first run\nOpen **Capture public page**, select or create a **Bearer Auth** credential, and paste only the `ls_live_…` token. The exported workflow contains no API key.\n\nThe successful response is binary field `capture`. Connect it to storage, email, chat, or another file-capable node.",
+        "content": "### Add the credential before the first run\nGet a recurring Free key at https://latchshot.fly.dev/?intent=n8ncatalog#trial — 100 successful renders each UTC month, no card.\n\nOpen **Capture public page**, select or create a **Bearer Auth** credential, and paste only the `ls_live_…` token. The exported workflow contains no API key.\n\nThe successful response is binary field `capture`. Connect it to storage, email, chat, or another file-capable node.",
         "height": 250,
         "width": 390
       },
@@ -133,7 +133,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "ff4a967b-6b87-489e-bd8d-bc4c4918e959",
+  "versionId": "ee32aad4-30a7-4752-9e30-9282573fad24",
   "meta": {
     "templateCredsSetupCompleted": false
   },
