@@ -385,7 +385,7 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 29 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 30 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -410,6 +410,7 @@ This section includes 29 additional n8n integration templates covering a wide ra
 | Introduction to the HTTP Tool | Basic tutorial on using HTTP tools in n8n. | Development | [Link to Template](Other_Integrations_and_Use_Cases/Introduction%20to%20the%20HTTP%20Tool.json) |
 | KB Tool - Confluence Knowledge Base | Integrates with Confluence for knowledge base management. | Documentation/IT | [Link to Template](Other_Integrations_and_Use_Cases/KB%20Tool%20-%20Confluence%20Knowledge%20Base.json) |
 | Komos Regulated Browser Ops Task Queue | Queues a [Komos](https://www.komos.ai/) browser automation task from n8n for CRA, banking, or insurance portal operations with audit-ready run metadata. | Ops/Compliance | [Link to Template](Other_Integrations_and_Use_Cases/Komos%20Regulated%20Browser%20Ops%20Task%20Queue.json) |
+| Latchshot — capture a public webpage | Captures a public URL as a binary PNG through Latchshot using an n8n Bearer credential, typed viewport inputs, bounded delay, and no embedded API key. The output is ready for storage, email, chat, or file-aware nodes. | Engineering/Automation | [Link to Template](Other_Integrations_and_Use_Cases/Latchshot%20%E2%80%94%20capture%20a%20public%20webpage.json) |
 | LINE Assistant with Google Calendar and Gmail | Creates a LINE assistant that integrates with Google Calendar and Gmail. | Productivity/Communication | [Link to Template](Other_Integrations_and_Use_Cases/LINE%20Assistant%20with%20Google%20Calendar%20and%20Gmail%20Integration.json) |
 | Monthly Spotify Track Archiving | Archives and classifies monthly Spotify tracks into playlists. | Personal/Music | [Link to Template](Other_Integrations_and_Use_Cases/Monthly%20Spotify%20Track%20Archiving%20and%20Playlist%20Classification.json) |
 | Obsidian Notes Read Aloud | Converts Obsidian notes into audio format as a podcast feed. | Productivity/Content | [Link to Template](Other_Integrations_and_Use_Cases/Obsidian%20Notes%20Read%20Aloud%20using%20AI_%20Available%20as%20a%20Podcast%20Feed.json) |
