@@ -1,0 +1,151 @@
+{
+  "name": "Bitcoin price alert to Telegram with CoinPaprika",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Bitcoin price alert (CoinPaprika, no API key)\n\nPolls the free, keyless CoinPaprika API every 15 minutes and sends a Telegram message when Bitcoin moves 5% or more (up or down) over 24h.\n\n**Setup**\n1. Add your Telegram credential to the *Send Telegram alert* node.\n2. Set your chat id in that node (replace YOUR_TELEGRAM_CHAT_ID).\n\n**Customize**\n- Track another coin: change `btc-bitcoin` in the HTTP node to any CoinPaprika id (e.g. `eth-ethereum`, `sol-solana`).\n- Change the 5% threshold in the *Big 24h move?* node.\n\nNo API key or signup is required. Data: https://api.coinpaprika.com",
+        "height": 360,
+        "width": 380
+      },
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "name": "About this template",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "b2222222-2222-4222-8222-222222222222",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.coinpaprika.com/v1/tickers/btc-bitcoin",
+        "options": {}
+      },
+      "id": "c3333333-3333-4333-8333-333333333333",
+      "name": "Get BTC price (CoinPaprika)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        340,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-up",
+              "leftValue": "={{ $json.quotes.USD.percent_change_24h }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "cond-down",
+              "leftValue": "={{ $json.quotes.USD.percent_change_24h }}",
+              "rightValue": -5,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "d4444444-4444-4444-8444-444444444444",
+      "name": "Big 24h move?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=Bitcoin big 24h move alert\n\nPrice: ${{ $json.quotes.USD.price.toFixed(2) }}\n24h change: {{ $json.quotes.USD.percent_change_24h.toFixed(2) }}%\n7d change: {{ $json.quotes.USD.percent_change_7d.toFixed(2) }}%\n\nSource: CoinPaprika (keyless, no API key)",
+        "additionalFields": {}
+      },
+      "id": "e5555555-5555-4555-8555-555555555555",
+      "name": "Send Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get BTC price (CoinPaprika)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get BTC price (CoinPaprika)": {
+      "main": [
+        [
+          {
+            "node": "Big 24h move?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Big 24h move?": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
