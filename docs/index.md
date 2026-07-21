@@ -143,8 +143,8 @@ description: "The largest curated collection of 280+ free, ready-to-use n8n auto
 
   <div class="category-card">
     <h3><a href="{{ site.baseurl }}/categories/other-integrations">Other Integrations</a></h3>
-    <span class="count">29 templates</span>
-    <p>API extraction, Spotify archiving, Zoom AI assistant, Siri agents, and 25+ more integrations.</p>
+    <span class="count">37 templates</span>
+    <p>API extraction, Spotify archiving, Zoom AI assistant, Siri agents, and 33+ more integrations.</p>
   </div>
 
   <div class="category-card">
