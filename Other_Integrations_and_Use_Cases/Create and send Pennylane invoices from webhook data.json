@@ -1,0 +1,789 @@
+{
+  "name": "Create and send Pennylane invoices from webhook data",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Create and send Pennylane invoices from webhook data\n\n## Who is this for\n\nSMEs and freelancers using Pennylane who want to create invoices automatically from a CRM, form, or business application.\n\n## What it does\n\nA protected POST webhook validates customer and line-item data, finds or creates the customer in Pennylane, creates a finalized invoice, optionally emails it through Pennylane, and returns the invoice details to the caller.\n\n## Security and setup\n\n1. Create an **HTTP Basic Auth** credential and select it on `WH Receive Invoice Data`. Never expose an unauthenticated invoicing webhook.\n2. Create an **HTTP Header Auth** credential for Pennylane: name `Authorization`, value `Bearer <YOUR_PENNYLANE_TOKEN>`.\n3. Select that Pennylane credential on all four `PL` HTTP Request nodes.\n4. Configure sequential invoice numbering in Pennylane.\n5. Test with `send_email: false` before enabling customer delivery. Email delivery retries Pennylane HTTP 409 responses once per minute, up to five attempts.\n6. Activate the workflow and use its production webhook URL.\n\nRequires n8n 1.40+ and a Pennylane API token with `customer_invoices:all` and `customers:all` scopes. Import verified with n8n 2.31.5.\n\nSource and full payload documentation: https://github.com/Gauthier-Huguenin/n8n-pennylane-auto-invoicing\n\nAdapted from the original template © 2026 Gauthier Huguenin. Distributed under the MIT License; the complete notice is included in this workflow.\n\n---\n\n### Flow\n\n`WH Receive Invoice Data`\n  → `Code Validate Payload`\n  → `PL Search Customer`\n  → `IF Customer Exists`\n    → yes: `Set Customer ID`\n    → no: `PL Create Customer` → `Set Customer ID`\n  → `Code Build Invoice Payload`\n  → `PL Create Invoice`\n  → `IF Send Email`\n    → yes: retry `Wait PDF Generation` → `PL Send Invoice Email` up to five times on HTTP 409\n    → no: `Set Output Response`\n  → `Set Output Response`",
+        "height": 1376,
+        "width": 720
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -592,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "2432a919-ea99-4529-969d-2f94a9f44110",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pennylane-invoice",
+        "responseMode": "lastNode",
+        "options": {},
+        "authentication": "basicAuth"
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        32
+      ],
+      "id": "402c4d14-ab30-4baf-85b5-daec4ceb06f4",
+      "name": "WH Receive Invoice Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookItem = $input.first().json;\nconst input = webhookItem.body ?? webhookItem;\nconst errors = [];\n\nif (typeof input.customer_name !== 'string' || input.customer_name.trim() === '') {\n  errors.push('customer_name is required');\n}\nif (typeof input.customer_email !== 'string' || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(input.customer_email)) {\n  errors.push('customer_email is required and must be valid');\n}\nif (!Array.isArray(input.items) || input.items.length === 0) {\n  errors.push('items array is required and must contain at least one item');\n} else {\n  input.items.forEach((item, i) => {\n    if (typeof item.label !== 'string' || item.label.trim() === '') errors.push(`items[${i}].label is required`);\n    if (typeof item.quantity !== 'number' || !Number.isFinite(item.quantity) || item.quantity <= 0) errors.push(`items[${i}].quantity must be a number > 0`);\n    if (typeof item.unit_price !== 'number' || !Number.isFinite(item.unit_price) || item.unit_price <= 0) errors.push(`items[${i}].unit_price must be a number > 0`);\n  });\n}\nif (input.customer_country && !/^[A-Z]{2}$/.test(input.customer_country)) {\n  errors.push('customer_country must be an uppercase ISO alpha-2 code');\n}\nif (input.due_date && !/^\\d{4}-\\d{2}-\\d{2}$/.test(input.due_date)) {\n  errors.push('due_date must use YYYY-MM-DD format');\n}\nif (errors.length > 0) throw new Error('Validation failed: ' + errors.join('; '));\n\nreturn [{ json: {\n  customer_name: input.customer_name.trim(),\n  customer_email: input.customer_email.trim().toLowerCase(),\n  customer_address: typeof input.customer_address === 'string' ? input.customer_address : '',\n  customer_postal_code: typeof input.customer_postal_code === 'string' ? input.customer_postal_code : '00000',\n  customer_city: typeof input.customer_city === 'string' ? input.customer_city : 'Non renseigné',\n  customer_country: input.customer_country || 'FR',\n  items: input.items.map(item => ({\n    label: item.label.trim(),\n    quantity: item.quantity,\n    unit_price: item.unit_price,\n    vat_rate: item.vat_rate || 'FR_200'\n  })),\n  due_date: input.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],\n  currency: input.currency || 'EUR',\n  reference: input.reference || null,\n  send_email: input.send_email === true\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        32
+      ],
+      "id": "585218e8-449a-40da-8ce7-d8157998c2f7",
+      "name": "Code Validate Payload"
+    },
+    {
+      "parameters": {
+        "url": "https://app.pennylane.com/api/external/v2/customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filter",
+              "value": "={{ JSON.stringify([{ field: 'emails', operator: 'in', value: $json.customer_email }]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        832,
+        32
+      ],
+      "id": "5440a265-819f-42d4-8c26-d83cb51eb219",
+      "name": "PL Search Customer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "85be8afd-6833-43ba-bb7b-305dd91e9a73",
+              "leftValue": "={{ $json.items.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        32
+      ],
+      "id": "8e9e52fa-654e-4b14-b72f-8c57b70744f7",
+      "name": "IF Customer Exists"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.pennylane.com/api/external/v2/company_customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $('Code Validate Payload').item.json.customer_name, emails: [$('Code Validate Payload').item.json.customer_email], billing_address: { address: $('Code Validate Payload').item.json.customer_address, postal_code: $('Code Validate Payload').item.json.customer_postal_code, city: $('Code Validate Payload').item.json.customer_city, country: $('Code Validate Payload').item.json.customer_country } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        128
+      ],
+      "id": "106b531c-143f-4de7-ba98-8ede691a0d01",
+      "name": "PL Create Customer"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86d02b7a-27bd-4791-a4aa-02b7429dc7bd",
+              "name": "customer_id",
+              "value": "={{ $json.id ?? $json.items?.[0]?.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        16
+      ],
+      "id": "49c0e376-9f63-4ded-8d0c-917cc7ddf652",
+      "name": "Set Customer ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.pennylane.com/api/external/v2/customer_invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1824,
+        16
+      ],
+      "id": "c33bd39f-5043-418c-88f9-0aaa8bc25c9d",
+      "name": "PL Create Invoice"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refs: 'Set Customer ID', 'Code Validate Payload'\nconst data = $('Code Validate Payload').first().json;\nconst customerId = $('Set Customer ID').first().json.customer_id;\n\nconst invoiceLines = data.items.map(item => ({\n  label: item.label,\n  quantity: item.quantity,\n  unit: 'piece',\n  raw_currency_unit_price: String(item.unit_price.toFixed(2)),\n  vat_rate: item.vat_rate\n}));\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst payload = {\n  customer_id: customerId,\n  date: today,\n  deadline: data.due_date,\n  currency: data.currency,\n  invoice_lines: invoiceLines,\n  draft: false\n};\n\nif (data.reference) {\n  payload.external_reference = data.reference;\n}\n\nreturn [{ json: payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        16
+      ],
+      "id": "964e6cc9-ff3c-49ab-bda0-ca842e6b380e",
+      "name": "Code Build Invoice Payload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "de5a2cc8-def5-4777-8369-51caea43256f",
+              "leftValue": "={{ $('Code Validate Payload').item.json.send_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2064,
+        16
+      ],
+      "id": "041e2680-0585-43e8-8df3-4a04b3c32fc3",
+      "name": "IF Send Email"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5fe5a2e-f759-4afd-907f-eacb7251481b",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "03e80656-7f61-46cd-98d4-0e7daf6636d3",
+              "name": "invoice_id",
+              "value": "={{ $('PL Create Invoice').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "0f54ae5d-87d0-473f-9076-3b17bc24ec0d",
+              "name": "invoice_number",
+              "value": "={{ $('PL Create Invoice').item.json.invoice_number }}",
+              "type": "string"
+            },
+            {
+              "id": "878b0587-95ee-4b69-8853-f51c1c356dfa",
+              "name": "amount",
+              "value": "={{ $('PL Create Invoice').item.json.currency_amount }}",
+              "type": "string"
+            },
+            {
+              "id": "ef1c38e7-d845-4604-bb8f-908fcbbe4146",
+              "name": "customer",
+              "value": "={{ $('Code Validate Payload').item.json.customer_name }}",
+              "type": "string"
+            },
+            {
+              "id": "93d69fa3-86ca-4f0b-8db3-94d7177c10cf",
+              "name": "public_url",
+              "value": "={{ $('PL Create Invoice').item.json.public_file_url || null }}",
+              "type": "string"
+            },
+            {
+              "id": "65e61d9c-4603-4d18-b12c-9e64e5bf1fc6",
+              "name": "email_sent",
+              "value": "={{ $('Code Validate Payload').item.json.send_email }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3648,
+        32
+      ],
+      "id": "8d44a126-0a95-4283-ab89-2ebf6e40baa7",
+      "name": "Set Output Response"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        -48
+      ],
+      "id": "f12591be-0ef5-4cc5-8232-a9058b77d8b6",
+      "name": "Wait PDF Generation"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://app.pennylane.com/api/external/v2/customer_invoices/{{ $('PL Create Invoice').item.json.id }}/send_by_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2512,
+        -48
+      ],
+      "id": "892471ed-1b8a-427c-a310-0f40ec49b632",
+      "name": "PL Send Invoice Email"
+    },
+    {
+      "parameters": {
+        "content": "## 1. Authenticated input\n\nReceives invoice data through a POST webhook protected by HTTP Basic Auth.\n\nAny authorized CRM, form, or script can call this endpoint. See the linked source repository for sample payloads.",
+        "height": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        192,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "adf964cd-ccdd-44c7-aaa3-4b035df2fa44",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Validation\n\nChecks required fields:\n- customer_name\n- customer_email\n- items[] with label, quantity, unit_price\n\nApplies defaults:\n- country: FR\n- currency: EUR\n- vat_rate: FR_200\n- due_date: +30 days",
+        "height": 624,
+        "width": 304,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        432,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "50f9b391-c5ba-4b8e-8738-687added6648",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Customer lookup\n\nSearches Pennylane for an existing customer by email. Creates one if none is found.\n\nEndpoints:\n- GET /customers (filter by emails)\n- POST /company_customers\n\nRequired billing_address fields: address, postal_code, city, country.",
+        "height": 624,
+        "width": 832,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        736,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "6e1dd244-3c60-405c-ae59-f1dc8a60a63c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 4. Invoice creation\n\nBuilds the invoice payload with line items,\nVAT, and deadline, then sends it to Pennylane.\n\nEndpoint: POST /customer_invoices\n\nAmounts must be strings (e.g. \"1500.00\").\nVAT codes: FR_200 (20%), FR_100 (10%),\nFR_055 (5.5%), exempt (0%).\n\nSet draft: true to create without finalizing.",
+        "height": 624,
+        "width": 432,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1568,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "4a4c4708-448f-4b1c-9a21-ba0bcdf1f6ca",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 5. Email sending (optional)\n\nIf send_email is true, waits one minute for PDF generation and calls:\nPOST /customer_invoices/{id}/send_by_email\n\nHTTP 204 means the email was accepted. HTTP 409 means the PDF is not ready, so the workflow retries once per minute for up to five attempts. Other errors return a clear partial-failure response: invoice created, email not sent.",
+        "height": 624,
+        "width": 672,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2000,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "53f73bb0-8e6f-4f4d-bf16-89af06cfa1bc",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## 6. Webhook response\n\nReturns JSON with invoice ID, number, amount, customer, public URL, and email delivery status.\n\nIf bounded email retries fail, the response clearly reports invoice_created: true and email_sent: false.\n\nConfigure an Error Workflow in Settings for production error handling.",
+        "height": 624,
+        "width": 368,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3472,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "bfbe45e4-cacc-4784-a309-b378ed99a2ce",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## MIT License notice\n\nCopyright (c) 2026 Gauthier Huguenin\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+        "height": 720,
+        "width": 720
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        1120
+      ],
+      "id": "47e18308-e272-430e-b4d6-88727f9f3661",
+      "name": "MIT License Notice"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e06fae6c-62fc-4ff6-a952-9c0393fa5411",
+              "name": "attempt",
+              "value": "={{ ($json.attempt ?? 0) + 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        -48
+      ],
+      "id": "7f91bb76-9be6-4432-9f5a-b32d908b833a",
+      "name": "Set Email Attempt"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "46c80551-9f88-485f-931a-2602e232317d",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 204,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2944,
+        -48
+      ],
+      "id": "ab4cc892-5c55-4924-a8bf-78b01656aa83",
+      "name": "IF Email Sent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const statusCode = $input.first().json.statusCode;\nconst attempt = $('Set Email Attempt').first().json.attempt;\nreturn [{ json: {\n  attempt,\n  status_code: statusCode,\n  retry: statusCode === 409 && attempt < 5\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3168,
+        80
+      ],
+      "id": "52c74e4a-3075-420c-847c-fc4ce7704e2d",
+      "name": "Code Evaluate Email Retry"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6ce90128-0435-4b88-8254-1db415bc7dfb",
+              "leftValue": "={{ $json.retry }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3392,
+        80
+      ],
+      "id": "03e91943-9ded-4462-92b4-9903f3e31b30",
+      "name": "IF Can Retry Email"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ad62d1db-e583-4020-9825-b5728c95bda2",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "e82a7366-d2da-4f76-ae98-9ec0376fc6db",
+              "name": "invoice_created",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "22a12052-00b5-41e8-b6f5-a68263c18c6e",
+              "name": "email_sent",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "1b8499a8-c83e-489f-b90e-98bec35e9d02",
+              "name": "invoice_id",
+              "value": "={{ $('PL Create Invoice').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "4cfc5e37-79b3-416d-91a7-2a95244db2b2",
+              "name": "invoice_number",
+              "value": "={{ $('PL Create Invoice').item.json.invoice_number }}",
+              "type": "string"
+            },
+            {
+              "id": "17ca7a53-159d-4bf4-b38d-1f67094fb75f",
+              "name": "status_code",
+              "value": "={{ $json.status_code }}",
+              "type": "number"
+            },
+            {
+              "id": "a4503823-8df8-468f-8bf1-000dfd355a19",
+              "name": "message",
+              "value": "Invoice created, but Pennylane email delivery did not succeed after bounded retries.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3616,
+        176
+      ],
+      "id": "cb496f0a-1a3f-487b-a2a4-d5ea778025ce",
+      "name": "Set Email Delivery Failed"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WH Receive Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Code Validate Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Validate Payload": {
+      "main": [
+        [
+          {
+            "node": "PL Search Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Search Customer": {
+      "main": [
+        [
+          {
+            "node": "IF Customer Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Customer Exists": {
+      "main": [
+        [
+          {
+            "node": "Set Customer ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PL Create Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Create Customer": {
+      "main": [
+        [
+          {
+            "node": "Set Customer ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Customer ID": {
+      "main": [
+        [
+          {
+            "node": "Code Build Invoice Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Build Invoice Payload": {
+      "main": [
+        [
+          {
+            "node": "PL Create Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Create Invoice": {
+      "main": [
+        [
+          {
+            "node": "IF Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Send Email": {
+      "main": [
+        [
+          {
+            "node": "Set Email Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Output Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait PDF Generation": {
+      "main": [
+        [
+          {
+            "node": "PL Send Invoice Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PL Send Invoice Email": {
+      "main": [
+        [
+          {
+            "node": "IF Email Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Email Attempt": {
+      "main": [
+        [
+          {
+            "node": "Wait PDF Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Email Sent": {
+      "main": [
+        [
+          {
+            "node": "Set Output Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code Evaluate Email Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Evaluate Email Retry": {
+      "main": [
+        [
+          {
+            "node": "IF Can Retry Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Can Retry Email": {
+      "main": [
+        [
+          {
+            "node": "Set Email Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Email Delivery Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "plInvoiceWebhook1",
+  "tags": []
+}
