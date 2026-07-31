@@ -1,0 +1,56 @@
+{
+  "name": "Issue a verifiable certificate (Attestify)",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "id": "b7841e4c-0100-41a3-a921-bf992fedc1c5",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://attestify.novadyne.ai/cert/issue",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"issuer\": \"Acme Automation Academy\",\n  \"course\": \"Advanced Workflow Automation 2026\",\n  \"recipients\": [\n    {\n      \"name\": \"Jane Doe\",\n      \"email\": \"jane@example.com\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "id": "02fa350c-6a0b-4ac7-9a6b-dfd033ecc4c4",
+      "name": "Issue certificate (Attestify)"
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Issue certificate (Attestify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "versionId": "271bc6c0-e489-4a91-91c2-91d038e3439c"
+}
