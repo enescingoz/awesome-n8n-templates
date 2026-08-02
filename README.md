@@ -431,6 +431,7 @@ This section includes 38 additional n8n integration templates covering a wide ra
 | Generate Seedance videos with Vancine API and bounded polling | Submits a Seedance video generation task, polls its asynchronous status, and handles completion, failure, and bounded timeout paths. | Engineering | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20Seedance%20videos%20with%20Vancine%20API%20and%20bounded%20polling.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+- [Pixel Pet](https://letmethink.cc/app/pixel-pet/) - Turn a personality description into a deterministic ASCII pixel companion in the browser.
 
 ### How do I automate forms and surveys with n8n?
 
