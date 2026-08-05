@@ -537,6 +537,10 @@ This repository is actively maintained and updated regularly with new templates 
 
 ---
 
+## Related Projects
+
+- **[StackPick n8n templates](https://github.com/marcelobm33/stackpick-n8n-templates)** — Free WhatsApp/automation n8n templates + verified pricing index for 23 SaaS tools.
+
 ## Contributing
 
 Contributions are welcome. If you have an n8n workflow template to share, please open a pull request with the JSON file placed in the appropriate category folder. For new category suggestions, bug reports, or general improvements, open an issue. See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
