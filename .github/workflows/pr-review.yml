@@ -1,25 +1,31 @@
 # ============================================================
-# GitHub Models PR Review Workflow
+# AI PR Review Workflow
 # ============================================================
-# Integration approach: GitHub Models inference endpoint (OpenAI-compatible)
-# Rationale: Uses the free GitHub Models allowance included with GitHub/Copilot
-# accounts. No separate API key required — authentication uses the auto-provided
-# GITHUB_TOKEN. We fetch only PR metadata and the diff via the GitHub API
-# (no untrusted code is executed, no checkout of PR code).
+# Provider: any OpenAI-compatible /chat/completions endpoint.
 #
-# Models used (both free-tier on GitHub Models):
-#   Primary  : openai/gpt-4o       — strong review quality, low-tier rate limit
-#   Fallback : openai/gpt-4o-mini  — lighter model, higher rate limit
+# GitHub Models was fully retired on 2026-07-30 (the old endpoint
+# https://models.github.ai/inference/chat/completions now returns HTTP 410),
+# so inference is configured via the job-level env block below and
+# authenticated with a repo secret instead of GITHUB_TOKEN.
+#
+# Required repo secret:
+#   MODEL_API_KEY — API key for the provider configured in MODEL_ENDPOINT
+#
+# Defaults below use the Google Gemini OpenAI-compatible endpoint (free tier).
+# To switch providers, change MODEL_ENDPOINT + the two model IDs only:
+#   Gemini     : https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+#   OpenRouter : https://openrouter.ai/api/v1/chat/completions
+#   Groq       : https://api.groq.com/openai/v1/chat/completions
+#   OpenAI     : https://api.openai.com/v1/chat/completions
 #
 # Auto-provided by GitHub (no setup needed):
-#   GITHUB_TOKEN  — used for gh cli calls, posting comments, and Models API auth
-#                   (requires `models: read` permission — see permissions block)
+#   GITHUB_TOKEN — used for gh cli calls, posting comments, and labels
 # ============================================================
 
-name: GitHub Models PR Review
+name: AI PR Review
 
 on:
-  # Manual trigger: backlog sweep or single PR review
+  # Manual trigger: backlog sweep, single PR, or retry of failed reviews
   workflow_dispatch:
     inputs:
       mode:
@@ -30,6 +36,7 @@ on:
           - latest
           - single
           - backlog
+          - retry-failed
         default: latest
       pr_number:
         description: "PR number (required when mode=single)"
@@ -45,7 +52,7 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize]
 
-  # Hourly safety net: retry PRs deferred by rate limits & catch any missed changes
+  # Hourly safety net: retry deferred/failed PRs & catch any missed changes
   schedule:
     - cron: '17 * * * *'
 
@@ -53,7 +60,6 @@ permissions:
   pull-requests: write
   contents: read
   issues: write
-  models: read
 
 jobs:
   # ──────────────────────────────────────────────────────────
@@ -76,19 +82,28 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           SERVER_URL: ${{ github.server_url }}
           RUN_ID: ${{ github.run_id }}
+          # ── inference provider config (repo secret + repo variables) ──
+          # Change models/endpoint in Settings → Secrets and variables → Actions
+          # → Variables. The values after || are fallbacks if a variable is unset.
+          MODEL_API_KEY: ${{ secrets.MODEL_API_KEY }}
+          MODEL_ENDPOINT: ${{ vars.MODEL_ENDPOINT || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' }}
+          PRIMARY_MODEL: ${{ vars.PRIMARY_MODEL || 'gemini-3.6-flash' }}
+          FALLBACK_MODEL: ${{ vars.FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
         run: |
           set -euo pipefail
 
+          if [ -z "${MODEL_API_KEY:-}" ]; then
+            echo "::error::MODEL_API_KEY secret is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
           # ── helpers ──────────────────────────────────────
           MARKER="<!-- pr-review -->"
-          PRIMARY_MODEL="openai/gpt-4o"
-          FALLBACK_MODEL="openai/gpt-4o-mini"
-          MODELS_ENDPOINT="https://models.github.ai/inference/chat/completions"
+          RETRY_STAMP="retry-pending"   # non-SHA stamp → PR is re-reviewed next sweep
 
           # needs_review <pr> <head_sha> — echoes "yes" or "no"
           # "no" only when a MARKER comment exists whose reviewed-sha == head_sha.
-          # On API failure or parse failure, defaults to "yes" (auto/single/latest
-          # always re-review anyway; backlog wraps each PR in error handling).
+          # Any other stamp (including RETRY_STAMP) or a parse failure → "yes".
           needs_review() {
             local pr="$1"
             local head_sha="$2"
@@ -98,20 +113,13 @@ jobs:
               return
             fi
             if ! printf '%s' "${comments}" | grep -qF "${MARKER}"; then
-              # No prior review comment — needs review.
               echo "yes"
               return
             fi
-            # Extract reviewed SHA from the marker comment's hidden line.
             reviewed_sha=$(printf '%s' "${comments}" \
-              | grep -oE '<!-- reviewed-sha: [0-9a-fA-F]+ -->' \
+              | grep -oE '<!-- reviewed-sha: [^ ]+ -->' \
               | head -n1 \
-              | sed -E 's/<!-- reviewed-sha: ([0-9a-fA-F]+) -->/\1/')
-            if [ -z "${reviewed_sha}" ]; then
-              # Marker present but no parseable SHA — re-review to be safe.
-              echo "yes"
-              return
-            fi
+              | sed -E 's/<!-- reviewed-sha: (.*) -->/\1/')
             if [ "${reviewed_sha}" = "${head_sha}" ]; then
               echo "no"
             else
@@ -119,14 +127,13 @@ jobs:
             fi
           }
 
-          # post_review <pr> <body> <head_sha> — UPSERT one review comment.
-          # Body is stamped with MARKER + hidden reviewed-sha line.
+          # post_review <pr> <body> <stamp> — UPSERT one review comment.
           post_review() {
             local pr="$1"
             local body="$2"
-            local head_sha="$3"
+            local stamp="$3"
             local full_body existing_id
-            full_body="${MARKER}"$'\n'"<!-- reviewed-sha: ${head_sha} -->"$'\n'"${body}"
+            full_body="${MARKER}"$'\n'"<!-- reviewed-sha: ${stamp} -->"$'\n'"${body}"
             existing_id=$(gh api "repos/${REPO}/issues/${pr}/comments" \
               --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" 2>/dev/null | head -n1)
             if [ -n "${existing_id}" ]; then
@@ -159,18 +166,14 @@ jobs:
               verdict="auto-review: error"
             fi
 
-            # Ensure all four labels exist (idempotent via --force).
-            gh label create "auto-review: safe"          --color 0e8a16 --force --repo "${REPO}" >/dev/null 2>&1 || true
-            gh label create "auto-review: needs-changes" --color d93f0b --force --repo "${REPO}" >/dev/null 2>&1 || true
+            # Ensure all labels exist (idempotent via --force).
+            gh label create "auto-review: safe"           --color 0e8a16 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: needs-changes"  --color d93f0b --force --repo "${REPO}" >/dev/null 2>&1 || true
             gh label create "auto-review: not-a-template" --color ededed --force --repo "${REPO}" >/dev/null 2>&1 || true
-            gh label create "auto-review: error"         --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
-            gh label create "auto-review: deferred"      --color fbca04 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: error"          --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: deferred"       --color fbca04 --force --repo "${REPO}" >/dev/null 2>&1 || true
 
             echo "Applying verdict label '${verdict}' to PR #${pr}."
-            # Only remove the OTHER auto-review labels that are actually present,
-            # and add the target only if it is missing. This avoids removing and
-            # re-adding the same label in one call (which spams the PR timeline
-            # with "added X / removed X" events and can leave the wrong state).
             local current edit_args=()
             current=$(gh pr view "${pr}" --repo "${REPO}" --json labels --jq '.labels[].name' 2>/dev/null || true)
             local L
@@ -191,9 +194,11 @@ jobs:
           }
 
           # call_model <model> <prompt>
-          # Returns 0 and sets REVIEW_BODY on success.
-          # Returns 1 on all retries exhausted.
-          # Returns 2 if payload is too large (413) — caller must skip fallback.
+          #   0 = success (sets REVIEW_BODY, USED_MODEL)
+          #   1 = retries exhausted / non-retryable error (sets LAST_ERROR)
+          #   2 = payload too large (413) — caller must skip fallback
+          #   3 = rate limited beyond wait budget — defer
+          #   4 = configuration error (401/403/404/410) — caller must skip fallback
           call_model() {
             local model="$1"
             local prompt="$2"
@@ -204,12 +209,12 @@ jobs:
 
             for attempt in $(seq 1 12); do
 
-              local hdr_file retry_after_hdr
+              local hdr_file retry_after_hdr err_msg
               hdr_file="$(mktemp)"
               # Capture body + HTTP status; dump response headers for Retry-After.
               response=$(curl -sS -D "${hdr_file}" -w "\n%{http_code}" \
-                -X POST "${MODELS_ENDPOINT}" \
-                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -X POST "${MODEL_ENDPOINT}" \
+                -H "Authorization: Bearer ${MODEL_API_KEY}" \
                 -H "Content-Type: application/json" \
                 -d "$(jq -n \
                   --arg model "${model}" \
@@ -226,6 +231,7 @@ jobs:
               retry_after_hdr=$(grep -i '^retry-after:' "${hdr_file}" | head -n1 | awk '{print $2}' | tr -d '\r\n' || true)
               rm -f "${hdr_file}"
 
+              err_msg=$(printf '%s' "${body}" | jq -r '.error.message // .error // empty' 2>/dev/null | head -c 300 || true)
               echo "  [attempt ${attempt}] model=${model} http=${http_code}"
 
               if [ "${http_code}" = "200" ]; then
@@ -236,15 +242,20 @@ jobs:
                   USED_MODEL="${model}"
                   return 0
                 fi
+                LAST_ERROR="HTTP 200 but empty content from ${model}"
                 echo "  Empty content in response; retrying..."
               elif [ "${http_code}" = "413" ]; then
+                LAST_ERROR="HTTP 413 (payload too large) from ${model}"
                 echo "  Payload too large (413) — diff exceeds model context. Skipping retries and fallback."
                 return 2
+              elif [ "${http_code}" = "401" ] || [ "${http_code}" = "403" ] || [ "${http_code}" = "404" ] || [ "${http_code}" = "410" ]; then
+                # Bad key, revoked key, unknown model ID, or a retired endpoint.
+                # Retrying and falling back cannot help — surface it loudly.
+                LAST_ERROR="HTTP ${http_code} from ${model}: ${err_msg:-no detail}"
+                echo "::error::Inference endpoint returned ${http_code} — check MODEL_ENDPOINT, MODEL_API_KEY and model IDs. ${err_msg:-}"
+                return 4
               elif [ "${http_code}" = "429" ]; then
-                # Log any API error message for diagnostics.
-                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                fi
+                if [ -n "${err_msg}" ]; then echo "  API error detail: ${err_msg}"; fi
                 # Wait time by priority: Retry-After header > body.retry_after >
                 # "wait N seconds" in the message > exponential backoff.
                 local wait_secs="" wait_src="" body_retry msg_retry
@@ -265,6 +276,7 @@ jobs:
                     fi
                   fi
                 fi
+                LAST_ERROR="HTTP 429 (rate limited) from ${model}: ${err_msg:-no detail}"
                 # A long wait means a daily/long quota — don't hang the job; defer.
                 if [ "${wait_secs}" -gt "${RL_MAX_WAIT}" ]; then
                   echo "  Rate limit needs ${wait_secs}s (> ${RL_MAX_WAIT}s cap) — likely a daily/long quota. Deferring."
@@ -278,24 +290,20 @@ jobs:
                 sleep "${wait_secs}"
                 rl_waited=$(( rl_waited + wait_secs ))
                 continue
-              elif [ "${http_code}" -ge 500 ]; then
+              elif [ "${http_code}" -ge 500 ] 2>/dev/null; then
                 local delay
                 delay=$(( 2 ** attempt ))   # 2s, 4s, 8s
+                LAST_ERROR="HTTP ${http_code} from ${model}: ${err_msg:-no detail}"
                 echo "  Server error ${http_code}; waiting ${delay}s..."
-                # Log any API error message for diagnostics
-                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                fi
+                if [ -n "${err_msg}" ]; then echo "  API error detail: ${err_msg}"; fi
                 sleep "${delay}"
                 if [ "${attempt}" -ge 3 ]; then
                   echo "  Capping 5xx retries at 3 attempts."
                   break
                 fi
               else
-                # Log any API error message for diagnostics
-                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                fi
+                LAST_ERROR="HTTP ${http_code} from ${model}: ${err_msg:-no detail}"
+                if [ -n "${err_msg}" ]; then echo "  API error detail: ${err_msg}"; fi
                 echo "  Non-retryable error ${http_code} from ${model}"
                 break
               fi
@@ -305,9 +313,8 @@ jobs:
           }
 
           # ── always re-review on every PR event (opened/reopened/synchronize) ──
-          # We intentionally do NOT skip when a prior review exists: a new commit
-          # must trigger a fresh re-check. post_review() upserts the existing
-          # comment so we re-check without spamming new comments.
+          # post_review() upserts the existing comment, so re-checking a new commit
+          # does not spam the PR with extra comments.
 
           # Resolve the head SHA to stamp: prefer the event payload, fall back to API.
           if [ -z "${HEAD_SHA:-}" ]; then
@@ -339,8 +346,8 @@ jobs:
           ADDED_WORKFLOWS_DISPLAY="${ADDED_WORKFLOWS:-none}"
           MODIFIED_WORKFLOWS_DISPLAY="${MODIFIED_WORKFLOWS:-none}"
 
-          # diff (capped at ~3K tokens to stay inside the 8K free-tier context window)
-          DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 12000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
+          # diff cap — raise/lower to match the context window of your chosen model
+          DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 40000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
           # ── build prompt ──────────────────────────────────
           # Note: indented here to satisfy YAML block scalar; sed strips the indent.
@@ -460,10 +467,11 @@ jobs:
           Be concise. This review will be posted as a GitHub comment."
           PROMPT=$(printf '%s' "${PROMPT}" | sed 's/^          //')
 
-          # ── call GitHub Models with fallback ─────────────
+          # ── call the model, with fallback ─────────────────
           REVIEW_BODY=""
           USED_MODEL=""
-          DEFERRED="no"
+          LAST_ERROR=""
+          STAMP="${HEAD_SHA}"
 
           echo "Trying primary model: ${PRIMARY_MODEL}"
           set +e
@@ -473,12 +481,17 @@ jobs:
 
           case "${rc}" in
             0)
-              # success — REVIEW_BODY already set by call_model
               ;;
             2)
               echo "Payload too large for primary — skipping fallback (same cap applies)."
-              REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+              REVIEW_BODY="Automated review skipped — this PR's diff exceeds the model's context window. Please review manually."
               USED_MODEL="(skipped: payload too large)"
+              ;;
+            4)
+              echo "Configuration error — skipping fallback."
+              REVIEW_BODY="⚠️ Automated review unavailable — inference endpoint misconfigured or unreachable (${LAST_ERROR}). This PR will be retried automatically once the workflow config is fixed."
+              USED_MODEL="(configuration error)"
+              STAMP="${RETRY_STAMP}"
               ;;
             *)
               echo "Primary model failed. Trying fallback: ${FALLBACK_MODEL}"
@@ -489,23 +502,29 @@ jobs:
 
               case "${rc2}" in
                 0)
-                  # success on fallback — REVIEW_BODY already set by call_model
                   ;;
                 2)
                   echo "Payload too large for fallback as well."
-                  REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+                  REVIEW_BODY="Automated review skipped — this PR's diff exceeds the model's context window. Please review manually."
                   USED_MODEL="(skipped: payload too large)"
                   ;;
                 3)
                   echo "Fallback also rate-limited — deferring review."
-                  REVIEW_BODY="⏳ Automated review deferred — GitHub Models rate limit reached. This PR will be re-reviewed automatically on the next push or the next scheduled sweep."
+                  REVIEW_BODY="⏳ Automated review deferred — model provider rate limit reached. This PR will be re-reviewed automatically on the next push or the next scheduled sweep."
                   USED_MODEL="(rate-limited — deferred)"
-                  DEFERRED="yes"
+                  STAMP="${RETRY_STAMP}"
+                  ;;
+                4)
+                  echo "Configuration error on fallback."
+                  REVIEW_BODY="⚠️ Automated review unavailable — inference endpoint misconfigured or unreachable (${LAST_ERROR}). This PR will be retried automatically once the workflow config is fixed."
+                  USED_MODEL="(configuration error)"
+                  STAMP="${RETRY_STAMP}"
                   ;;
                 *)
                   echo "Both models failed. Posting fallback comment."
-                  REVIEW_BODY="Automated review unavailable — please review manually."
+                  REVIEW_BODY="⚠️ Automated review unavailable — ${LAST_ERROR:-unknown error}. This PR will be retried automatically on the next scheduled sweep."
                   USED_MODEL="(unavailable)"
+                  STAMP="${RETRY_STAMP}"
                   ;;
               esac
               ;;
@@ -517,20 +536,15 @@ jobs:
           ${REVIEW_BODY}
 
           ---
-          <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${SERVER_URL}/${REPO}/actions/runs/${RUN_ID})</sub>"
+          <sub>Reviewed by \`${USED_MODEL}\` · [Workflow run](${SERVER_URL}/${REPO}/actions/runs/${RUN_ID})</sub>"
           COMMENT=$(printf '%s' "${COMMENT}" | sed 's/^          //')
 
-          if [ "${DEFERRED}" = "yes" ]; then
-            # Stamp a non-SHA so needs_review re-reviews this PR on the next sweep.
-            post_review "${PR_NUMBER}" "${COMMENT}" "deferred"
-          else
-            post_review "${PR_NUMBER}" "${COMMENT}" "${HEAD_SHA}"
-          fi
+          post_review "${PR_NUMBER}" "${COMMENT}" "${STAMP}"
           apply_verdict_label "${PR_NUMBER}" "${REVIEW_BODY}"
-          echo "Review posted on PR #${PR_NUMBER} (model: ${USED_MODEL})."
+          echo "Review posted on PR #${PR_NUMBER} (model: ${USED_MODEL}, stamp: ${STAMP})."
 
   # ──────────────────────────────────────────────────────────
-  # MANUAL: backlog sweep or single-PR review
+  # MANUAL / SCHEDULED: backlog sweep, single PR, retry failed
   # ──────────────────────────────────────────────────────────
   review-pr-manual:
     name: Review PR (manual/scheduled)
@@ -548,18 +562,25 @@ jobs:
           MODE: ${{ inputs.mode || (github.event_name == 'schedule' && 'backlog' || 'latest') }}
           INPUT_PR_NUMBER: ${{ inputs.pr_number }}
           FORCE: ${{ inputs.force || false }}
+          # ── inference provider config (same secret + variables as the auto job) ──
+          MODEL_API_KEY: ${{ secrets.MODEL_API_KEY }}
+          MODEL_ENDPOINT: ${{ vars.MODEL_ENDPOINT || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' }}
+          PRIMARY_MODEL: ${{ vars.PRIMARY_MODEL || 'gemini-3.6-flash' }}
+          FALLBACK_MODEL: ${{ vars.FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
         run: |
           set -euo pipefail
 
+          if [ -z "${MODEL_API_KEY:-}" ]; then
+            echo "::error::MODEL_API_KEY secret is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
           # ── helpers ──────────────────────────────────────
           MARKER="<!-- pr-review -->"
-          PRIMARY_MODEL="openai/gpt-4o"
-          FALLBACK_MODEL="openai/gpt-4o-mini"
-          MODELS_ENDPOINT="https://models.github.ai/inference/chat/completions"
+          RETRY_STAMP="retry-pending"
+          MAX_PER_SWEEP=15          # PRs reviewed per scheduled/backlog run
+          PACE_SECONDS=15           # gap between PRs, to stay under the provider RPM cap
 
-          # needs_review <pr> <head_sha> — echoes "yes" or "no"
-          # "no" only when a MARKER comment exists whose reviewed-sha == head_sha.
-          # On API failure or parse failure, defaults to "yes".
           needs_review() {
             local pr="$1"
             local head_sha="$2"
@@ -573,13 +594,9 @@ jobs:
               return
             fi
             reviewed_sha=$(printf '%s' "${comments}" \
-              | grep -oE '<!-- reviewed-sha: [0-9a-fA-F]+ -->' \
+              | grep -oE '<!-- reviewed-sha: [^ ]+ -->' \
               | head -n1 \
-              | sed -E 's/<!-- reviewed-sha: ([0-9a-fA-F]+) -->/\1/')
-            if [ -z "${reviewed_sha}" ]; then
-              echo "yes"
-              return
-            fi
+              | sed -E 's/<!-- reviewed-sha: (.*) -->/\1/')
             if [ "${reviewed_sha}" = "${head_sha}" ]; then
               echo "no"
             else
@@ -587,13 +604,27 @@ jobs:
             fi
           }
 
-          # post_review <pr> <body> <head_sha> — UPSERT one review comment.
+          # is_failed_pr <pr> — "yes" when the PR carries an error/deferred label,
+          # i.e. its last review attempt did not produce a real verdict. These are
+          # re-reviewed even when the stamp matches the head SHA (legacy failures
+          # were stamped with the real SHA and would otherwise be skipped forever).
+          is_failed_pr() {
+            local pr="$1"
+            local labels
+            labels=$(gh pr view "${pr}" --repo "${REPO}" --json labels --jq '.labels[].name' 2>/dev/null || true)
+            if printf '%s\n' "${labels}" | grep -qxE "auto-review: (error|deferred)"; then
+              echo "yes"
+            else
+              echo "no"
+            fi
+          }
+
           post_review() {
             local pr="$1"
             local body="$2"
-            local head_sha="$3"
+            local stamp="$3"
             local full_body existing_id
-            full_body="${MARKER}"$'\n'"<!-- reviewed-sha: ${head_sha} -->"$'\n'"${body}"
+            full_body="${MARKER}"$'\n'"<!-- reviewed-sha: ${stamp} -->"$'\n'"${body}"
             existing_id=$(gh api "repos/${REPO}/issues/${pr}/comments" \
               --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" 2>/dev/null | head -n1)
             if [ -n "${existing_id}" ]; then
@@ -609,7 +640,6 @@ jobs:
             fi
           }
 
-          # apply_verdict_label <pr> <body> — apply exactly one verdict label.
           apply_verdict_label() {
             local pr="$1"
             local body="$2"
@@ -626,16 +656,13 @@ jobs:
               verdict="auto-review: error"
             fi
 
-            gh label create "auto-review: safe"          --color 0e8a16 --force --repo "${REPO}" >/dev/null 2>&1 || true
-            gh label create "auto-review: needs-changes" --color d93f0b --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: safe"           --color 0e8a16 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: needs-changes"  --color d93f0b --force --repo "${REPO}" >/dev/null 2>&1 || true
             gh label create "auto-review: not-a-template" --color ededed --force --repo "${REPO}" >/dev/null 2>&1 || true
-            gh label create "auto-review: error"         --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
-            gh label create "auto-review: deferred"      --color fbca04 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: error"          --color b60205 --force --repo "${REPO}" >/dev/null 2>&1 || true
+            gh label create "auto-review: deferred"       --color fbca04 --force --repo "${REPO}" >/dev/null 2>&1 || true
 
             echo "Applying verdict label '${verdict}' to PR #${pr}."
-            # Only remove the OTHER auto-review labels that are actually present,
-            # and add the target only if missing — avoids "added X / removed X"
-            # timeline spam from removing and re-adding the same label.
             local current edit_args=()
             current=$(gh pr view "${pr}" --repo "${REPO}" --json labels --jq '.labels[].name' 2>/dev/null || true)
             local L
@@ -656,25 +683,22 @@ jobs:
           }
 
           # call_model <model> <prompt>
-          # Returns 0 and sets REVIEW_BODY on success.
-          # Returns 1 on all retries exhausted.
-          # Returns 2 if payload is too large (413) — caller must skip fallback.
+          #   0 = success  1 = failed  2 = 413  3 = rate-limit defer  4 = config error
           call_model() {
             local model="$1"
             local prompt="$2"
             local attempt http_code response body
-            local RL_MAX_WAIT=300        # cap for a SINGLE 429 wait (per-minute window)
-            local RL_TOTAL_BUDGET=600    # cumulative 429 wait budget for this invocation
+            local RL_MAX_WAIT=300
+            local RL_TOTAL_BUDGET=600
             local rl_waited=0
 
             for attempt in $(seq 1 12); do
 
-              local hdr_file retry_after_hdr
+              local hdr_file retry_after_hdr err_msg
               hdr_file="$(mktemp)"
-              # Capture body + HTTP status; dump response headers for Retry-After.
               response=$(curl -sS -D "${hdr_file}" -w "\n%{http_code}" \
-                -X POST "${MODELS_ENDPOINT}" \
-                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -X POST "${MODEL_ENDPOINT}" \
+                -H "Authorization: Bearer ${MODEL_API_KEY}" \
                 -H "Content-Type: application/json" \
                 -d "$(jq -n \
                   --arg model "${model}" \
@@ -691,6 +715,7 @@ jobs:
               retry_after_hdr=$(grep -i '^retry-after:' "${hdr_file}" | head -n1 | awk '{print $2}' | tr -d '\r\n' || true)
               rm -f "${hdr_file}"
 
+              err_msg=$(printf '%s' "${body}" | jq -r '.error.message // .error // empty' 2>/dev/null | head -c 300 || true)
               echo "  [attempt ${attempt}] model=${model} http=${http_code}"
 
               if [ "${http_code}" = "200" ]; then
@@ -701,17 +726,18 @@ jobs:
                   USED_MODEL="${model}"
                   return 0
                 fi
+                LAST_ERROR="HTTP 200 but empty content from ${model}"
                 echo "  Empty content in response; retrying..."
               elif [ "${http_code}" = "413" ]; then
+                LAST_ERROR="HTTP 413 (payload too large) from ${model}"
                 echo "  Payload too large (413) — diff exceeds model context. Skipping retries and fallback."
                 return 2
+              elif [ "${http_code}" = "401" ] || [ "${http_code}" = "403" ] || [ "${http_code}" = "404" ] || [ "${http_code}" = "410" ]; then
+                LAST_ERROR="HTTP ${http_code} from ${model}: ${err_msg:-no detail}"
+                echo "::error::Inference endpoint returned ${http_code} — check MODEL_ENDPOINT, MODEL_API_KEY and model IDs. ${err_msg:-}"
+                return 4
               elif [ "${http_code}" = "429" ]; then
-                # Log any API error message for diagnostics.
-                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                fi
-                # Wait time by priority: Retry-After header > body.retry_after >
-                # "wait N seconds" in the message > exponential backoff.
+                if [ -n "${err_msg}" ]; then echo "  API error detail: ${err_msg}"; fi
                 local wait_secs="" wait_src="" body_retry msg_retry
                 if printf '%s' "${retry_after_hdr}" | grep -qE '^[0-9]+$'; then
                   wait_secs=$(( retry_after_hdr + 3 )); wait_src="header"
@@ -730,7 +756,7 @@ jobs:
                     fi
                   fi
                 fi
-                # A long wait means a daily/long quota — don't hang the job; defer.
+                LAST_ERROR="HTTP 429 (rate limited) from ${model}: ${err_msg:-no detail}"
                 if [ "${wait_secs}" -gt "${RL_MAX_WAIT}" ]; then
                   echo "  Rate limit needs ${wait_secs}s (> ${RL_MAX_WAIT}s cap) — likely a daily/long quota. Deferring."
                   return 3
@@ -743,24 +769,20 @@ jobs:
                 sleep "${wait_secs}"
                 rl_waited=$(( rl_waited + wait_secs ))
                 continue
-              elif [ "${http_code}" -ge 500 ]; then
+              elif [ "${http_code}" -ge 500 ] 2>/dev/null; then
                 local delay
-                delay=$(( 2 ** attempt ))   # 2s, 4s, 8s
+                delay=$(( 2 ** attempt ))
+                LAST_ERROR="HTTP ${http_code} from ${model}: ${err_msg:-no detail}"
                 echo "  Server error ${http_code}; waiting ${delay}s..."
-                # Log any API error message for diagnostics
-                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                fi
+                if [ -n "${err_msg}" ]; then echo "  API error detail: ${err_msg}"; fi
                 sleep "${delay}"
                 if [ "${attempt}" -ge 3 ]; then
                   echo "  Capping 5xx retries at 3 attempts."
                   break
                 fi
               else
-                # Log any API error message for diagnostics
-                if printf '%s' "${body}" | jq -e '.error' >/dev/null 2>&1; then
-                  echo "  API error detail: $(printf '%s' "${body}" | jq -r '.error.message // .error')"
-                fi
+                LAST_ERROR="HTTP ${http_code} from ${model}: ${err_msg:-no detail}"
+                if [ -n "${err_msg}" ]; then echo "  API error detail: ${err_msg}"; fi
                 echo "  Non-retryable error ${http_code} from ${model}"
                 break
               fi
@@ -771,7 +793,7 @@ jobs:
 
           review_one_pr() {
             local PR_NUMBER="$1"
-            local HEAD_SHA
+            local HEAD_SHA STAMP
 
             echo "--- Reviewing PR #${PR_NUMBER} ---"
 
@@ -794,14 +816,13 @@ jobs:
             README_TOUCHED=$(printf '%s' "${FILES_JSON}" | jq -r '
               if any(.[]; .filename | test("(?i)readme.*\\.md$")) then "yes" else "no" end')
 
-            # All changed filenames with status for context (capped at 50 lines)
             FILES=$(printf '%s' "${FILES_JSON}" | jq -r '[.[] | "\(.status): \(.filename)"] | join("\n")' | head -n 50)
 
             ADDED_WORKFLOWS_DISPLAY="${ADDED_WORKFLOWS:-none}"
             MODIFIED_WORKFLOWS_DISPLAY="${MODIFIED_WORKFLOWS:-none}"
 
-            # diff (capped at ~3K tokens to stay inside the 8K free-tier context window)
-            DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 12000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
+            # diff cap — raise/lower to match the context window of your chosen model
+            DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 40000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
             # Note: indented here to satisfy YAML block scalar; sed strips the indent.
             PROMPT="You are a reviewer for an open-source curated list of n8n workflow JSON templates (awesome-n8n-templates). Your job is to check whether a PR correctly adds a new workflow template and flag real problems. Be conservative — only flag things you can clearly see in the diff.
@@ -922,7 +943,8 @@ jobs:
 
             REVIEW_BODY=""
             USED_MODEL=""
-            DEFERRED="no"
+            LAST_ERROR=""
+            STAMP="${HEAD_SHA}"
 
             echo "Trying primary model: ${PRIMARY_MODEL}"
             set +e
@@ -932,12 +954,17 @@ jobs:
 
             case "${rc}" in
               0)
-                # success — REVIEW_BODY already set by call_model
                 ;;
               2)
                 echo "Payload too large for primary — skipping fallback (same cap applies)."
-                REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+                REVIEW_BODY="Automated review skipped — this PR's diff exceeds the model's context window. Please review manually."
                 USED_MODEL="(skipped: payload too large)"
+                ;;
+              4)
+                echo "Configuration error — skipping fallback."
+                REVIEW_BODY="⚠️ Automated review unavailable — inference endpoint misconfigured or unreachable (${LAST_ERROR}). This PR will be retried automatically once the workflow config is fixed."
+                USED_MODEL="(configuration error)"
+                STAMP="${RETRY_STAMP}"
                 ;;
               *)
                 echo "Primary model failed. Trying fallback: ${FALLBACK_MODEL}"
@@ -948,44 +975,45 @@ jobs:
 
                 case "${rc2}" in
                   0)
-                    # success on fallback — REVIEW_BODY already set by call_model
                     ;;
                   2)
                     echo "Payload too large for fallback as well."
-                    REVIEW_BODY="Automated review skipped — this PR's diff exceeds the GitHub Models free-tier 8K-token context window. Please review manually."
+                    REVIEW_BODY="Automated review skipped — this PR's diff exceeds the model's context window. Please review manually."
                     USED_MODEL="(skipped: payload too large)"
                     ;;
                   3)
                     echo "Fallback also rate-limited — deferring review."
-                    REVIEW_BODY="⏳ Automated review deferred — GitHub Models rate limit reached. This PR will be re-reviewed automatically on the next push or the next scheduled sweep."
+                    REVIEW_BODY="⏳ Automated review deferred — model provider rate limit reached. This PR will be re-reviewed automatically on the next push or the next scheduled sweep."
                     USED_MODEL="(rate-limited — deferred)"
-                    DEFERRED="yes"
+                    STAMP="${RETRY_STAMP}"
+                    ;;
+                  4)
+                    echo "Configuration error on fallback."
+                    REVIEW_BODY="⚠️ Automated review unavailable — inference endpoint misconfigured or unreachable (${LAST_ERROR}). This PR will be retried automatically once the workflow config is fixed."
+                    USED_MODEL="(configuration error)"
+                    STAMP="${RETRY_STAMP}"
                     ;;
                   *)
                     echo "Both models failed. Posting fallback comment."
-                    REVIEW_BODY="Automated review unavailable — please review manually."
+                    REVIEW_BODY="⚠️ Automated review unavailable — ${LAST_ERROR:-unknown error}. This PR will be retried automatically on the next scheduled sweep."
                     USED_MODEL="(unavailable)"
+                    STAMP="${RETRY_STAMP}"
                     ;;
                 esac
                 ;;
             esac
 
-            COMMENT="          ## 🤖 Automated PR Review
+            COMMENT="## 🤖 Automated PR Review
 
           ${REVIEW_BODY}
 
           ---
-          <sub>Reviewed by \`${USED_MODEL}\` via GitHub Models · [Workflow run](${SERVER_URL}/${REPO}/actions/runs/${RUN_ID})</sub>"
+          <sub>Reviewed by \`${USED_MODEL}\` · [Workflow run](${SERVER_URL}/${REPO}/actions/runs/${RUN_ID})</sub>"
             COMMENT=$(printf '%s' "${COMMENT}" | sed 's/^          //')
 
-            if [ "${DEFERRED}" = "yes" ]; then
-              # Stamp a non-SHA so needs_review re-reviews this PR on the next sweep.
-              post_review "${PR_NUMBER}" "${COMMENT}" "deferred"
-            else
-              post_review "${PR_NUMBER}" "${COMMENT}" "${HEAD_SHA}"
-            fi
+            post_review "${PR_NUMBER}" "${COMMENT}" "${STAMP}"
             apply_verdict_label "${PR_NUMBER}" "${REVIEW_BODY}"
-            echo "Review posted on PR #${PR_NUMBER} (model: ${USED_MODEL})."
+            echo "Review posted on PR #${PR_NUMBER} (model: ${USED_MODEL}, stamp: ${STAMP})."
           }
 
           # ── mode dispatch ─────────────────────────────────
@@ -1003,7 +1031,9 @@ jobs:
 
             HEAD_SHA=$(gh api "repos/${REPO}/pulls/${LATEST_PR}" --jq '.head.sha')
 
-            if [ "${FORCE}" != "true" ] && [ "$(needs_review "${LATEST_PR}" "${HEAD_SHA}")" = "no" ]; then
+            if [ "${FORCE}" != "true" ] \
+               && [ "$(needs_review "${LATEST_PR}" "${HEAD_SHA}")" = "no" ] \
+               && [ "$(is_failed_pr "${LATEST_PR}")" = "no" ]; then
               echo "PR #${LATEST_PR} already up to date — nothing to do (use force=true to re-review)."
               exit 0
             fi
@@ -1018,9 +1048,34 @@ jobs:
             # single mode ALWAYS force re-reviews — ignore needs_review.
             review_one_pr "${INPUT_PR_NUMBER}"
 
+          elif [ "${MODE}" = "retry-failed" ]; then
+            echo "Mode=retry-failed: finding open PRs labelled error/deferred..."
+            FAILED_PRS=$( {
+              gh pr list --repo "${REPO}" --state open --label "auto-review: error"    --json number --jq '.[].number' 2>/dev/null || true
+              gh pr list --repo "${REPO}" --state open --label "auto-review: deferred" --json number --jq '.[].number' 2>/dev/null || true
+            } | sort -un )
+
+            if [ -z "${FAILED_PRS}" ]; then
+              echo "No failed/deferred reviews to retry."
+              exit 0
+            fi
+
+            COUNT=0
+            for PR_NUM in ${FAILED_PRS}; do
+              if [ "${COUNT}" -ge "${MAX_PER_SWEEP}" ]; then
+                echo "Reached MAX_PER_SWEEP (${MAX_PER_SWEEP}) — re-run this mode to continue."
+                break
+              fi
+              ( set -e; review_one_pr "${PR_NUM}" ) \
+                || echo "PR #${PR_NUM}: processing failed — logged and continuing."
+              COUNT=$(( COUNT + 1 ))
+              sleep "${PACE_SECONDS}"
+            done
+            echo "Retry sweep complete (${COUNT} PR(s) processed)."
+
           elif [ "${MODE}" = "backlog" ]; then
             echo "Fetching all open PRs..."
-            OPEN_PRS=$(gh pr list --repo "${REPO}" --state open --json number \
+            OPEN_PRS=$(gh pr list --repo "${REPO}" --state open --limit 200 --json number \
               --jq '.[].number')
 
             if [ -z "${OPEN_PRS}" ]; then
@@ -1028,25 +1083,46 @@ jobs:
               exit 0
             fi
 
+            COUNT=0
             for PR_NUM in ${OPEN_PRS}; do
+              if [ "${COUNT}" -ge "${MAX_PER_SWEEP}" ]; then
+                echo "Reached MAX_PER_SWEEP (${MAX_PER_SWEEP}) — remaining PRs will be picked up by the next hourly sweep."
+                break
+              fi
               # Wrap each PR so a single failure logs and continues the sweep.
-              (
-                set -e
-                HEAD_SHA=$(gh api "repos/${REPO}/pulls/${PR_NUM}" --jq '.head.sha')
+              SHOULD_REVIEW=$(
+                HEAD_SHA=$(gh api "repos/${REPO}/pulls/${PR_NUM}" --jq '.head.sha' 2>/dev/null || true)
                 if [ -z "${HEAD_SHA}" ] || [ "${HEAD_SHA}" = "null" ]; then
+                  echo "skip"
+                elif [ "${FORCE}" = "true" ]; then
+                  echo "yes"
+                elif [ "$(needs_review "${PR_NUM}" "${HEAD_SHA}")" = "yes" ]; then
+                  echo "yes"
+                elif [ "$(is_failed_pr "${PR_NUM}")" = "yes" ]; then
+                  # Last attempt errored/deferred but was stamped with a real SHA
+                  # (legacy behaviour) — retry it anyway.
+                  echo "yes"
+                else
+                  echo "no"
+                fi
+              )
+
+              case "${SHOULD_REVIEW}" in
+                yes)
+                  ( set -e; review_one_pr "${PR_NUM}" ) \
+                    || echo "PR #${PR_NUM}: processing failed — logged and continuing to next PR."
+                  COUNT=$(( COUNT + 1 ))
+                  sleep "${PACE_SECONDS}"
+                  ;;
+                skip)
                   echo "PR #${PR_NUM}: could not resolve head SHA — skipping."
-                  exit 0
-                fi
-                if [ "${FORCE}" != "true" ] && [ "$(needs_review "${PR_NUM}" "${HEAD_SHA}")" = "no" ]; then
+                  ;;
+                *)
                   echo "PR #${PR_NUM} up to date — skipping."
-                  exit 0
-                fi
-                review_one_pr "${PR_NUM}"
-                # Pace requests under the free-tier RPM cap.
-                sleep 30
-              ) || echo "PR #${PR_NUM}: processing failed — logged and continuing to next PR."
+                  ;;
+              esac
             done
-            echo "Backlog sweep complete."
+            echo "Backlog sweep complete (${COUNT} PR(s) reviewed)."
           else
             echo "ERROR: unknown mode '${MODE}'"
             exit 1
