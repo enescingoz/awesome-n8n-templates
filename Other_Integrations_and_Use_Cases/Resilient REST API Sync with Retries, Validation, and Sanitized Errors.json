@@ -1,0 +1,297 @@
+{
+  "id": "e23e4a12-4625-47bb-9a9b-5eff5a04e32d",
+  "name": "Resilient REST API Sync with Retries, Validation, and Sanitized Errors",
+  "active": false,
+  "versionId": "f629614a-9017-47df-83f7-bc6bded77612",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Resilient REST API Sync\nUse this workflow when an automation must pull records from a REST API without failing silently.\n\n**What it demonstrates:** bounded retries, a 10-second timeout, required-field validation, and a credential-safe failure record.\n\nRun the included JSONPlaceholder demo first. Then follow the production checklist before connecting a real system.",
+        "height": 250,
+        "width": 480,
+        "color": 5
+      },
+      "id": "4b62a70f-e30f-4f72-91ef-e3aa06f88200",
+      "name": "Template Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        -380
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1 · Configure and run the safe demo\nClick **Run Demo**. The configuration node supplies a public test endpoint and the required fields `id,name,email`.\n\n**Expected input:** no credentials or manual data.\n**Expected result:** ten sample user records continue to the fetch step.",
+        "height": 210,
+        "width": 470,
+        "color": 3
+      },
+      "id": "73a6651f-42d2-4a91-991b-8a67d9750db7",
+      "name": "Step 1 Configure Demo",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2 · Fetch with bounded retries\nThe HTTP request waits up to 10 seconds and retries failed calls 3 times with a 3-second delay.\n\n**Success output:** API records.\n**Error output:** routes to the sanitized failure path instead of stopping silently.",
+        "height": 210,
+        "width": 230,
+        "color": 6
+      },
+      "id": "e2191158-4703-460d-8b0b-b5057d884b85",
+      "name": "Step 2 Fetch Safely",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -230,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3A · Normalize and validate success\nThe Code node accepts an array or individual items, normalizes names and email addresses, and checks every configured required field.\n\n**Use this output:** connect **Validated Records** to the database, spreadsheet, or app that should receive reviewed records.",
+        "height": 210,
+        "width": 500,
+        "color": 4
+      },
+      "id": "d2037abc-bb15-4724-bdc3-59c77667e100",
+      "name": "Step 3A Validate Success",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        30,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3B · Emit a safe failure record\nRequest errors and validation exceptions land here. The Code node removes common credential patterns, limits the message to 240 characters, and returns a retryable failure record with a next step.\n\n**Use this output:** connect **Failure Record** to a private log or alert channel.",
+        "height": 220,
+        "width": 500,
+        "color": 2
+      },
+      "id": "11ae143e-dfb5-4dfe-9214-e55cf3c06fc6",
+      "name": "Step 3B Sanitize Failure",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        30,
+        140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4d9f589c-bb4c-41e6-88d0-ad483d01dd8b",
+      "name": "Run Demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4cdfa4ca-52ea-45ca-b015-256629721e21",
+              "name": "request_url",
+              "value": "https://jsonplaceholder.typicode.com/users",
+              "type": "string"
+            },
+            {
+              "id": "2ce9b783-9b16-4c42-aa74-633314ffed46",
+              "name": "required_fields",
+              "value": "id,name,email",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8facdcd0-4b55-4693-9b15-25a6d2960d38",
+      "name": "Set Demo Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -430,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.request_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "54588bd7-abbe-450e-a618-143c05e742ef",
+      "name": "Fetch API Records",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -180,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.all();\nconst flattened = incoming.length === 1 && Array.isArray(incoming[0].json)\n  ? incoming[0].json\n  : incoming.map((item) => item.json);\nconst requiredFields = String(\n  $('Set Demo Configuration').first().json.required_fields || 'id,name,email'\n)\n  .split(',')\n  .map((field) => field.trim())\n  .filter(Boolean);\n\nif (flattened.length === 0) {\n  throw new Error('EMPTY_RESPONSE: The upstream API returned no records.');\n}\n\nreturn flattened.map((record, index) => {\n  const missing = requiredFields.filter((field) => {\n    const value = record?.[field];\n    return value === undefined || value === null || String(value).trim() === '';\n  });\n\n  return {\n    json: {\n      source_index: index,\n      record_id: record?.id ?? null,\n      name: String(record?.name ?? '').trim(),\n      email: String(record?.email ?? '').trim().toLowerCase(),\n      validation_status: missing.length === 0 ? 'valid' : 'invalid',\n      missing_fields: missing,\n      source_domain: record?.website ?? null\n    }\n  };\n});"
+      },
+      "id": "6db98386-50d1-4880-b374-71701fe7ec10",
+      "name": "Normalize and Validate Records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -20
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "id": "11d079f9-e61e-4513-96c6-fadf07b929c8",
+      "name": "Validated Records",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        350,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const failure = $input.first().json;\nconst raw = String(\n  failure?.error?.message ||\n  failure?.error?.description ||\n  failure?.message ||\n  'The upstream request failed.'\n);\n\nconst sanitized = raw\n  .replace(/(?:bearer|token|api[_-]?key|password|authorization)\\s*[:=]\\s*[^\\s,;]+/gi, '[credential redacted]')\n  .replace(/[?&](?:key|token|api_key|access_token)=[^&\\s]+/gi, '?credential=[redacted]')\n  .slice(0, 240);\n\nreturn [{\n  json: {\n    status: 'failed',\n    error: 'upstream_request_failed',\n    message: sanitized,\n    retryable: true,\n    failed_at: new Date().toISOString(),\n    next_step: 'Verify the URL and authentication, then run the workflow again.'\n  }\n}];"
+      },
+      "id": "5a4ace78-3334-4103-9d51-e59c48e5138f",
+      "name": "Sanitize Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        190
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6f8a5ea7-4ee2-411d-83e2-0a1600e3a628",
+      "name": "Failure Record",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        350,
+        190
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Before using real data\n1. Replace the public test URL with the production endpoint.\n2. Select an n8n credential in the HTTP Request node—never paste secrets into the URL or exported JSON.\n3. Set `required_fields` to the fields your downstream system needs.\n4. Test both outputs: a valid response and a deliberate bad URL.\n5. Connect **Validated Records** to the destination and **Failure Record** to a private log or alert.\n6. Add a separate Error Workflow for failures outside this handled API call.",
+        "height": 280,
+        "width": 520,
+        "color": 4
+      },
+      "id": "9848a6b2-7e5e-4c02-bd8a-e66ef79e87ed",
+      "name": "Production Checklist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        40,
+        -390
+      ]
+    }
+  ],
+  "connections": {
+    "Run Demo": {
+      "main": [
+        [
+          {
+            "node": "Set Demo Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Demo Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch API Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch API Records": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Validate Records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sanitize Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Validate Records": {
+      "main": [
+        [
+          {
+            "node": "Validated Records",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sanitize Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize Failure": {
+      "main": [
+        [
+          {
+            "node": "Failure Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
