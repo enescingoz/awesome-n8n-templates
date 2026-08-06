@@ -387,10 +387,11 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 38 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 39 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| Extract source-backed company website metadata with Apify | Validates one company domain, runs a cost-capped Apify Actor, and accepts exactly one website-metadata candidate result with provenance for human CRM review. | Sales/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Extract%20source-backed%20company%20website%20metadata%20with%20Apify.json) |
 | Create and send Pennylane invoices from webhook data | Receives validated invoice data through an HTTP Basic Auth-protected webhook, finds or creates the customer in Pennylane, creates a finalized invoice, optionally emails it through Pennylane, and returns the result. | Finance/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Create%20and%20send%20Pennylane%20invoices%20from%20webhook%20data.json) |
 | API Schema Extractor | Extracts API schemas from web services for documentation or integration purposes. | Development/Integration | [Link to Template](Other_Integrations_and_Use_Cases/API%20Schema%20Extractor.json) |
 | Synthetic Candidate Intake Reliability Harness | Runs six credential-free synthetic tests for candidate-intake deduplication, idempotency, partial-failure resume, invalid-input quarantine, and bounded 429 retry behavior. | HR/QA/Workflow Reliability | [Link to Template](Other_Integrations_and_Use_Cases/Synthetic%20Candidate%20Intake%20Reliability%20Harness.json) |

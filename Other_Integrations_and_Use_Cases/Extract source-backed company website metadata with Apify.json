@@ -1,0 +1,100 @@
+{
+  "name": "Extract source-backed company website metadata with Apify",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-520, 160],
+      "id": "f68af4dd-1cdb-47ad-b385-e65475f8f613",
+      "name": "Run manually"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dff8a003-3e79-4cc8-8d11-11ade1f76b28",
+              "name": "domain",
+              "value": "example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-300, 160],
+      "id": "c0c2cfd8-b815-4fd7-9058-a113e1a06bc6",
+      "name": "Set company domain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const domain = String($json.domain || '').trim().toLowerCase();\nif (domain.length > 253 || !domain.includes('.') || domain.includes('://') || domain.includes('/') || domain.includes(':') || domain.includes(' ') || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) {\n  throw new Error('Use one bare company domain, for example example.com');\n}\nconst labels = domain.split('.');\nconst labelPattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;\nif (labels.some((label) => label.length < 1 || label.length > 63 || !labelPattern.test(label)) || !/^[A-Za-z]{2,63}$/.test(labels.at(-1))) {\n  throw new Error('The company domain is invalid');\n}\nreturn [{ json: { domain, integrationSource: 'n8n-github-c9' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-60, 160],
+      "id": "6de5dfef-56bf-4a4d-a89b-c72603dba826",
+      "name": "Validate domain"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/vivid_astronaut~company-enrichment/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "maxItems", "value": "1"},
+            {"name": "maxTotalChargeUsd", "value": "0.02"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {"timeout": 150000}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [180, 160],
+      "id": "27149609-c426-46bf-97fb-72e7a58345b1",
+      "name": "Extract metadata on Apify"
+    },
+    {
+      "parameters": {
+        "jsCode": "const expectedDomain = $('Validate domain').first().json.domain;\nconst rows = $input.all().flatMap((item) => Array.isArray(item.json) ? item.json : [item.json]);\nif (rows.length !== 1) {\n  throw new Error('Expected exactly one company metadata result');\n}\nconst row = rows[0];\nif (row.success !== true || row.domain !== expectedDomain || row.integrationSource !== 'n8n-github-c9' || row.provenance?.method !== 'website_metadata_scrape') {\n  throw new Error('The Actor response failed semantic validation');\n}\nreturn [{ json: row }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 160],
+      "id": "0f6c43c4-867d-4938-858b-f5be724925aa",
+      "name": "Validate metadata result"
+    },
+    {
+      "parameters": {
+        "content": "# Extract source-backed company website metadata with Apify\n\n## What it does\n\nAccepts one bare company domain, runs Brainiall's public Company Enrichment Actor on Apify, and returns one semantically validated website-metadata candidate item with provenance.\n\n## Setup\n\n1. Create a scoped Apify API token that can run Actors.\n2. On **Extract metadata on Apify**, select an n8n **Header Auth** credential. Use header name `Authorization` and value `Bearer YOUR_SCOPED_APIFY_TOKEN`. Never paste a token into workflow fields.\n3. Replace `example.com` in **Set company domain**.\n4. Review the live Actor pricing. The request caps results at one and total run charge at US$0.02.\n5. Run manually and review the candidate fields before updating a CRM.\n\nThe workflow is inactive by default. It rejects invalid domains and any response that is empty, failed, mismatched, or lacks website-scrape provenance. Candidate fields are not authoritative registry facts."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-520, -360],
+      "id": "3b5dc6a3-33a8-4ed7-9f27-1fbcc46ae355",
+      "name": "Setup instructions"
+    }
+  ],
+  "connections": {
+    "Run manually": {"main": [[{"node": "Set company domain", "type": "main", "index": 0}]]},
+    "Set company domain": {"main": [[{"node": "Validate domain", "type": "main", "index": 0}]]},
+    "Validate domain": {"main": [[{"node": "Extract metadata on Apify", "type": "main", "index": 0}]]},
+    "Extract metadata on Apify": {"main": [[{"node": "Validate metadata result", "type": "main", "index": 0}]]}
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "brainiallMetadata1",
+  "meta": {"templateCredsSetupCompleted": false},
+  "tags": []
+}
