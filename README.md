@@ -580,3 +580,4 @@ Contributions are welcome. If you have an n8n workflow template to share, please
 ---
 
 *Last updated: March 2026*
+- [Para-Inc n8n Handbook](https://github.com/OmarAlshoaiby/n8n-handbook) — free, import-ready AI-automation resource.
