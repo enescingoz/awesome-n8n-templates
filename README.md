@@ -253,12 +253,13 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 
 ### What n8n templates are available for DevOps and server automation?
 
-This section includes 2 DevOps and server automation templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, or control Docker Compose services remotely through HTTP POST requests. Both templates use SSH for secure server management.
+This section includes 3 DevOps and server automation templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely through HTTP POST requests, or watch disk usage across all mountpoints and get alerted before a full disk takes services down. All templates use SSH for secure server management.
 
 | Title | Description | Link |
 |-------|-------------|------|
 | Linux System Update via Webhook | Trigger update & upgrade of your Debian-based server via an authenticated POST request and SSH. | SSH Tools | [Link to Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Start or stop Docker Compose services on your server via authenticated HTTP POST request with n8n + SSH. | SSH Tools | [Link to Template](devops/docker-compose-controller.json) |
+| Disk Space Watchdog with Tiered Thresholds | Check disk usage over SSH on a schedule, warn at 80% and 90%, and alert only when a mountpoint changes level - no repeated alerts for the same full disk. Telegram with e-mail fallback. | SSH Tools | [Link to Template](devops/disk-space-watchdog.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
