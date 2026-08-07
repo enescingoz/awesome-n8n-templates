@@ -1,0 +1,185 @@
+{
+  "name": "Disk space watchdog with tiered thresholds and Telegram alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "f2b10000-0000-4000-8000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "command",
+        "command": "df -P"
+      },
+      "id": "f2b10000-0000-4000-8000-000000000002",
+      "name": "Check Disk Usage (SSH)",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parses the output of \"df -P\", compares it against tiered thresholds (WARN/CRIT)\n// and only reports when a mountpoint CHANGES level. The de-duplication uses n8n's\n// workflow static data, so a disk sitting at 85% for a week alerts once, not 336 times.\n// Thresholds are read from environment variables so the workflow needs no editing.\nconst warnPct = parseInt($env.DISK_WARN_PCT || '80', 10);\nconst critPct = parseInt($env.DISK_CRIT_PCT || '90', 10);\n\nconst raw = $input.first().json.stdout || '';\nconst lines = raw.trim().split('\\n').slice(1);\n\nconst staticData = $getWorkflowStaticData('node');\nif (!staticData.lastLevel) staticData.lastLevel = {};\n\nconst alerts = [];\nfor (const line of lines) {\n  const parts = line.trim().split(/\\s+/);\n  if (parts.length < 6) continue;\n  const filesystem = parts[0];\n  const capacityStr = parts[parts.length - 2];\n  const mount = parts[parts.length - 1];\n  const usedPct = parseInt(capacityStr.replace('%', ''), 10);\n  if (Number.isNaN(usedPct)) continue;\n\n  let level = 'ok';\n  if (usedPct >= critPct) level = 'critical';\n  else if (usedPct >= warnPct) level = 'warning';\n\n  const prevLevel = staticData.lastLevel[mount] || 'ok';\n  if (level !== prevLevel) {\n    staticData.lastLevel[mount] = level;\n    const availGB = (parseInt(parts[parts.length - 3], 10) / 1024 / 1024).toFixed(1);\n    if (level !== 'ok') {\n      alerts.push({ mount, filesystem, usedPct, level, availGB });\n    } else {\n      // Recovery is reported too, so a silent channel means \"nothing changed\",\n      // not \"the workflow died\".\n      alerts.push({ mount, filesystem, usedPct, level, availGB, recovered: true });\n    }\n  }\n}\n\nconst hasAlerts = alerts.length > 0;\nlet message = null;\nif (hasAlerts) {\n  message = alerts.map(a => a.recovered\n    ? `[OK] ${a.mount} back below threshold (${a.usedPct}%)`\n    : `${a.level === 'critical' ? '[CRITICAL]' : '[WARNING]'} ${a.mount} (${a.filesystem}): ${a.usedPct}% used, ${a.availGB} GB free`\n  ).join('\\n');\n}\n\nreturn [{ json: { hasAlerts, message, alerts } }];"
+      },
+      "id": "f2b10000-0000-4000-8000-000000000003",
+      "name": "Parse & Evaluate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{$json.hasAlerts}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "f2b10000-0000-4000-8000-000000000004",
+      "name": "Any alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TG_CHAT_ID}}",
+        "text": "={{$json.message}}",
+        "additionalFields": {}
+      },
+      "id": "f2b10000-0000-4000-8000-000000000005",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        880,
+        -80
+      ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{$env.SMTP_FROM}}",
+        "toEmail": "={{$env.SMTP_TO}}",
+        "subject": "Disk space watchdog alert",
+        "text": "={{$json.message}}"
+      },
+      "id": "f2b10000-0000-4000-8000-000000000006",
+      "name": "Send Email Fallback",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        -80
+      ],
+      "credentials": {
+        "smtp": {
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Disk Usage (SSH)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Disk Usage (SSH)": {
+      "main": [
+        [
+          {
+            "node": "Parse & Evaluate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Evaluate": {
+      "main": [
+        [
+          {
+            "node": "Any alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Alert": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Email Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any alerts?": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}
