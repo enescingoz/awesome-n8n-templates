@@ -431,6 +431,7 @@ This section includes 39 additional n8n integration templates covering a wide ra
 | ClientFlow Lite - Client Onboarding Automation | Client submits a form, receives a welcome email, and gets added to a Google Sheets pipeline automatically. Simple onboarding workflow. | Ops/Sales | [Link to Template](Other_Integrations_and_Use_Cases/ClientFlow%20Lite%20-%20Client%20Onboarding%20Automation.json) |
 | VoiceAgent Lite - Phone Call Logger | Logs phone calls from Vapi.ai or Bland.ai to Google Sheets via webhook. Captures caller info, duration, and transcript summary. | Ops/Support | [Link to Template](Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) |
 | Generate Seedance videos with Vancine API and bounded polling | Submits a Seedance video generation task, polls its asynchronous status, and handles completion, failure, and bounded timeout paths. | Engineering | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20Seedance%20videos%20with%20Vancine%20API%20and%20bounded%20polling.json) |
+| Issue a Verifiable Certificate (Attestify API) | POST recipient and course data to a free API and receive a permanent, tamper-evident public verify page (Ed25519-signed — change one character and verification fails). Core HTTP node; no API key, no signup. | Education/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Issue%20a%20verifiable%20certificate%20(Attestify).json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
