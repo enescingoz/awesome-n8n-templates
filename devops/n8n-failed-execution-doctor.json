@@ -1,0 +1,51 @@
+{
+  "name": "n8n Failed Execution Doctor",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "df873507-97e1-4e2a-871a-b48fe4d72212",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst workflow = input.workflow;\nconst execution = input.execution;\n\nif (!workflow || !Array.isArray(workflow.nodes)) {\n  throw new Error('workflow.nodes must be an array');\n}\nif (!execution || typeof execution !== 'object') {\n  throw new Error('execution must be an object');\n}\n\nconst nodeTypes = new Map(\n  workflow.nodes.map((node) => [String(node.name || ''), String(node.type || '')]),\n);\nconst data = execution.data && typeof execution.data === 'object' ? execution.data : {};\nconst result = data.resultData && typeof data.resultData === 'object'\n  ? data.resultData\n  : (execution.resultData && typeof execution.resultData === 'object' ? execution.resultData : {});\nconst lastNode = result.lastNodeExecuted ? String(result.lastNodeExecuted) : null;\nconst runData = result.runData && typeof result.runData === 'object' ? result.runData : {};\nconst failures = [];\nfunction safeMessage(value) {\n  let text = String(value ?? '').replace(/\\s+/g, ' ').trim();\n  text = text.replace(/(api[_-]?key|token|secret|password|authorization)\\s*[:=]\\s*[^\\s,;}]+/gi, '$1=[REDACTED]');\n  text = text.replace(/bearer\\s+[A-Za-z0-9._~+/-]{8,}/gi, 'Bearer [REDACTED]');\n  return text.slice(0, 300);\n}\n\nfunction classify(message, status) {\n  const text = `${String(status ?? '')} ${message}`.toLowerCase();\n  if (['401', '403', 'unauthorized', 'forbidden', 'credential', 'authentication'].some((x) => text.includes(x))) {\n    return ['authentication', 'Verify credential reference, auth scheme, token scope and expiry; then retest only the failing node.'];\n  }\n  if (['429', 'rate limit', 'too many requests'].some((x) => text.includes(x))) {\n    return ['rate_limit', 'Add bounded retry with exponential backoff and respect Retry-After or the upstream rate-limit policy.'];\n  }\n  if (['timeout', 'timed out', 'etimedout', 'econnaborted'].some((x) => text.includes(x))) {\n    return ['timeout', 'Set an explicit timeout, retry only idempotent work, and isolate the slow external call from the main path.'];\n  }\n  if (['econn', 'dns', 'network', 'connection refused', 'socket hang up'].some((x) => text.includes(x))) {\n    return ['network', 'Check endpoint reachability, DNS and TLS first; then add bounded retries and an explicit failure path.'];\n  }\n  if (['400', '422', 'invalid', 'validation', 'bad request'].some((x) => text.includes(x))) {\n    return ['invalid_input', 'Inspect the outbound payload/schema and validate required fields before the failing node.'];\n  }\n  if (['expression', 'undefined', 'cannot read', 'not defined', 'item linking'].some((x) => text.includes(x))) {\n    return ['expression', 'Validate referenced fields, item linking and optional values before evaluating the expression.'];\n  }\n  return ['execution_error', 'Reproduce the failing node with the same sanitized input, then add an explicit error path before re-enabling automation.'];\n}\n\nfunction addFailure(node, rawError) {\n  const error = rawError && typeof rawError === 'object' ? rawError : {};\n  const rawMessage = error.message || error.description || error.name || rawError || 'Execution failed';\n  const statusCode = error.httpCode ?? error.statusCode ?? error.status ?? null;\n  const message = safeMessage(rawMessage);\n  const [category, recommendedNextStep] = classify(message, statusCode);\n  failures.push({\n    node,\n    nodeType: node ? (nodeTypes.get(String(node)) || null) : null,\n    category,\n    statusCode,\n    message,\n    recommendedNextStep,\n  });\n}\nfor (const [nodeName, runs] of Object.entries(runData)) {\n  if (!Array.isArray(runs)) continue;\n  for (const run of runs) {\n    if (!run || typeof run !== 'object' || !run.error) continue;\n    addFailure(nodeName, run.error);\n  }\n}\nif (result.error && failures.length === 0) {\n  addFailure(lastNode, result.error);\n}\n\nconst counts = {};\nfor (const failure of failures) {\n  counts[failure.category] = (counts[failure.category] || 0) + 1;\n}\nconst primaryCategory = Object.entries(counts)\n  .sort((a, b) => b[1] - a[1])[0]?.[0] || 'unknown';\n\nreturn [{ json: {\n  workflowName: String(workflow.name || ''),\n  lastNodeExecuted: lastNode,\n  failureCount: failures.length,\n  primaryCategory,\n  failures,\n  diagnosticStatus: failures.length ? 'FAILED_EXECUTION_ANALYZED' : 'NO_STRUCTURED_ERROR_FOUND',\n  privacyNote: 'Common secret-like strings are redacted and error messages are truncated.',\n} }];\n"
+      },
+      "id": "4aa207b4-a12c-482e-8313-32ad43dd7680",
+      "name": "Diagnose Failed Execution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Diagnose Failed Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "44b9dc86-702b-45e8-9b71-803799778a26",
+  "versionId": "ca9abd80-9bb7-4c14-83e5-00c53828ada5"
+}
