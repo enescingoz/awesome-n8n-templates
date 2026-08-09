@@ -1,0 +1,174 @@
+{
+  "name": "Slack Approval Gate — Human In The Loop",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Slack Approval Gate\n\nPuts a person in front of anything irreversible. The workflow pauses on the Slack node until someone clicks a button, then continues down the approved or declined branch.\n\n**Why this is worth the five minutes:** it converts your worst-case outcome from \"the automation emailed 400 customers\" into \"someone clicked Decline.\" Add it in front of every send, charge, delete, or post.\n\nEspecially worth it in front of anything an AI agent decided to do.",
+        "height": 360,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -60]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "needs-approval",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [280, 300],
+      "notesInFlow": true,
+      "notes": "Or an Execute Workflow Trigger, if used as a tool"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summarise what is about to happen, in the words the approver needs.\n// \"Approve action?\" with no detail trains people to click Approve.\nreturn $input.all().map((item) => {\n  const d = item.json.body ?? item.json;\n  return {\n    json: {\n      ...d,\n      summary: [\n        `*Action:* ${d.action ?? 'unspecified'}`,\n        `*Target:* ${d.target ?? 'unspecified'}`,\n        `*Value:* ${d.amount ?? d.value ?? 'n/a'}`,\n        `*Requested by:* ${d.requested_by ?? 'automation'}`,\n      ].join('\\n'),\n    },\n  };\n});"
+      },
+      "id": "summarise",
+      "name": "Summarise Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "message": "=Approval needed before this runs:\n\n{{ $json.summary }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {}
+      },
+      "id": "send-and-wait",
+      "name": "Ask For Approval",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [760, 300],
+      "notesInFlow": true,
+      "notes": "Execution pauses here until someone clicks"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "was-approved",
+              "leftValue": "={{ $json.data?.approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-approved",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {},
+      "id": "do-action",
+      "name": "→ Your Action Here",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1240, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "declined",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "log-declined",
+      "name": "Log Declined",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1240, 400],
+      "notesInFlow": true,
+      "notes": "A decline is data — log it"
+    },
+    {
+      "parameters": {
+        "content": "### Two settings that matter\n\n**Approval type is `double`** — the Slack message shows both Approve and Decline. Approve-only cannot distinguish \"declined\" from \"nobody looked yet\", and that ambiguity is the whole reason you added a gate.\n\n**Waiting executions survive restarts** only if your instance persists them — one more reason to run Postgres rather than SQLite for anything real.\n\nIf approvals routinely go unanswered, add a timeout branch. An execution waiting forever is its own kind of silent failure.",
+        "height": 360,
+        "width": 380,
+        "color": 3
+      },
+      "id": "sticky-settings",
+      "name": "Settings note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1660, 220]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Summarise Request", "type": "main", "index": 0 }]]
+    },
+    "Summarise Request": {
+      "main": [[{ "node": "Ask For Approval", "type": "main", "index": 0 }]]
+    },
+    "Ask For Approval": {
+      "main": [[{ "node": "Approved?", "type": "main", "index": 0 }]]
+    },
+    "Approved?": {
+      "main": [
+        [{ "node": "→ Your Action Here", "type": "main", "index": 0 }],
+        [{ "node": "Log Declined", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

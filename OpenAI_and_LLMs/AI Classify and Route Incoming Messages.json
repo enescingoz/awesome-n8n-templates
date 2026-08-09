@@ -1,0 +1,284 @@
+{
+  "name": "AI Classify & Route",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AI Classify & Route\n\nTriage, not generation — the highest-value AI workflow and the cheapest to run. One model call decides where something goes.\n\n**Why one call and not an agent:** the steps here are fixed. You already know the order. An agent would pay a model to rediscover your own flowchart on every run. Use an agent only when the path genuinely varies.\n\nSet a spending limit at your provider before publishing this.",
+        "height": 340,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -60]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "classify",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [280, 280],
+      "notesInFlow": true,
+      "notes": "Swap for Gmail / Telegram / form trigger"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Classify the message into exactly one of: sales, support, billing, spam.\n\nReply with the single word and nothing else. No punctuation, no explanation.\nIf the message fits none of them, reply: other",
+              "role": "system"
+            },
+            {
+              "content": "={{ $json.body?.message || $json.message || $json.text }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "classify",
+      "name": "Classify",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [520, 280],
+      "notesInFlow": true,
+      "notes": "Small model is plenty for classification"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Never trust the label unchecked. Models add punctuation, capitals, and the\n// occasional full sentence — and a Switch node matches none of those.\nconst ALLOWED = ['sales', 'support', 'billing', 'spam'];\n\nreturn $input.all().map((item) => {\n  const raw = item.json.message?.content ?? item.json.content ?? item.json.text ?? '';\n  const cleaned = String(raw).toLowerCase().replace(/[^a-z]/g, '');\n  const category = ALLOWED.includes(cleaned) ? cleaned : 'review';\n\n  return {\n    json: {\n      category,\n      rawLabel: String(raw).trim(),\n      // True when the model returned something outside the list. Worth watching:\n      // a rising rate here means the prompt or the categories need work.\n      offList: category === 'review',\n      original: $('Webhook').item.json.body ?? $('Webhook').item.json,\n    },\n  };\n});"
+      },
+      "id": "normalise",
+      "name": "Normalise Label",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 280]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-sales",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "sales",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sales"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-support",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "support",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "support"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-billing",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "billing",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "billing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-spam",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "spam",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "spam"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "review"
+        }
+      },
+      "id": "route",
+      "name": "Route By Category",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1000, 280]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "text": "=🟢 New sales enquiry\n\n{{ JSON.stringify($json.original) }}",
+        "otherOptions": {}
+      },
+      "id": "sales-slack",
+      "name": "Sales → Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1260, 60]
+    },
+    {
+      "parameters": {},
+      "id": "support-branch",
+      "name": "Support → Your Handler",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1260, 200]
+    },
+    {
+      "parameters": {},
+      "id": "billing-branch",
+      "name": "Billing → Your Handler",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1260, 320]
+    },
+    {
+      "parameters": {},
+      "id": "spam-branch",
+      "name": "Spam → Drop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1260, 440]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "needs_review",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "review-queue",
+      "name": "Review Queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1260, 580]
+    },
+    {
+      "parameters": {
+        "content": "### The fallback branch is the point\n\nThe model will occasionally return something outside your list. Without a fallback those items vanish, and you find out weeks later that you lost sales leads.\n\nRouting them to a review queue instead means an off-list answer costs you one glance, not a customer. Watch the rate — if it climbs above a percent or two, the categories are ambiguous rather than the model being wrong.",
+        "height": 320,
+        "width": 360,
+        "color": 3
+      },
+      "id": "sticky-fallback",
+      "name": "Fallback note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1640, 460]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Classify", "type": "main", "index": 0 }]]
+    },
+    "Classify": {
+      "main": [[{ "node": "Normalise Label", "type": "main", "index": 0 }]]
+    },
+    "Normalise Label": {
+      "main": [[{ "node": "Route By Category", "type": "main", "index": 0 }]]
+    },
+    "Route By Category": {
+      "main": [
+        [{ "node": "Sales → Slack", "type": "main", "index": 0 }],
+        [{ "node": "Support → Your Handler", "type": "main", "index": 0 }],
+        [{ "node": "Billing → Your Handler", "type": "main", "index": 0 }],
+        [{ "node": "Spam → Drop", "type": "main", "index": 0 }],
+        [{ "node": "Review Queue", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

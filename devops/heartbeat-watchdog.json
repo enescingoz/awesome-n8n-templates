@@ -1,0 +1,215 @@
+{
+  "name": "Alert on stale workflow heartbeats with Google Sheets and Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Alert on stale workflow heartbeats with Google Sheets and Slack\n\nCatches what an Error Trigger structurally cannot: a workflow that never ran, a trigger left unpublished, an expired token, or a poll that returns nothing and calls it success. It alerts on the *absence of success* rather than the presence of failure.\n\n### How it works\n\n1. A schedule trigger runs every 15 minutes and reads a Google Sheet holding one row per monitored workflow.\n2. A Code node compares each row's `last_success` timestamp against that row's own `max_age_minutes`.\n3. Overdue rows, and rows with no valid timestamp, are emitted as stale; healthy rows produce nothing.\n4. A second Code node formats each stale row into an alert naming the workflow, its age and the expected interval.\n5. Slack posts the alert. When everything is healthy the run ends silently.\n\n### Setup steps\n\n- [ ] Create a Google Sheet with the columns `workflow`, `last_success` and `max_age_minutes` — one row per monitored workflow.\n- [ ] Add your Google Sheets credential to **Read Heartbeats** and select that document and sheet.\n- [ ] Add your Slack credential to **Slack — Send Alert** and pick the destination channel.\n- [ ] At the end of each workflow you want watched, add a Google Sheets **Append or Update** node matching on `workflow` that writes `last_success` = `{{ $now.toISO() }}`.\n- [ ] Set the schedule interval shorter than your smallest `max_age_minutes`.\n\n### Customization\n\nThresholds live per row, so each workflow carries its own tolerance and you never edit this workflow to add another. Replace the Slack node to send anywhere else — everything upstream is transport-agnostic.",
+        "width": 480,
+        "height": 1024
+      },
+      "id": "sticky-main",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Read heartbeats on a schedule\n\nPulls one row per monitored workflow from Google Sheets every 15 minutes.",
+        "width": 448,
+        "height": 352,
+        "color": 7
+      },
+      "id": "sticky-section-read",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Detect stale rows and alert\n\nFlags any row older than its own threshold, formats a message naming the workflow and its age, and posts it to Slack.",
+        "width": 672,
+        "height": 352,
+        "color": 7
+      },
+      "id": "sticky-section-alert",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        704,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⚠️ Two rules decide whether this actually works\n\n**Write the heartbeat conditionally.** In the monitored workflow, write `last_success` only when it produced real output — rows returned, message sent, record created. Write it unconditionally and a green-but-empty run marks itself healthy.\n\n**The watcher must not share fate with what it watches.** This runs inside the same n8n instance as the workflows it monitors, so it cannot detect that instance being down. For anything critical, also point an external uptime check at your instance.",
+        "width": 1136,
+        "height": 304,
+        "color": 3
+      },
+      "id": "sticky-warning",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        300,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "heartbeats",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "read-heartbeats",
+      "name": "Read Heartbeats",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        520,
+        368
+      ],
+      "notesInFlow": true,
+      "notes": "Columns: workflow | last_success | max_age_minutes"
+    },
+    {
+      "parameters": {
+        "jsCode": "// One row per monitored workflow:\n//   workflow            e.g. \"Daily invoice sync\"\n//   last_success        ISO timestamp written by that workflow\n//   max_age_minutes     how long is too long\n//\n// Emits one item per STALE workflow. Emits nothing when all are healthy,\n// which is exactly what you want — no news is no alert.\nconst now = Date.now();\nconst stale = [];\n\nfor (const item of $input.all()) {\n  const row = item.json;\n  const name = row.workflow ?? 'unnamed';\n  const maxAge = Number(row.max_age_minutes ?? 60);\n  const last = row.last_success ? Date.parse(row.last_success) : NaN;\n\n  // A missing or unparseable timestamp is a failure, not a skip.\n  if (!Number.isFinite(last)) {\n    stale.push({ json: { workflow: name, ageMinutes: null, maxAge, reason: 'no valid last_success timestamp' } });\n    continue;\n  }\n\n  const ageMinutes = Math.round((now - last) / 60000);\n  if (ageMinutes > maxAge) {\n    stale.push({ json: { workflow: name, ageMinutes, maxAge, reason: 'overdue' } });\n  }\n}\n\nreturn stale;"
+      },
+      "id": "find-stale",
+      "name": "Find Stale Heartbeats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Name the workflow, the age, and the expectation. A vague alert gets ignored.\nreturn $input.all().map((item) => {\n  const d = item.json;\n  const age = d.ageMinutes === null ? 'never recorded' : `${d.ageMinutes} min ago`;\n  return {\n    json: {\n      alert: `🟠 *${d.workflow}* has not succeeded recently.\\nLast success: ${age}\\nExpected at least every ${d.maxAge} min\\nReason: ${d.reason}`,\n    },\n  };\n});"
+      },
+      "id": "format-alert",
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "text": "={{ $json.alert }}",
+        "otherOptions": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack — Send Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1180,
+        368
+      ],
+      "notesInFlow": true,
+      "notes": "Pick your channel and credential"
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Read Heartbeats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Heartbeats": {
+      "main": [
+        [
+          {
+            "node": "Find Stale Heartbeats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Stale Heartbeats": {
+      "main": [
+        [
+          {
+            "node": "Format Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [
+          {
+            "node": "Slack — Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
