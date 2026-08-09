@@ -1,0 +1,122 @@
+{
+  "name": "Error Handler — Alert With Context",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Error Handler\n\nSet this workflow as the **Error Workflow** on your other workflows:\nWorkflow → Settings → Error Workflow → pick this one.\n\nIt does NOT need to be published. n8n calls it directly when a run fails.\n\n**Important limit:** an Error Trigger only fires when an execution *fails*. A workflow that never triggered at all produces no execution, so there is nothing to fail and this will stay silent. Use the Heartbeat Watchdog template for that case.",
+        "height": 320,
+        "width": 380,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-140, -40]
+    },
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [300, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build an alert that names the workflow, the node, and the error.\n// A bare \"workflow failed\" trains you to ignore alerts.\nconst e = $json.execution ?? {};\nconst w = $json.workflow ?? {};\n\nconst lines = [\n  `🔴 *${w.name ?? 'Unknown workflow'}* failed`,\n  `Node: ${e.lastNodeExecuted ?? 'unknown'}`,\n  `Error: ${e.error?.message ?? 'no message'}`,\n  e.url ? `Execution: ${e.url}` : `Execution ID: ${e.id ?? 'unknown'}`,\n  `Mode: ${e.mode ?? 'unknown'}${e.retryOf ? ` (retry of ${e.retryOf})` : ''}`,\n];\n\nreturn [{ json: { alert: lines.join('\\n'), workflowName: w.name, nodeName: e.lastNodeExecuted } }];"
+      },
+      "id": "format-alert",
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 160]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "text": "={{ $json.alert }}",
+        "otherOptions": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack — Send Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [760, 60],
+      "notesInFlow": true,
+      "notes": "Pick your channel and credential"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.alert }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "telegram-alert",
+      "name": "Telegram — Send Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [760, 280],
+      "disabled": true,
+      "notesInFlow": true,
+      "notes": "Enable this instead of Slack if you prefer"
+    },
+    {
+      "parameters": {
+        "content": "### Pick one channel\n\nSlack is enabled, Telegram is disabled. Enable whichever you use and delete the other.\n\nThe Telegram node is set to HTML parse mode on purpose — MarkdownV2 requires escaping a long list of characters, and error messages contain most of them.",
+        "height": 240,
+        "width": 300,
+        "color": 5
+      },
+      "id": "sticky-channel",
+      "name": "Channel note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1000, 60]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [
+          {
+            "node": "Slack — Send Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram — Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

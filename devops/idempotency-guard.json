@@ -1,0 +1,249 @@
+{
+  "name": "Idempotency Guard — Never Act Twice",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Idempotency Guard\n\nThe pattern that stops a retry from sending the same invoice twice.\n\n**The problem:** if a workflow writes to three systems and fails on the fourth, the first three already happened. n8n unwinds nothing. Re-run it and those three happen again — and nothing errors, because both attempts succeeded.\n\n**The rule:** any action a customer would notice happening twice needs a key checked before it fires. Sending, charging, posting, creating. Reads and searches don't.\n\nUse this as a **sub-workflow tool** so the check lives with the action, written once.",
+        "height": 420,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -80]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "guarded-action",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [300, 260],
+      "notesInFlow": true,
+      "notes": "Or swap for an Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The key must be STABLE across retries and UNIQUE per real request.\n//\n// Good keys: an upstream event ID, an order ID, a provider message ID.\n// Bad keys: a timestamp, a random value, an execution ID — all three change\n// on retry, so every retry looks like a brand new request and the guard\n// silently stops guarding.\n//\n// No natural ID? Hash the meaningful fields instead.\nconst crypto = require('crypto');\n\nreturn $input.all().map((item) => {\n  const body = item.json.body ?? item.json;\n\n  const naturalId = body.event_id ?? body.order_id ?? body.message_id ?? null;\n\n  const key = naturalId\n    ? String(naturalId)\n    : crypto\n        .createHash('sha256')\n        .update(JSON.stringify({ to: body.to, amount: body.amount, ref: body.reference }))\n        .digest('hex')\n        .slice(0, 32);\n\n  return { json: { ...body, idempotency_key: key, keyedOn: naturalId ? 'natural id' : 'field hash' } };\n});"
+      },
+      "id": "build-key",
+      "name": "Build Idempotency Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 260]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "processed_keys",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "idempotency_key",
+              "lookupValue": "={{ $json.idempotency_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "lookup-key",
+      "name": "Already Processed?",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [760, 260],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "notes": "alwaysOutputData is ON so an empty result still flows"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "seen-before",
+              "leftValue": "={{ $json.idempotency_key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-seen",
+      "name": "Seen Before?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [980, 260]
+    },
+    {
+      "parameters": {},
+      "id": "skip",
+      "name": "Skip — Already Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1220, 140]
+    },
+    {
+      "parameters": {
+        "content": "### The action goes here\n\nReplace this No-Op with the thing that must happen exactly once: send the invoice, charge the card, post the message, create the record.\n\nEverything upstream exists so this node fires once per real request.",
+        "height": 240,
+        "width": 320,
+        "color": 3
+      },
+      "id": "sticky-action",
+      "name": "Your action",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1200, 560]
+    },
+    {
+      "parameters": {},
+      "id": "do-action",
+      "name": "→ Your Action Here",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1220, 400]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "processed_keys",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "idempotency_key": "={{ $('Build Idempotency Key').item.json.idempotency_key }}",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "record-key",
+      "name": "Record Key",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "content": "### Write the key AFTER the action\n\nWrite it before and a failure in the action leaves the key recorded — so the retry skips, and the thing never happens at all. Silent no-op instead of silent duplicate. Equally bad, harder to spot.\n\nWriting after leaves a small window where a crash between action and record could allow one duplicate. For anything where money moves, use a store with atomic conditional writes (Postgres `INSERT ... ON CONFLICT DO NOTHING`) instead of a spreadsheet, and claim the key first.",
+        "height": 320,
+        "width": 380,
+        "color": 7
+      },
+      "id": "sticky-order",
+      "name": "Ordering matters",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1580, 120]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Idempotency Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Idempotency Key": {
+      "main": [
+        [
+          {
+            "node": "Already Processed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already Processed?": {
+      "main": [
+        [
+          {
+            "node": "Seen Before?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seen Before?": {
+      "main": [
+        [
+          {
+            "node": "Skip — Already Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "→ Your Action Here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "→ Your Action Here": {
+      "main": [
+        [
+          {
+            "node": "Record Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

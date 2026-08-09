@@ -1,0 +1,216 @@
+{
+  "name": "Telegram Command Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Telegram Command Bot\n\nRoutes `/status`, `/help` and anything else to separate branches.\n\n**Two things to know before testing**\n\n1. **Telegram allows exactly one webhook per bot.** n8n's test URL and production URL overwrite each other with no error and no warning. If the bot works in the editor and goes silent once published — or the reverse — that's this. Publish, then test with the real bot.\n\n2. **In groups, privacy mode hides normal messages.** By default a bot only receives commands and replies/mentions. Either keep it to commands, or turn privacy mode off via BotFather → `/setprivacy`.",
+        "height": 400,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -80]
+    },
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [300, 280],
+      "notesInFlow": true,
+      "notes": "Only 'message' — add others deliberately"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull out the command and its arguments once, so branches stay readable.\nreturn $input.all().map((item) => {\n  const msg = item.json.message ?? item.json;\n  const text = String(msg.text ?? '').trim();\n\n  // Group commands arrive as /status@your_bot_name — strip the suffix.\n  const [rawCommand, ...args] = text.split(/\\s+/);\n  const command = rawCommand.startsWith('/')\n    ? rawCommand.split('@')[0].toLowerCase()\n    : '';\n\n  return {\n    json: {\n      command,\n      args: args.join(' '),\n      text,\n      chatId: msg.chat?.id ?? null,\n      chatType: msg.chat?.type ?? null,\n      from: msg.from?.username ?? msg.from?.first_name ?? 'unknown',\n    },\n  };\n});"
+      },
+      "id": "parse-command",
+      "name": "Parse Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 280]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cmd-status",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "status"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cmd-help",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/help",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "help"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "route",
+      "name": "Route Command",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [760, 280]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=✅ Everything is running.\nChecked at {{ $now.toFormat('yyyy-LL-dd HH:mm') }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "reply-status",
+      "name": "Reply — Status",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1000, 140]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=<b>Commands</b>\n/status — check the system\n/help — this message",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "reply-help",
+      "name": "Reply — Help",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=I didn't recognise that. Send /help for the list.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "reply-unknown",
+      "name": "Reply — Unknown",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1000, 460]
+    },
+    {
+      "parameters": {
+        "content": "### Use HTML, not MarkdownV2\n\nAll three replies use `parse_mode: HTML`. MarkdownV2 requires escaping `_ * [ ] ( ) ~ ` > # + - = | { } . !` — and any unescaped one returns a 400 from Telegram. HTML needs only `&`, `<` and `>`.\n\nRegister the command list with BotFather via `/setcommands` so they autocomplete.",
+        "height": 260,
+        "width": 340,
+        "color": 6
+      },
+      "id": "sticky-format",
+      "name": "Formatting note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1260, 300]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Command": {
+      "main": [
+        [
+          {
+            "node": "Route Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Command": {
+      "main": [
+        [
+          {
+            "node": "Reply — Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply — Help",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply — Unknown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

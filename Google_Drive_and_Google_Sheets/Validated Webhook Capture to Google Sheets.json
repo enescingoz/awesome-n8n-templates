@@ -1,0 +1,240 @@
+{
+  "name": "Webhook → Validate → Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Webhook → Validate → Sheets\n\nThe form-and-lead-capture pattern, with the validation step most versions leave out.\n\n**Before you test:** the Webhook node has two URLs. The **test** URL only listens for about 120 seconds after you click *Execute workflow*. The **production** URL works only once the workflow is published. Registering the test URL somewhere external is the single most common reason a webhook \"stops working after two minutes\".",
+        "height": 320,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-180, -40]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-capture",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [280, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise first, validate second. Most \"bad\" submissions are just untrimmed\n// or differently-cased, and rejecting those loses real leads.\nconst out = [];\n\nfor (const item of $input.all()) {\n  const body = item.json.body ?? item.json;\n\n  const email = String(body.email ?? '').trim().toLowerCase();\n  const name = String(body.name ?? '').trim();\n  const message = String(body.message ?? '').trim();\n\n  const errors = [];\n  // Deliberately permissive: something@something.something.\n  if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) errors.push('invalid email');\n  if (name.length === 0) errors.push('missing name');\n  if (message.length > 5000) errors.push('message too long');\n\n  out.push({\n    json: {\n      valid: errors.length === 0,\n      errors,\n      receivedAt: new Date().toISOString(),\n      email,\n      name,\n      message,\n      source: body.source ?? 'unknown',\n    },\n  });\n}\n\nreturn out;"
+      },
+      "id": "validate",
+      "name": "Normalise & Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-valid",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "append-row",
+      "name": "Append Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [960, 100],
+      "notesInFlow": true,
+      "notes": "Header row must match the field names"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true } }}",
+        "options": {}
+      },
+      "id": "respond-ok",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1180, 100]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "rejected",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "log-rejected",
+      "name": "Log Rejected",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [960, 320],
+      "notesInFlow": true,
+      "notes": "Keep rejects — silent discards hide real bugs"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": false, \"errors\": $json.errors } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-bad",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1180, 320]
+    },
+    {
+      "parameters": {
+        "content": "### Why log the rejects\n\nA validation branch that discards bad input silently is indistinguishable from a broken form. Writing rejects to their own tab costs nothing and tells you whether your validation is too strict — which it usually is at first.",
+        "height": 220,
+        "width": 320,
+        "color": 6
+      },
+      "id": "sticky-rejects",
+      "name": "Rejects note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [960, 480]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalise & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise & Validate": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Append Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Lead": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Rejected": {
+      "main": [
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

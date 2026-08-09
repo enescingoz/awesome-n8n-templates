@@ -1,0 +1,155 @@
+{
+  "name": "AI Agent Starter — One Tool, Done Properly",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AI Agent Starter\n\nOne agent, one tool, memory keyed per user. Deliberately small — a broken agent with one tool is diagnosable; a broken agent with six is not.\n\n**Before you add more tools:** ask whether the sequence of steps actually varies with the input. If you can draw the flowchart, build the flowchart instead. An agent is for when you can't.\n\nEvery AI Agent node is a Tools Agent now. If a tutorial has you choosing an agent type from a dropdown, it predates that change.",
+        "height": 400,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-intro",
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-220, -100]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "chat-trigger",
+      "name": "When Chat Message Received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [300, 300],
+      "notesInFlow": true,
+      "notes": "Supplies chatInput AND sessionId"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a support assistant for an online shop.\n\nYou can look up order status using the order lookup tool.\n\nRules:\n- Only call the lookup tool when the customer has given you an order number.\n- If they haven't, ask for it. Do not guess and do not call the tool with a placeholder.\n- If the lookup returns nothing, say you couldn't find that order. Never invent a status.\n- If the question isn't about orders, say you can't help with that and suggest emailing support.",
+          "maxIterations": 4,
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [560, 300]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "chat-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [440, 540],
+      "notesInFlow": true,
+      "notes": "Add your OpenAI credential here"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "memory",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [620, 540],
+      "notesInFlow": true,
+      "notes": "Keyed per session — never a static string"
+    },
+    {
+      "parameters": {
+        "name": "order_lookup",
+        "description": "Look up the status of a single order. Input: the order number, digits only, no # prefix. Use only when the customer has supplied an order number. Do not use it for questions about returns, refunds, or delivery policy.",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "id": "order-tool",
+      "name": "Order Lookup Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [800, 540],
+      "notesInFlow": true,
+      "notes": "Point at your lookup sub-workflow"
+    },
+    {
+      "parameters": {
+        "content": "### The description IS the interface\n\nThe agent cannot see what a tool does. It sees the name and the sentence you wrote. Look at the tool description here — it states **when to call it**, **what the input must look like**, and **what it is not for**.\n\nThat third part is the cheapest guardrail available. Models over-reach with plausible-sounding tools.\n\nWhen an agent claims it can't do something you clearly gave it a tool for, rewrite the description before you touch the system prompt.",
+        "height": 360,
+        "width": 380,
+        "color": 3
+      },
+      "id": "sticky-tools",
+      "name": "Tool description note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1020, 460]
+    },
+    {
+      "parameters": {
+        "content": "### Session keys leak context\n\n`sessionKey` is set to the trigger's `sessionId`. Keep it that way.\n\nA static key like `my_test_session` is fine while testing and a data-exposure bug in production — every user shares one history, so two customers can see each other's context. With a Telegram or Slack trigger instead of the chat panel, key it on the chat ID or user ID.",
+        "height": 300,
+        "width": 360,
+        "color": 7
+      },
+      "id": "sticky-memory",
+      "name": "Memory note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [300, 780]
+    },
+    {
+      "parameters": {
+        "content": "### Debugging\n\nWhen the answer is wrong but the run is green, turn on **Return Intermediate Steps** in the agent options and ask three questions in order:\n\n1. Right tool? → if not, fix the tool description\n2. Right input? → if not, clarify the expected format\n3. Did the tool return what you expected? → if it returned nothing and the agent answered anyway, the system message is missing an instruction\n\nDifferent causes, different fixes. Guessing at the system prompt first is why agents get worse.\n\n**Max Iterations is 4 here, not the default 10.** A one-tool agent needing ten passes is looping, not thinking — and every pass is another model call.",
+        "height": 420,
+        "width": 400,
+        "color": 6
+      },
+      "id": "sticky-debug",
+      "name": "Debugging note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [760, 20]
+    }
+  ],
+  "connections": {
+    "When Chat Message Received": {
+      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Simple Memory": {
+      "ai_memory": [[{ "node": "AI Agent", "type": "ai_memory", "index": 0 }]]
+    },
+    "Order Lookup Tool": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
