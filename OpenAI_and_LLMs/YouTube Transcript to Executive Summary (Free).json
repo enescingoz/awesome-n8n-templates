@@ -1,0 +1,188 @@
+{
+  "name": "YouTube Transcript → Executive Summary (Free)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "yt-transcript-lite",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "yt-transcript-lite"
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $input.first().json.body.url;\n// Extract video ID from various YouTube URL formats\nlet videoId = null;\nconst patterns = [\n  /(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/|youtube\\.com\\/v\\/)([a-zA-Z0-9_-]{11})/,\n  /^([a-zA-Z0-9_-]{11})$/\n];\nfor (const pattern of patterns) {\n  const match = url.match(pattern);\n  if (match) {\n    videoId = match[1];\n    break;\n  }\n}\nif (!videoId) {\n  throw new Error('Invalid YouTube URL. Could not extract video ID.');\n}\nreturn { videoId, url };"
+      },
+      "id": "extract-id",
+      "name": "Extract Video ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Fetch Transcript with automatic fallback (v9)\n// Primary:   youtubetranscript.com (free, keyless — same as paid)\n// Fallback:  local bridge using youtube-transcript-api (optional)\n// ============================================================\nconst videoId = $json.videoId;\n// Optional secondary source. Leave empty to disable.\n// Point at any transcript API you have (e.g. a local bridge or\n// transcriptapi.com with your key). Primary source is free & keyless.\nconst FALLBACK_URL = '';\n\nlet raw = null;\nlet source = 'youtubetranscript.com';\n\n// 1) Primary source (free, no API key)\ntry {\n  const resp = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `https://youtubetranscript.com/?server_vid2=${videoId}`,\n    responseFormat: 'text',\n    timeout: 20000,\n  });\n  const isBlocked = /currently blocking us|working on a fix|can't fetch|unable to fetch/i.test(resp) && resp.length < 400;\n  if (!isBlocked && resp.includes('<text')) {\n    raw = resp;\n  }\n} catch (e) {\n  // primary unavailable -> try fallback\n}\n\n// 2) Fallback source (local bridge / any configured transcript API)\nif (!raw && FALLBACK_URL) {\n  try {\n    const fb = await this.helpers.httpRequest({\n      method: 'GET',\n      url: `${FALLBACK_URL}?video_id=${videoId}`,\n      json: true,\n      timeout: 30000,\n    });\n    if (fb && fb.ok && fb.transcript) {\n      raw = fb.transcript;\n      source = 'local-bridge';\n    }\n  } catch (e) {\n    // fallback unavailable\n  }\n}\n\nif (!raw) {\n  throw new Error('Could not fetch a transcript for this video. The free transcript service is temporarily blocked by YouTube — try a video with captions, or try again later.');\n}\n\n// Parse: XML <text> tags (primary) or plain text (fallback)\nlet transcript = '';\nconst textMatches = raw.match(/<text[^>]*>([\\s\\S]*?)<\\/text>/g) || [];\nif (textMatches.length) {\n  transcript = textMatches\n    .map(t => t.replace(/<[^>]+>/g, '').trim())\n    .filter(t => t.length > 0)\n    .join(' ');\n} else {\n  transcript = raw\n    .split('\\n')\n    .filter(l => l.trim() && !l.includes('[') && !l.includes('((') && l.length > 5)\n    .join(' ');\n}\ntranscript = transcript.trim();\nif (!transcript) {\n  throw new Error('Could not extract a transcript for this video. It may have no captions, or the transcript service is unavailable.');\n}\n\nreturn {\n  transcript: transcript.substring(0, 25000),\n  wordCount: transcript.split(' ').length,\n  source,\n};"
+      },
+      "id": "fetch-transcript",
+      "name": "Fetch Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "complete",
+        "chatModel": "gpt-4o-mini",
+        "messages": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a YouTube content analyst. Analyze the provided transcript and produce an **Executive Summary** (3-5 paragraphs) that captures the key points, insights, and main message of the video. Return as structured JSON with key: summary"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.transcript }}"
+            }
+          ]
+        },
+        "simplifyOutput": true,
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1000
+        }
+      },
+      "id": "ai-analysis",
+      "name": "AI Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// OpenAI node (simplifyOutput: true) returns { message: { role, content } }\n// The model is instructed to return JSON with key \"summary\".\nconst msg = $input.first().json.message;\nconst content = (msg && msg.content) || '';\nlet summary = content.trim();\ntry {\n  const parsed = JSON.parse(content);\n  if (parsed && parsed.summary) {\n    summary = parsed.summary;\n  }\n} catch (e) {\n  // content was plain text\n}\n\nconst prev = $('Fetch Transcript').first().json;\nreturn {\n  videoUrl: $('Extract Video ID').first().json.url || '',\n  videoId: $('Extract Video ID').first().json.videoId || '',\n  wordCount: prev.wordCount || 0,\n  summary,\n};"
+      },
+      "id": "format-output",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "response": {
+            "responseCode": 200,
+            "respondMode": "allJson",
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            }
+          }
+        },
+        "jsCode": "const output = $input.first().json;\nreturn output;"
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Video ID": {
+      "main": [
+        [
+          {
+            "node": "Fetch Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Transcript": {
+      "main": [
+        [
+          {
+            "node": "AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Output": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    "youtube",
+    "transcript",
+    "summary",
+    "openai",
+    "content-creation"
+  ]
+}
