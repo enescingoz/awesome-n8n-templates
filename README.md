@@ -253,13 +253,14 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 
 ### What n8n templates are available for DevOps and server automation?
 
-This section includes 3 DevOps and server automation templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely through HTTP POST requests, or watch disk usage across all mountpoints and get alerted before a full disk takes services down. All templates use SSH for secure server management.
+This section includes 4 DevOps and reliability templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, or diagnose failed n8n execution JSON without connecting to a live instance.
 
-| Title | Description | Link |
-|-------|-------------|------|
+| Title | Description | Department | Link |
+|-------|-------------|------------|------|
 | Linux System Update via Webhook | Trigger update & upgrade of your Debian-based server via an authenticated POST request and SSH. | SSH Tools | [Link to Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Start or stop Docker Compose services on your server via authenticated HTTP POST request with n8n + SSH. | SSH Tools | [Link to Template](devops/docker-compose-controller.json) |
 | Disk Space Watchdog with Tiered Thresholds | Check disk usage over SSH on a schedule, warn at 80% and 90%, and alert only when a mountpoint changes level - no repeated alerts for the same full disk. Telegram with e-mail fallback. | SSH Tools | [Link to Template](devops/disk-space-watchdog.json) |
+| n8n Failed Execution Doctor | Diagnose exported failed n8n execution data locally, identify the failing node, classify common root causes such as 401/403, 429, timeouts, network, invalid input, and expression errors, and return a focused next diagnostic step. No external API key or LLM required. | Engineering | [Link to Template](devops/n8n-failed-execution-doctor.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
