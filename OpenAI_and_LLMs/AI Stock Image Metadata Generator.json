@@ -1,0 +1,198 @@
+{
+  "name": "AI Stock Image Metadata Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stock-image-meta",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Accept either { imageUrl } or { imageBase64 } (data URL) in the webhook body\nconst raw = $('Webhook').first().json.body || $('Webhook').first().json || {};\nlet imageRef = raw.imageUrl || raw.image_url || raw.image || null;\nif (!imageRef && raw.imageBase64) {\n  // Allow raw base64 without the data: prefix - wrap it\n  imageRef = raw.imageBase64.startsWith('data:') ? raw.imageBase64 : 'data:image/jpeg;base64,' + raw.imageBase64;\n}\nif (!imageRef) {\n  throw new Error('No image provided. Send JSON with \"imageUrl\" (public URL) or \"imageBase64\" (data URL).');\n}\nreturn [{ json: { imageRef } }];\n"
+      },
+      "id": "parse-input-1",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the OpenAI vision request body. Prompt: stock metadata (title, description, 20-40 keywords).\nconst imageRef = $json.imageRef;\nconst body = {\n  model: 'gpt-4o-mini',\n  messages: [\n    {\n      role: 'system',\n      content: 'You are a professional stock-photo metadata writer. You write metadata that makes images SELL on stock marketplaces (Adobe Stock, Shutterstock, Getty).'\n    },\n    {\n      role: 'user',\n      content: [\n        {\n          type: 'text',\n          text: 'Analyze this image and return ONLY raw JSON (no markdown, no code fences) with exactly these fields: {\"title\": \"compelling stock title under 12 words\", \"description\": \"2-3 sentence description with subject, setting, mood, use cases\", \"keywords\": [\"20-40 lowercase keywords\", \"comma-separated array\"]}. Keywords: mix of subject, style, concept, mood, and usage keywords a buyer would search.'\n        },\n        { type: 'image_url', image_url: { url: imageRef } }\n      ]\n    }\n  ],\n  temperature: 0.3,\n  max_tokens: 800\n};\nreturn [{ json: { requestBody: JSON.stringify(body) } }];\n"
+      },
+      "id": "build-request-1",
+      "name": "Build Vision Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "none",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.requestBody }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "vision-llm-1",
+      "name": "Vision LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the LLM response; tolerate code fences and whitespace\nlet content = $json.choices && $json.choices[0] && $json.choices[0].message\n  ? $json.choices[0].message.content : String($json.content || '');\ncontent = content.replace(/```json\\s*/gi, '').replace(/```/g, '').trim();\nlet meta;\ntry {\n  meta = JSON.parse(content);\n} catch (e) {\n  // Fallback: extract first {...} block\n  const m = content.match(/\\{[\\s\\S]*\\}/);\n  meta = m ? JSON.parse(m[0]) : {};\n}\nconst title = (meta.title || 'Untitled').trim();\nconst description = (meta.description || '').trim();\nconst keywords = Array.isArray(meta.keywords) ? meta.keywords.map(k => String(k).trim()).filter(Boolean) : [];\nif (!title || !description || keywords.length === 0) {\n  throw new Error('Bad LLM output: missing title/description/keywords. Got: ' + content.slice(0, 200));\n}\nreturn [{ json: { title, description, keywords, keyword_count: keywords.length } }];\n"
+      },
+      "id": "parse-meta-1",
+      "name": "Parse Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Emit the metadata row as CSV (RFC-4180-ish quoting) + a JSON view for the response\nconst t = $json.title.replace(/\"/g, '\"\"');\nconst d = $json.description.replace(/\"/g, '\"\"');\nconst kw = $json.keywords.join('; ').replace(/\"/g, '\"\"');\nconst csvLine = `\"${t}\",\"${d}\",\"${kw}\"`;\nconst csvHeader = '\"title\",\"description\",\"keywords\"';\nreturn [{\n  json: {\n    title: $json.title,\n    description: $json.description,\n    keywords: $json.keywords,\n    keyword_count: $json.keyword_count,\n    csv_row: csvLine,\n    csv: csvHeader + '\\n' + csvLine\n  }\n}];\n"
+      },
+      "id": "build-csv-1",
+      "name": "Build CSV Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "responseBody": "={{ JSON.stringify({ success: true, title: $json.title, description: $json.description, keywords: $json.keywords, keyword_count: $json.keyword_count, csv: $json.csv }) }}",
+        "options": {}
+      },
+      "id": "respond-1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Build Vision Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Vision Request": {
+      "main": [
+        [
+          {
+            "node": "Vision LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vision LLM": {
+      "main": [
+        [
+          {
+            "node": "Parse Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Metadata": {
+      "main": [
+        [
+          {
+            "node": "Build CSV Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build CSV Row": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "active": false
+}
