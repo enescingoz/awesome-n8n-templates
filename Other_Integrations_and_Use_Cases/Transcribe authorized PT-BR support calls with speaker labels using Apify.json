@@ -1,0 +1,39 @@
+{
+  "name": "Brainiall - Review an authorized PT-BR support call",
+  "nodes": [
+    {"parameters": {}, "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [-620, 160], "id": "a1570002-0001-4000-8000-000000000001", "name": "Run manually"},
+    {
+      "parameters": {"assignments": {"assignments": [
+        {"id": "a1570002-0002-4000-8000-000000000001", "name": "mediaUrl", "value": "https://www.brainiall.com/assets/brainiall-ptbr-multispeaker-demo.mp3", "type": "string"},
+        {"id": "a1570002-0003-4000-8000-000000000001", "name": "language", "value": "pt", "type": "string"},
+        {"id": "a1570002-0004-4000-8000-000000000001", "name": "diarization", "value": true, "type": "boolean"},
+        {"id": "a1570002-0005-4000-8000-000000000001", "name": "maxDurationMinutes", "value": 20, "type": "number"},
+        {"id": "a1570002-0006-4000-8000-000000000001", "name": "confirmRightsAndConsent", "value": false, "type": "boolean"}
+      ]}, "options": {}},
+      "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [-400, 160], "id": "a1570002-0007-4000-8000-000000000001", "name": "Set authorized support call"
+    },
+    {
+      "parameters": {"jsCode": "const cfg = $json;\nif (cfg.confirmRightsAndConsent !== true) throw new Error('Confirm processing rights and any required speaker consent before running');\nlet parsed;\ntry { parsed = new URL(String(cfg.mediaUrl || '')); } catch { throw new Error('Use one valid public HTTPS media URL'); }\nconst host = parsed.hostname.toLowerCase();\nif (parsed.protocol !== 'https:' || parsed.username || parsed.password || !host.includes('.') || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal') || /^10\\.|^127\\.|^169\\.254\\.|^192\\.168\\.|^172\\.(1[6-9]|2[0-9]|3[01])\\./.test(host)) throw new Error('Use one public HTTPS media URL without embedded credentials');\nconst language = String(cfg.language || 'pt').toLowerCase();\nif (!/^[a-z]{2,3}$/.test(language)) throw new Error('Language must be a two-to-three-letter ISO code');\nconst maxDurationMinutes = Number(cfg.maxDurationMinutes);\nif (!Number.isInteger(maxDurationMinutes) || maxDurationMinutes < 1 || maxDurationMinutes > 20) throw new Error('Duration must be between 1 and 20 minutes');\nreturn [{json:{sources:[parsed.toString()],language,diarization:true,output_formats:['json','srt','vtt','txt'],maxDurationMinutes,integrationSource:'n8n-c157-support-call-review'}}];"},
+      "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-160, 160], "id": "a1570002-0008-4000-8000-000000000001", "name": "Validate consent URL and limits"
+    },
+    {
+      "parameters": {"method": "POST", "url": "https://api.apify.com/v2/acts/vivid_astronaut~audio-video-transcription-diarization/run-sync-get-dataset-items", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendQuery": true, "queryParameters": {"parameters": [{"name": "maxItems", "value": "1"}, {"name": "maxTotalChargeUsd", "value": "0.05"}, {"name": "timeout", "value": "300"}]}, "sendBody": true, "contentType": "raw", "rawContentType": "application/json", "body": "={{ JSON.stringify($json) }}", "options": {"timeout": 295000}},
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.4, "position": [80, 160], "id": "a1570002-0009-4000-8000-000000000001", "name": "Transcribe support call on Apify"
+    },
+    {
+      "parameters": {"jsCode": "const expected = $('Validate consent URL and limits').first().json;\nconst rows = $input.all().flatMap((item) => Array.isArray(item.json) ? item.json : [item.json]);\nif (rows.length !== 1) throw new Error('Expected exactly one transcription result');\nconst row = rows[0];\nif (row.url !== expected.sources[0] || row.integrationSource !== expected.integrationSource || typeof row.text !== 'string' || !Array.isArray(row.segments) || !row.files || typeof row.files !== 'object' || !Number.isInteger(row.charged_minutes) || row.charged_minutes < 1 || row.charged_minutes > expected.maxDurationMinutes) throw new Error('The Actor response failed semantic validation');\nreturn [{json:row}];"},
+      "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [320, 160], "id": "a1570002-0010-4000-8000-000000000001", "name": "Validate speaker-labelled result"
+    },
+    {
+      "parameters": {"content": "## Configure before the first run\n\nUse only a support-call recording you are authorized to process and review applicable notice, consent, retention, and privacy requirements. Set **confirmRightsAndConsent** to true only after that review. Select an n8n Header Auth credential on **Transcribe support call on Apify**: `Authorization` = `Bearer YOUR_SCOPED_APIFY_TOKEN`.\n\nThe request is capped at USD 0.05 and 20 minutes. Speaker labels are model-generated placeholders for human renaming, not biometric identity or compliance evidence.", "height": 380, "width": 540, "color": 5},
+      "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-620, -330], "id": "a1570002-0011-4000-8000-000000000001", "name": "Setup privacy and review boundary"
+    }
+  ],
+  "connections": {
+    "Run manually": {"main": [[{"node": "Set authorized support call", "type": "main", "index": 0}]]},
+    "Set authorized support call": {"main": [[{"node": "Validate consent URL and limits", "type": "main", "index": 0}]]},
+    "Validate consent URL and limits": {"main": [[{"node": "Transcribe support call on Apify", "type": "main", "index": 0}]]},
+    "Transcribe support call on Apify": {"main": [[{"node": "Validate speaker-labelled result", "type": "main", "index": 0}]]}
+  },
+  "pinData": {}, "settings": {"executionOrder": "v1"}, "meta": {"templateCredsSetupCompleted": false}, "tags": [], "active": false
+}
