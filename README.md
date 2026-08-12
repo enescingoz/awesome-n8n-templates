@@ -253,7 +253,7 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 
 ### What n8n templates are available for DevOps and server automation?
 
-This section includes 4 DevOps and reliability templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, or diagnose failed n8n execution JSON without connecting to a live instance.
+This section includes 5 DevOps and reliability templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, diagnose failed n8n execution JSON without connecting to a live instance, or get a Telegram alert only when a site's up/down state changes.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -261,6 +261,7 @@ This section includes 4 DevOps and reliability templates for n8n. Trigger Linux 
 | Docker Compose Controller via Webhook | Start or stop Docker Compose services on your server via authenticated HTTP POST request with n8n + SSH. | SSH Tools | [Link to Template](devops/docker-compose-controller.json) |
 | Disk Space Watchdog with Tiered Thresholds | Check disk usage over SSH on a schedule, warn at 80% and 90%, and alert only when a mountpoint changes level - no repeated alerts for the same full disk. Telegram with e-mail fallback. | SSH Tools | [Link to Template](devops/disk-space-watchdog.json) |
 | n8n Failed Execution Doctor | Diagnose exported failed n8n execution data locally, identify the failing node, classify common root causes such as 401/403, 429, timeouts, network, invalid input, and expression errors, and return a focused next diagnostic step. No external API key or LLM required. | Engineering | [Link to Template](devops/n8n-failed-execution-doctor.json) |
+| Uptime Ping Alert | Pings a URL every 5 minutes and notifies Telegram only when the up/down state actually changes (no repeated alerts while it stays down). No external API key beyond a Telegram bot token. | SSH Tools | [Link to Template](devops/uptime-ping-alert.json) |
 
 > 🚀 **Automate any workflow.** [Create your free n8n account and start building →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 
