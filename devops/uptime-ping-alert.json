@@ -1,0 +1,58 @@
+{
+  "name": "Uptime Ping Alert — sai che un sito è giù prima dei tuoi utenti",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger-5m",
+      "name": "Ogni 5 minuti",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://esempio.com",
+        "options": { "timeout": 10000, "ignoreHttpStatusErrors": true }
+      },
+      "id": "ping",
+      "name": "Chiama il sito",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Passa in avanti SOLO se lo stato è cambiato rispetto all'ultimo controllo (evita di\n// avvisarti ogni 5 minuti finché il sito resta giù, o su ogni ping quando è su).\nconst state = $getWorkflowStaticData('global');\nconst code = $input.first().json.statusCode || 0;\nconst giu = code === 0 || code >= 500;\nconst eraGiu = state.giu === true;\nif (giu === eraGiu) return [];\nstate.giu = giu;\nreturn [{ json: { giu, code, quando: new Date().toISOString() } }];"
+      },
+      "id": "filter-change",
+      "name": "Solo se cambia stato",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID || 'INSERISCI_CHAT_ID' }}",
+        "text": "={{ $json.giu ? '🔴 Il sito è DOWN (status ' + $json.code + ') — ' + $json.quando : '🟢 Il sito è tornato SU — ' + $json.quando }}",
+        "additionalFields": {}
+      },
+      "id": "notify-telegram",
+      "name": "Manda su Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, 0],
+      "credentials": {
+        "telegramApi": { "id": "CONFIGURA_IN_N8N", "name": "Bot Telegram (crea la credenziale in n8n)" }
+      }
+    }
+  ],
+  "connections": {
+    "Ogni 5 minuti": { "main": [[{ "node": "Chiama il sito", "type": "main", "index": 0 }]] },
+    "Chiama il sito": { "main": [[{ "node": "Solo se cambia stato", "type": "main", "index": 0 }]] },
+    "Solo se cambia stato": { "main": [[{ "node": "Manda su Telegram", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
