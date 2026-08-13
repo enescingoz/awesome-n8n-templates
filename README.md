@@ -139,6 +139,7 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| RSS Keyword Alert to Telegram | Polls RSS feeds and sends a Telegram alert only when an entry matches a keyword you choose, with duplicate-entry protection. | Ops | [Link to Template](Telegram/RSS%20Keyword%20Alert%20to%20Telegram.json) |
 | Agentic Telegram AI bot with LangChain nodes and new tools | An advanced Telegram bot leveraging LangChain and OpenAI for conversational AI. Supports memory, dynamic tool use, and handles incoming events for rich, context-aware chat interactions. | Support | [Link to Template](Telegram/Agentic%20Telegram%20AI%20bot%20with%20with%20LangChain%20nodes%20and%20new%20tools.json) |
 | AI-Powered Children's Arabic Storytelling on Telegram | A Telegram bot that uses OpenAI to generate and narrate children's stories in Arabic, making storytelling interactive and educational for young users. | Support | [Link to Template](Telegram/AI-Powered%20Children_s%20Arabic%20Storytelling%20on%20Telegram.json) |
 | AI-Powered Children's English Storytelling on Telegram with OpenAI | Creates and tells children's stories in English using OpenAI to engage young audiences in an interactive way. | Support | [Link to Template](Telegram/AI-Powered%20Children_s%20English%20Storytelling%20on%20Telegram%20with%20OpenAI.json) |
