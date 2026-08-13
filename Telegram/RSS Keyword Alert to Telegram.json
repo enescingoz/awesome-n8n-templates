@@ -1,0 +1,63 @@
+{
+  "name": "JSON Feed Watcher → Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger-5min",
+      "name": "Ogni 5 minuti",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://INSERISCI-LA-TUA-API/lista.json",
+        "options": { "timeout": 10000 }
+      },
+      "id": "fetch-feed",
+      "name": "Leggi il feed JSON",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Adatta ARRAY_FIELD, FILTER_FIELD e TIMESTAMP_FIELD alla forma della tua risposta JSON.\n// L'idea: tieni in memoria (static data, sopravvive ai riavvii n8n) l'ultimo timestamp visto,\n// e manda solo le voci nuove che superano il filtro che ti interessa.\nconst ARRAY_FIELD = 'items';       // nome del campo che contiene l'array nella risposta\nconst FILTER_VALUES = [];          // es. ['errore','warning'] — lascia [] per non filtrare\nconst FILTER_FIELD = 'tipo';       // campo su cui applicare FILTER_VALUES\nconst TIMESTAMP_FIELD = 'ts';      // campo timestamp/ordinabile, per non ripetere le stesse voci\n\nconst state = $getWorkflowStaticData('global');\nconst lastTs = state.lastTs || '';\nconst raw = ($input.first().json[ARRAY_FIELD] || []);\nconst events = raw\n  .filter(e => !FILTER_VALUES.length || FILTER_VALUES.includes(e[FILTER_FIELD]))\n  .filter(e => String(e[TIMESTAMP_FIELD] || '') > lastTs)\n  .reverse();\nif (events.length) state.lastTs = String(events[events.length - 1][TIMESTAMP_FIELD] || lastTs);\nreturn events.map(e => ({ json: {\n  text: `🔔 ${e[FILTER_FIELD] || 'evento'}\\n${JSON.stringify(e).slice(0, 300)}`\n} }));"
+      },
+      "id": "filter-new",
+      "name": "Solo voci nuove e filtrate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID || 'INSERISCI_CHAT_ID' }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "id": "send-telegram",
+      "name": "Manda su Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, 0],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURA_IN_N8N",
+          "name": "Bot Telegram (crea la credenziale in n8n)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Ogni 5 minuti": { "main": [[{ "node": "Leggi il feed JSON", "type": "main", "index": 0 }]] },
+    "Leggi il feed JSON": { "main": [[{ "node": "Solo voci nuove e filtrate", "type": "main", "index": 0 }]] },
+    "Solo voci nuove e filtrate": { "main": [[{ "node": "Manda su Telegram", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "note": "Setup: 1) crea un bot con @BotFather e copia il token; 2) in n8n crea la credenziale Telegram API con quel token e collegala al nodo; 3) scrivi al bot e ricava il tuo chat_id (es. da https://api.telegram.org/bot<TOKEN>/getUpdates), poi mettilo nel nodo Telegram o come variabile d'ambiente TELEGRAM_CHAT_ID; 4) adatta i 4 nomi di campo nel nodo Code alla forma della tua risposta JSON; 5) attiva il workflow."
+  }
+}
