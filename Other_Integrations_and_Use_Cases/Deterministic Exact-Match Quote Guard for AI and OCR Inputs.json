@@ -1,0 +1,296 @@
+{
+  "id": "DeterministicExactMatchQuoteGuard01",
+  "name": "Deterministic Exact-Match Quote Guard for AI and OCR Inputs",
+  "description": "Credential-free synthetic template that validates untrusted extracted line items, exact-matches references against a fixed catalog, ignores claimed prices, and returns HTTP 422 with NEEDS_REVIEW for caller-side human handling.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup and safety boundary\n- The catalog, prices, labor rate, travel fee, and VAT are synthetic fixtures. Replace them with an authenticated source and approved business rules.\n- The webhook has no authentication in this template. Add Header Auth or JWT Auth before publishing it.\n- Treat `extracted_items` as untrusted AI or OCR output. Prices supplied by that input are ignored.\n- Unknown references return `NEEDS_REVIEW` with `totals: null`. Keep a human approval step before sending a quote.\n- Test concurrency, rounding, taxes, discounts, audit storage, and retries against your own acceptance cases.",
+        "height": 400,
+        "width": 500
+      },
+      "id": "db7d6e18-367c-4be7-9b07-6d1a7a4938b4",
+      "name": "Setup and safety boundary",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item) => ({ json: {\n  ok: false,\n  status: 'REJECTED',\n  request_id: item.json.request_id,\n  invalid_fields: item.json.invalid_fields\n} }));"
+      },
+      "id": "8bb4a0de-555c-4e0a-ba4a-4ed74c4e82b5",
+      "name": "Build Rejected Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "deterministic-exact-match-quote",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8393076b-bbcf-4aad-88c3-1be227eb03a1",
+      "name": "Receive Synthetic Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        160
+      ],
+      "webhookId": "2700215e-9c14-4aca-91f5-df0434fd6865"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? $json;\nconst requestId = typeof input.request_id === 'string' ? input.request_id : '';\nconst sourceDescription = typeof input.source_description === 'string' ? input.source_description : '';\nconst laborHours = input.labor_hours;\nconst travelRequired = input.travel_required;\nconst extractedItems = Array.isArray(input.extracted_items) ? input.extracted_items : [];\nconst errors = [];\nif (!/^quote-[a-z0-9-]{3,40}$/i.test(requestId)) errors.push('request_id');\nif (!sourceDescription || sourceDescription.length > 1000) errors.push('source_description');\nconst laborHundredths = typeof laborHours === 'number' ? laborHours * 100 : Number.NaN;\nif (typeof laborHours !== 'number' || !Number.isFinite(laborHours) || laborHours < 0 || laborHours > 24 || Math.abs(Math.round(laborHundredths) - laborHundredths) > 1e-9) errors.push('labor_hours');\nif (typeof travelRequired !== 'boolean') errors.push('travel_required');\nif (extractedItems.length < 1 || extractedItems.length > 10) errors.push('extracted_items');\nconst normalizedItems = extractedItems.map((item, index) => {\n  const reference = typeof item?.reference === 'string' ? item.reference : '';\n  const quantity = item?.quantity;\n  if (!/^SYN-[A-Z]+-[0-9]{3}$/.test(reference)) errors.push(`extracted_items[${index}].reference`);\n  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) errors.push(`extracted_items[${index}].quantity`);\n  if (item?.claimed_unit_price_chf !== undefined && (typeof item.claimed_unit_price_chf !== 'number' || !Number.isFinite(item.claimed_unit_price_chf))) errors.push(`extracted_items[${index}].claimed_unit_price_chf`);\n  return { reference, quantity, claimed_unit_price_chf: item?.claimed_unit_price_chf ?? null };\n});\nreturn [{ json: {\n  ok: errors.length === 0,\n  status: errors.length === 0 ? 'VALIDATED' : 'REJECTED',\n  request_id: requestId || null,\n  invalid_fields: [...new Set(errors)],\n  source_description: sourceDescription,\n  labor_hours: laborHours,\n  travel_required: travelRequired,\n  extracted_items: normalizedItems,\n  extraction_boundary: 'untrusted_synthetic_fixture'\n} }];"
+      },
+      "id": "44e9da82-fae1-4732-b21b-24217c6c46f3",
+      "name": "Validate Untrusted Extraction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ok }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "ab1a8413-08a8-4f0e-94d8-80018ed67d04",
+      "name": "Is Input Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        520,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const catalog = Object.freeze({\n  'SYN-VALVE-100': Object.freeze({ name: 'Synthetic isolation valve 100', unit_price_cents: 12000 }),\n  'SYN-PIPE-200': Object.freeze({ name: 'Synthetic pipe section 200', unit_price_cents: 8550 }),\n  'SYN-SEAL-300': Object.freeze({ name: 'Synthetic seal kit 300', unit_price_cents: 3240 })\n});\nconst centsToChf = (value) => Number((value / 100).toFixed(2));\nconst matchedItems = [];\nconst missingReferences = [];\nlet ignoredClaimedPrices = false;\nfor (const item of $json.extracted_items) {\n  const catalogItem = catalog[item.reference];\n  if (!catalogItem) {\n    missingReferences.push(item.reference);\n    continue;\n  }\n  if (item.claimed_unit_price_chf !== null && Math.round(item.claimed_unit_price_chf * 100) !== catalogItem.unit_price_cents) ignoredClaimedPrices = true;\n  const lineTotalCents = catalogItem.unit_price_cents * item.quantity;\n  matchedItems.push({\n    reference: item.reference,\n    name: catalogItem.name,\n    quantity: item.quantity,\n    unit_price_chf: centsToChf(catalogItem.unit_price_cents),\n    line_total_chf: centsToChf(lineTotalCents),\n    line_total_cents: lineTotalCents\n  });\n}\nif (missingReferences.length > 0) {\n  return [{ json: {\n    ok: false,\n    status: 'NEEDS_REVIEW',\n    request_id: $json.request_id,\n    exact_match: false,\n    matched_items: matchedItems.map(({ line_total_cents, ...item }) => item),\n    missing_references: missingReferences,\n    ignored_claimed_prices: ignoredClaimedPrices,\n    totals: null,\n    reason: 'exact_catalog_match_required'\n  } }];\n}\nconst materialsCents = matchedItems.reduce((sum, item) => sum + item.line_total_cents, 0);\nconst marginCents = Math.round(materialsCents * 0.15);\nconst laborCents = Math.round($json.labor_hours * 9500);\nconst travelCents = $json.travel_required ? 4500 : 0;\nconst netCents = materialsCents + marginCents + laborCents + travelCents;\nconst vatCents = Math.round(netCents * 0.081);\nconst totalCents = netCents + vatCents;\nreturn [{ json: {\n  ok: true,\n  status: 'QUOTABLE',\n  request_id: $json.request_id,\n  exact_match: true,\n  matched_items: matchedItems.map(({ line_total_cents, ...item }) => item),\n  missing_references: [],\n  ignored_claimed_prices: ignoredClaimedPrices,\n  rates: { material_margin_percent: 15, labor_hour_chf: 95, travel_flat_chf: 45, vat_percent: 8.1 },\n  totals: {\n    materials_chf: centsToChf(materialsCents),\n    material_margin_chf: centsToChf(marginCents),\n    labor_chf: centsToChf(laborCents),\n    travel_chf: centsToChf(travelCents),\n    net_chf: centsToChf(netCents),\n    vat_chf: centsToChf(vatCents),\n    total_chf: centsToChf(totalCents)\n  }\n} }];"
+      },
+      "id": "f8edc20b-47ee-4a7d-b6df-a8724442150d",
+      "name": "Exact Match and Calculate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ok }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "3425d12f-80c4-4c64-9dde-1e0bb89b8f0b",
+      "name": "Is Quote Ready",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "9f999379-8ddd-4675-a9ec-d09e033dc87c",
+      "name": "Respond Quotable",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 422,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "be0f7ac1-6490-4848-9fc9-9b4dfaf98a4f",
+      "name": "Respond Needs Review",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1300,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "93bdcb43-aacb-4609-9045-ebc87ce031a3",
+      "name": "Respond Rejected",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1040,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Receive Synthetic Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Untrusted Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Untrusted Extraction": {
+      "main": [
+        [
+          {
+            "node": "Is Input Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Input Valid": {
+      "main": [
+        [
+          {
+            "node": "Exact Match and Calculate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Rejected Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exact Match and Calculate": {
+      "main": [
+        [
+          {
+            "node": "Is Quote Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Quote Ready": {
+      "main": [
+        [
+          {
+            "node": "Respond Quotable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Rejected Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "f84b15d3-ac60-4dcf-b3f7-6b6501ccf240",
+  "activeVersionId": "f84b15d3-ac60-4dcf-b3f7-6b6501ccf240",
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
