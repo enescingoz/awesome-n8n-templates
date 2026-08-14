@@ -1,0 +1,161 @@
+{
+  "name": "Capture WhatsApp Leads to Google Sheets with Instant Hebrew Auto-Reply",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Capture WhatsApp leads into Google Sheets\n\nEvery incoming WhatsApp message becomes a lead row in Google Sheets, and the sender instantly gets a confirmation reply in Hebrew.\n\n**Flow:**\n1. Webhook receives the message (WAHA or WhatsApp Cloud API)\n2. Code node extracts name + text and normalizes the phone to +972 E.164\n3. The lead is appended to Google Sheets\n4. An auto-reply is sent back on WhatsApp\n\nGroup chats and your own outgoing messages are ignored on purpose.\n\nBuilt by [Achiya Automation](https://achiya-automation.com) — WhatsApp & automation studio from Israel.",
+        "width": 380,
+        "height": 500
+      },
+      "id": "sticky-overview-t1",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-1080, -220]
+    },
+    {
+      "parameters": {
+        "content": "## Setup (5 minutes)\n1. Point your WAHA webhook (or Meta app webhook) at this workflow's webhook URL — use the **Production URL** after activating.\n2. Create a Google Sheet with the columns: `Timestamp | Name | Phone | Message | Source`.\n3. Connect your Google Sheets credential and pick the spreadsheet + tab in the Sheets node.\n4. In the HTTP node, replace `YOUR-WAHA-SERVER` with your WAHA base URL and attach a Header Auth credential (header `X-Api-Key`).\n5. Edit the Hebrew auto-reply text to match your business, then activate.",
+        "width": 940,
+        "height": 240,
+        "color": 4
+      },
+      "id": "sticky-setup-t1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-660, -480]
+    },
+    {
+      "parameters": {
+        "content": "## Adapting this template\n- **WAHA vs WhatsApp Cloud API:** the Code node handles both payload shapes automatically.\n- **Not in Israel?** Change the `972` country prefix inside the Code node.\n- **Reply via Cloud API instead of WAHA:** swap the HTTP node for the official WhatsApp Business Cloud node (message → send).\n- **Want lead alerts too?** Branch after the Sheets node into Telegram / Email / Slack.",
+        "width": 940,
+        "height": 220,
+        "color": 5
+      },
+      "id": "sticky-adapt-t1",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-660, 200]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-lead-intake"
+      },
+      "id": "webhook-whatsapp-in-t1",
+      "name": "WhatsApp Incoming Message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-600, 0],
+      "webhookId": "b3e6f2a1-8c4d-4f5e-9a2b-7c1d3e5f8a01"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Accepts WAHA (waha.devlike.pro) and Meta WhatsApp Cloud API webhooks.\n// Extracts sender name, message text and a normalized Israeli phone number.\nconst req = $input.first().json;\nconst body = req.body ?? req;\n\nlet raw = '';\nlet text = '';\nlet name = '';\n\nif (body.payload) {\n  // WAHA payload: { event: 'message', payload: { from, body, fromMe, _data } }\n  const p = body.payload;\n  if (p.fromMe) return []; // ignore messages sent by us\n  raw = p.from ?? '';\n  if (String(raw).endsWith('@g.us')) return []; // ignore group chats\n  text = p.body ?? '';\n  name = p._data?.notifyName ?? p.notifyName ?? '';\n} else if (body.entry) {\n  // WhatsApp Cloud API payload: entry[0].changes[0].value\n  const value = body.entry?.[0]?.changes?.[0]?.value ?? {};\n  const msg = value.messages?.[0];\n  if (!msg) return []; // ignore delivery/status callbacks\n  raw = msg.from ?? '';\n  text = msg.text?.body ?? '';\n  name = value.contacts?.[0]?.profile?.name ?? '';\n} else {\n  return []; // unknown payload shape\n}\n\nif (!raw) return [];\n\n// Normalize to Israeli E.164 (+972...). Adjust the prefix for other countries.\nlet digits = String(raw).replace(/@.*$/, '').replace(/\\D/g, '');\nif (digits.startsWith('0')) digits = '972' + digits.slice(1);\nif (!digits.startsWith('972')) digits = '972' + digits;\n\nreturn [{\n  json: {\n    name: name || 'New WhatsApp lead',\n    phone: '+' + digits,\n    chatId: digits + '@c.us',\n    message: text,\n    receivedAt: $now.toISO(),\n    source: 'WhatsApp',\n  },\n}];"
+      },
+      "id": "code-normalize-lead-t1",
+      "name": "Normalize Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-360, 0]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Leads spreadsheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $json.receivedAt }}",
+            "Name": "={{ $json.name }}",
+            "Phone": "={{ $json.phone }}",
+            "Message": "={{ $json.message }}",
+            "Source": "={{ $json.source }}"
+          },
+          "schema": [
+            { "id": "Timestamp", "displayName": "Timestamp", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Name", "displayName": "Name", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Phone", "displayName": "Phone", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "Message", "displayName": "Message", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "Source", "displayName": "Source", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-append-lead-t1",
+      "name": "Add Lead to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [-120, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR-WAHA-SERVER/api/sendText",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "session", "value": "default" },
+            { "name": "chatId", "value": "={{ $('Normalize Lead Data').item.json.chatId }}" },
+            { "name": "text", "value": "=תודה {{ $('Normalize Lead Data').item.json.name }}! קיבלנו את הפנייה שלך ונחזור אליך בהקדם 🙏" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-send-reply-t1",
+      "name": "Send WhatsApp Auto-Reply (WAHA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [120, 0]
+    }
+  ],
+  "connections": {
+    "WhatsApp Incoming Message": {
+      "main": [
+        [
+          { "node": "Normalize Lead Data", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          { "node": "Add Lead to Google Sheets", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Add Lead to Google Sheets": {
+      "main": [
+        [
+          { "node": "Send WhatsApp Auto-Reply (WAHA)", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
