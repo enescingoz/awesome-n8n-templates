@@ -1,0 +1,226 @@
+{
+  "id": "SignedWebhookHmacGuard01",
+  "name": "Signed Webhook HMAC Guard with Timestamp Window",
+  "description": "Verifies an HMAC-SHA256 signature against the exact raw JSON webhook body, checks a signed timestamp window and event ID, and returns a generic 401 before any business logic runs.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Verify a signed webhook before business logic\n\n### Who this is for\nAutomation teams receiving server-to-server webhooks from a provider that signs the exact request body with HMAC-SHA256.\n\n### Contract used by this template\n- Header: `X-Automation-Signature: sha256=<hex digest; comparison is case-insensitive>`\n- Signature input: the exact raw request body bytes\n- Body fields: `event_id`, signed Unix timestamp `sent_at`, and `payload`\n- Freshness: no more than 300 seconds old or 60 seconds in the future\n\n### Set up\n1. Keep the workflow inactive after import.\n2. Create an n8n Crypto credential with the shared HMAC secret.\n3. Assign it to **Compute Body HMAC**.\n4. Match the provider's exact header, canonical string, digest encoding, and timestamp rules.\n5. Add business nodes only after the true output of **Is Request Authentic and Fresh**.\n\n### Boundaries\nThe timestamp limits replay time but does not stop duplicate delivery inside the five-minute window. Add persistent event-ID deduplication for strict once-only handling. Apply rate and body-size limits before n8n. Generic `401` responses avoid exposing which check failed. The public workflow contains no credential or real data.",
+        "height": 720,
+        "width": 620,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -300
+      ],
+      "id": "42c702f5-c54d-4d06-a1a3-9f550bc9c117",
+      "name": "Template Guide"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "signed-webhook-hmac-guard",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        120
+      ],
+      "id": "a676a3b6-9f00-4b8f-8331-f355e509939f",
+      "name": "Receive Signed Webhook",
+      "webhookId": "29d885d2-12fb-4efc-8ac5-5c9ee37a4f7a"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "type": "SHA256",
+        "dataPropertyName": "expected_signature",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        260,
+        120
+      ],
+      "id": "08dc63de-1991-4d3f-a5ad-057096fd093a",
+      "name": "Compute Body HMAC"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst headers = input.headers ?? {};\nconst received = typeof headers['x-automation-signature'] === 'string'\n  ? headers['x-automation-signature'].trim().toLowerCase()\n  : '';\nconst digest = typeof input.expected_signature === 'string'\n  ? input.expected_signature.toLowerCase()\n  : '';\nconst expected = `sha256=${digest}`;\nconst signatureFormatValid = /^sha256=[a-f0-9]{64}$/.test(received) && /^sha256=[a-f0-9]{64}$/.test(expected);\nlet signatureMismatch = 1;\nif (signatureFormatValid) {\n  signatureMismatch = 0;\n  for (let index = 0; index < expected.length; index += 1) {\n    signatureMismatch |= expected.charCodeAt(index) ^ received.charCodeAt(index);\n  }\n}\nconst body = input.body ?? {};\nconst sentAt = body.sent_at;\nconst now = Math.floor(Date.now() / 1000);\nconst timestampValid = Number.isInteger(sentAt) && sentAt >= now - 300 && sentAt <= now + 60;\nconst eventId = typeof body.event_id === 'string' ? body.event_id : '';\nconst eventIdValid = /^evt_[A-Za-z0-9-]{8,64}$/.test(eventId);\nconst contentType = typeof headers['content-type'] === 'string' ? headers['content-type'].toLowerCase() : '';\nconst contentTypeValid = contentType.startsWith('application/json');\nconst signatureValid = signatureFormatValid && signatureMismatch === 0;\nreturn [{ json: {\n  accepted: signatureValid && timestampValid && eventIdValid && contentTypeValid,\n  event_id: eventIdValid ? eventId : null,\n  authenticated: signatureValid,\n  fresh: timestampValid,\n  age_seconds: Number.isInteger(sentAt) ? now - sentAt : null,\n  replay_window_seconds: 300\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        120
+      ],
+      "id": "2af5b1f2-4074-4c9b-9880-f81e64d9229c",
+      "name": "Validate Signature and Timestamp"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.accepted }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        780,
+        120
+      ],
+      "id": "e01cced2-e2e0-4bc9-9f24-ed02e33e3e70",
+      "name": "Is Request Authentic and Fresh"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, status: 'accepted', authenticated: true, event_id: $json.event_id, replay_window_seconds: $json.replay_window_seconds } }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1040,
+        40
+      ],
+      "id": "59e351df-2536-4421-998b-28d327ee0380",
+      "name": "Accept Authenticated Request"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, status: 'rejected', reason: 'invalid_or_stale_signature' } }}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1040,
+        200
+      ],
+      "id": "6e298e1f-e13d-4c46-b147-44161e10f312",
+      "name": "Reject Invalid or Stale Request"
+    }
+  ],
+  "connections": {
+    "Receive Signed Webhook": {
+      "main": [
+        [
+          {
+            "node": "Compute Body HMAC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Body HMAC": {
+      "main": [
+        [
+          {
+            "node": "Validate Signature and Timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Signature and Timestamp": {
+      "main": [
+        [
+          {
+            "node": "Is Request Authentic and Fresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Request Authentic and Fresh": {
+      "main": [
+        [
+          {
+            "node": "Accept Authenticated Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid or Stale Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "023c2355-740c-4b7c-823e-971e62ab3206",
+  "activeVersionId": "023c2355-740c-4b7c-823e-971e62ab3206",
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
