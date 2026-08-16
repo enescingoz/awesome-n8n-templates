@@ -504,7 +504,7 @@ I contributi sono benvenuti. Se hai un template di workflow n8n da condividere, 
 
 ## Cronologia Stelle
 
-[![Star History Chart](https://api.star-history.com/svg?repos=enescingoz/awesome-n8n-templates&type=Date)](https://star-history.com/#enescingoz/awesome-n8n-templates&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=enescingoz/awesome-n8n-templates&type=Date)](https://star-history.dera.page/#enescingoz/awesome-n8n-templates&Date)
 
 ---
 
