@@ -504,7 +504,7 @@ Yogdaan ka swaagat hai. Agar aapke paas saajha karne ke liye n8n workflow templa
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=enescingoz/awesome-n8n-templates&type=Date)](https://star-history.com/#enescingoz/awesome-n8n-templates&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=enescingoz/awesome-n8n-templates&type=Date)](https://star-history.dera.page/#enescingoz/awesome-n8n-templates&Date)
 
 ---
 

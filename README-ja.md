@@ -504,7 +504,7 @@ n8nは、400以上の組み込み連携を備えた無料のオープンソー�
 
 ## スター履歴
 
-[![Star History Chart](https://api.star-history.com/svg?repos=enescingoz/awesome-n8n-templates&type=Date)](https://star-history.com/#enescingoz/awesome-n8n-templates&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=enescingoz/awesome-n8n-templates&type=Date)](https://star-history.dera.page/#enescingoz/awesome-n8n-templates&Date)
 
 ---
 
