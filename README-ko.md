@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> GitHub 최대의 오픈소스 n8n 자동화 템플릿 모음집입니다. Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets 등 다양한 플랫폼을 지원하는 280개 이상의 무료 워크플로우 템플릿을 탐색하세요. 2026년 3월 기준 지속적으로 업데이트됩니다.
+> Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets 등 다양한 플랫폼을 위한 280개 이상의 n8n 워크플로우 템플릿 파일 모음입니다. 사용하기 전에 각 워크플로우를 검토하고 설정하고 테스트하세요. 2026년 8월 기준 지속적으로 업데이트됩니다.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/n8n_무료_체험-자동화_시작하기-orange?style=for-the-badge" alt="n8n 무료 체험" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n 자동화 플랫폼" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## 빠른 시작: 템플릿 사용 방법
 
-1. **[n8n 가입하기](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (무료 및 오픈소스)
+1. **[n8n 가입하기](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (n8n Cloud 체험판 제공)
+   <br />
+   <small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 2. 이 저장소에서 원하는 `.json` 템플릿 파일을 다운로드합니다
 3. n8n에서 **Workflows → Import from File**로 이동하여 JSON 파일을 선택합니다
 4. 연결된 각 서비스의 자격 증명을 설정합니다
@@ -77,13 +83,15 @@
 
 ## 왜 n8n인가?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)은 모든 것을 연결할 수 있는 오픈소스 워크플로우 자동화 플랫폼입니다. 폐쇄형 대안과 달리 n8n은 데이터와 인프라에 대한 완전한 제어권을 제공합니다. 주요 장점은 다음과 같습니다:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)은 서비스와 시스템을 연결하는 fair-code 소스 공개형 워크플로우 자동화 플랫폼입니다. 자체 호스팅할 수 있어 데이터와 인프라를 직접 관리할 수 있습니다. 주요 장점은 다음과 같습니다:
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
-- **오픈소스 및 자체 호스팅 가능** -- 벤더 종속 없이 자체 서버에서 실행
+- **Fair-code, 소스 공개 및 자체 호스팅 가능** -- 벤더 종속 없이 자체 서버에서 실행
 - **400개 이상의 내장 통합** -- 거의 모든 서비스나 API에 연결 가능
 - **비주얼 워크플로우 편집기** -- 코딩 없이 드래그 앤 드롭으로 자동화 구축
 - **AI 네이티브 기능** -- OpenAI, Claude, Gemini, LangChain, 벡터 데이터베이스 기본 지원
-- **무료로 시작** -- n8n Cloud의 넉넉한 무료 티어 또는 무료 자체 호스팅
+- **배포 옵션** -- n8n Cloud 체험판을 이용하거나 n8n 라이선스에 따라 Community Edition을 자체 호스팅
 
 이메일 워크플로우 자동화, AI 챗봇 구축, 문서 처리, DevOps 파이프라인 오케스트레이션 등 어떤 작업이든 n8n은 이 템플릿들이 실행되는 기반을 제공합니다.
 
@@ -124,7 +132,9 @@ Gmail, Outlook, IMAP을 지원하는 9개의 이메일 자동화 템플릿 모�
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | Outlook용 AI 이메일 어시스턴트로 Monday.com과 Airtable을 연동합니다. | 운영 | [템플릿 링크](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | FT.com 금융 뉴스를 매일 Outlook으로 자동 전송합니다. | 경영진 | [템플릿 링크](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 Telegram 봇을 어떻게 자동화할 수 있나요?
 
@@ -153,7 +163,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Translate Telegram audio messages with AI (55 supported languages) | 음성 메시지를 55개 이상의 언어로 번역합니다. | 지원 | [템플릿 링크](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | 장기 메모리와 동적 도구 라우팅으로 AI 챗봇을 강화합니다. | 지원 | [템플릿 링크](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### Google Drive와 Google Sheets를 위한 최고의 n8n 템플릿은?
 
@@ -175,7 +187,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | AI로 지원자를 스크리닝하고 HR에 알림 후 Google Sheet에 저장합니다. | HR | [템플릿 링크](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | GPT-4로 Google Forms 피드백을 요약합니다. | 마케팅 | [템플릿 링크](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 WordPress를 어떻게 자동화하나요?
 
@@ -190,7 +204,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Supabase와 OpenAI로 WordPress에 AI 챗봇을 통합합니다. | 고객지원/마케팅 | [템플릿 링크](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | 몇 개의 키워드로 AI가 WordPress 글을 작성합니다. | 마케팅/콘텐츠 | [템플릿 링크](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### PDF 및 문서 처리를 위한 n8n 템플릿은?
 
@@ -210,7 +226,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Vertex AI(Gemini)로 PDF와 이미지에서 텍스트를 추출하여 CSV로 변환합니다. | 데이터추출/IT | [템플릿 링크](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | LlamaParse와 OpenAI로 송장 데이터를 구조화하여 추출합니다. | 재무/관리 | [템플릿 링크](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 Discord를 어떻게 자동화할 수 있나요?
 
@@ -222,7 +240,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Send daily translated Calvin and Hobbes Comics to Discord | Calvin and Hobbes 만화를 매일 번역하여 Discord에 게시합니다. | 마케팅/콘텐츠 | [템플릿 링크](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | YouTube 영상을 AI 요약과 함께 Discord에 공유합니다. | 마케팅 | [템플릿 링크](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### 최고의 n8n 데이터베이스 및 스토리지 자동화 템플릿은?
 
@@ -236,7 +256,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Supabase Insertion & Upsertion & Retrieval | Supabase에서 벡터 임베딩의 삽입, 업서트, 조회를 수행합니다. | 엔지니어링 | [템플릿 링크](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | LangChain AI 에이전트로 자연어로 SQLite를 조회합니다. | 데이터분석 | [템플릿 링크](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### DevOps 및 서버 자동화를 위한 n8n 템플릿은?
 
@@ -247,7 +269,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Linux System Update via Webhook | 인증된 POST 요청과 SSH로 Debian 서버를 업데이트합니다. | SSH Tools | [템플릿 링크](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | HTTP POST와 SSH로 Docker Compose 서비스를 원격 제어합니다. | SSH Tools | [템플릿 링크](devops/docker-compose-controller.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 Airtable을 어떻게 자동화하나요?
 
@@ -261,7 +285,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Handling Job Application Submissions with AI and n8n Forms | AI로 이력서(PDF)에서 정보를 추출하여 지원서를 자동 처리합니다. | HR | [템플릿 링크](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | OpenAI와 Airtable로 HubSpot Chat 자동 응답을 구현합니다. | 영업 | [템플릿 링크](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### Notion을 위한 최고의 n8n 템플릿은?
 
@@ -280,7 +306,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | 이메일을 AI로 강화된 Notion 작업으로 변환합니다(다중 사용자 지원). | 운영 | [템플릿 링크](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | 대용량 문서를 청킹하여 Supabase 벡터 스토어에 업서트합니다. | 엔지니어링 | [템플릿 링크](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 Slack을 어떻게 자동화할 수 있나요?
 
@@ -298,7 +326,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Slack slash commands AI Chat Bot | Slack 슬래시 명령어로 접근 가능한 AI 챗봇입니다. | IT | [템플릿 링크](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Venafi Cloud와 연동하여 인증서를 관리하는 Slack 봇입니다. | 보안 | [템플릿 링크](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### OpenAI, LLM 및 AI 에이전트를 위한 n8n 템플릿은?
 
@@ -324,7 +354,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | AI: Ask questions about any data source (using the n8n workflow retriever) | n8n 워크플로우 리트리버로 다양한 데이터 소스에 질문합니다. | AI/데이터분석/워크플로우자동화 | [템플릿 링크](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | AI로 팟캐스트를 요약하고 Wikipedia 정보로 보강합니다. | 콘텐츠제작/AI/데이터분석 | [템플릿 링크](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 WhatsApp 챗봇을 어떻게 만드나요?
 
@@ -337,7 +369,9 @@ LangChain과 OpenAI를 활용한 AI 챗봇, 55개 언어 음성-텍스트 번역
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | OpenAI로 구동되는 비즈니스 WhatsApp RAG 챗봇입니다. | 고객서비스/AI/개발 | [템플릿 링크](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | AI로 전문적인 WhatsApp 메시지 응답을 자동화합니다. | 고객서비스/AI/커뮤니케이션 | [템플릿 링크](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### 소셜 미디어 자동화를 위한 최고의 n8n 템플릿은?
 
@@ -356,7 +390,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn 등을 지원하는 10개의 소
 | Twitter Virtual AI Influencer | 가상 AI 인플루언서 Twitter 계정을 관리합니다. | 마케팅/AI | [템플릿 링크](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | HTTP 요청으로 Twitter 배너를 업데이트합니다. | 마케팅/개발 | [템플릿 링크](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### 기타 n8n 통합 템플릿에는 무엇이 있나요?
 
@@ -394,7 +430,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn 등을 지원하는 10개의 소
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | OpenAI와 Quickchart.io로 SQL 쿼리를 시각화합니다. | 데이터분석/시각화 | [템플릿 링크](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Zoom 미팅 요약, ClickUp 작업 생성, 후속 일정을 자동화합니다. | 생산성/커뮤니케이션 | [템플릿 링크](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n으로 폼과 설문조사를 어떻게 자동화하나요?
 
@@ -406,7 +444,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn 등을 지원하는 10개의 소
 | Email Subscription Service with n8n Forms, Airtable and AI | n8n Forms와 Airtable로 이메일 구독을 관리합니다. | 마케팅/커뮤니케이션 | [템플릿 링크](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | AI로 n8n Forms 예약 요청을 평가하고 처리합니다. | 영업/지원 | [템플릿 링크](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### AI 리서치, RAG 및 데이터 분석을 위한 n8n 템플릿은?
 
@@ -454,7 +494,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn 등을 지원하는 10개의 소
 | Visual Regression Testing with Apify and AI Vision Model | Apify와 AI 비전 모델로 비주얼 회귀 테스팅을 수행합니다. | QA, AI 리서치 | [Visual Regression Testing with Apify and AI Vision Model.txt](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Perplexity AI 리서치를 HTML 콘텐츠로 변환합니다. | 콘텐츠제작, AI 리서치 | [🔍 Perplexity Research to HTML.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **모든 워크플로우를 자동화하세요.** [무료 n8n 계정을 만들고 빌드를 시작하세요 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **모든 워크플로우를 자동화하세요.** [n8n Cloud 체험판 시작 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### 기타
 
@@ -464,8 +506,10 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn 등을 지원하는 10개의 소
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/무료_n8n_계정_만들기-자동화_시작하기-orange?style=for-the-badge" alt="Create Free n8n Account" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 </p>
 
 ## 자주 묻는 질문
@@ -473,14 +517,18 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn 등을 지원하는 10개의 소
 ### 이 저장소에서 n8n 템플릿을 어떻게 가져오나요?
 
 사용하려는 템플릿의 `.json` 파일을 다운로드하세요. n8n 인스턴스(자체 호스팅 또는 [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe))를 열고 Workflows로 이동한 다음 "Import from File"을 클릭하여 다운로드한 JSON 파일을 선택하세요. 워크플로우가 편집기에 나타나며 설정할 준비가 됩니다. 워크플로우를 활성화하기 전에 연결된 각 서비스의 자격 증명을 추가해야 합니다.
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### n8n이란 무엇이며 왜 자동화에 사용해야 하나요?
 
-n8n은 400개 이상의 내장 통합을 갖춘 무료 오픈소스 워크플로우 자동화 플랫폼입니다. Zapier나 Make 같은 SaaS 대안과 달리 n8n은 자체 인프라에서 호스팅할 수 있어 데이터에 대한 완전한 제어권을 제공합니다. 비주얼 드래그 앤 드롭 편집기, 네이티브 AI 및 LLM 지원, 활발한 커뮤니티를 갖추고 있습니다. 클라우드 플랫폼에서 [무료로 n8n 사용을 시작](https://n8n.partnerlinks.io/h1pwwf5m4toe)하거나 자체 서버에 배포할 수 있습니다.
+n8n은 수백 개의 통합을 제공하는 fair-code 소스 공개형 워크플로우 자동화 플랫폼입니다. 자체 인프라에 호스팅할 수 있으며 비주얼 편집기와 AI 및 LLM 지원을 제공합니다. [n8n Cloud 체험판을 시작](https://n8n.partnerlinks.io/h1pwwf5m4toe)하거나 Community Edition을 자체 서버에 배포할 수 있습니다.
+<br />
+<small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 
 ### 이 템플릿은 무료로 사용할 수 있나요?
 
-네, 이 저장소의 모든 템플릿은 완전히 무료로 다운로드하고 사용할 수 있습니다. 인터넷에서 공개적으로 이용 가능한 소스에서 수집되었으며, 쉬운 접근을 위해 공유됩니다. n8n 자체는 오픈소스이며 무료로 자체 호스팅이 가능합니다. n8n Cloud 플랫폼도 넉넉한 한도의 무료 티어를 제공하므로 비용 없이 시작할 수 있습니다.
+템플릿 파일은 이 저장소에서 무료로 다운로드할 수 있지만 개별 템플릿에는 원저작자의 라이선스 조건이 적용될 수 있습니다. n8n은 fair-code 소스 공개형이며 Community Edition을 자체 호스팅할 수 있습니다. n8n Cloud는 체험판 이후 유료 요금제를 제공합니다.
 
 ### 내 템플릿을 기여할 수 있나요?
 
@@ -524,16 +572,20 @@ n8n은 400개 이상의 내장 통합을 갖춘 무료 오픈소스 워크플로
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/280+_템플릿_가져오기-무료_n8n_계정_만들기-orange?style=for-the-badge" alt="Import Templates" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n 자동화 플랫폼" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* 추천 링크 — 적격 구매에 대해 이 프로젝트가 수수료를 받습니다.</small>
 </p>
 
 ---
 
-*최종 업데이트: 2026년 3월*
+*최종 업데이트: 2026년 8월*

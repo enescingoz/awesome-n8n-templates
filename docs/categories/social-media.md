@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Social Media Automation Templates for n8n | Awesome n8n Templates"
-description: "10 free n8n social media templates for Instagram, Twitter/X, Reddit, YouTube, and LinkedIn. AI content generation, dynamic banners, and influencer management."
+description: "10 n8n social media templates for Instagram, Twitter/X, Reddit, YouTube, and LinkedIn. AI content generation, dynamic banners, and influencer management."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Social Media</nav>
@@ -10,7 +10,9 @@ description: "10 free n8n social media templates for Instagram, Twitter/X, Reddi
 
 Explore 10 social media automation templates for n8n covering Instagram, Twitter/X, Reddit, YouTube, LinkedIn, and more. Templates include AI-powered Instagram DM management with Manychat, dynamic Twitter banners, trend-based content generation with AI image creation, tweet generators, YouTube-to-X posting, Reddit digest creation, social media analytics, and virtual AI influencer management.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Automate Social Media</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Automate Social Media</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -29,7 +31,9 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your social media platform credentials (Twitter API, Instagram, etc.)
@@ -39,7 +43,9 @@ Explore 10 social media automation templates for n8n covering Instagram, Twitter
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

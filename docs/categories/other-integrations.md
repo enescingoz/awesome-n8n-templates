@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Other Integration Templates for n8n | Awesome n8n Templates"
-description: "37 free n8n integration templates. API extraction, Pinterest analysis, SIEM alerts, GitLab code review, Spotify archiving, Zoom AI assistant, Siri agents, and more."
+description: "37 n8n integration templates. API extraction, Pinterest analysis, SIEM alerts, GitLab code review, Spotify archiving, Zoom AI assistant, Siri agents, and more."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Other Integrations</nav>
@@ -10,7 +10,9 @@ description: "37 free n8n integration templates. API extraction, Pinterest analy
 
 This section includes 37 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Connect Any App</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Connect Any App</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -56,7 +58,9 @@ This section includes 37 additional n8n integration templates covering a wide ra
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your service-specific credentials
@@ -65,7 +69,9 @@ This section includes 37 additional n8n integration templates covering a wide ra
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

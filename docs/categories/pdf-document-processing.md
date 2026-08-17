@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "PDF & Document Processing Templates for n8n | Awesome n8n Templates"
-description: "11 free n8n PDF and document processing templates. AI-powered PDF Q&A, resume parsing, invoice extraction with LlamaParse, OCR with Gemini, and more."
+description: "11 n8n PDF and document processing templates. AI-powered PDF Q&A, resume parsing, invoice extraction with LlamaParse, OCR with Gemini, and more."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / PDF & Document Processing</nav>
@@ -10,7 +10,9 @@ description: "11 free n8n PDF and document processing templates. AI-powered PDF 
 
 Find 11 PDF and document processing templates for n8n. These workflows handle AI-powered PDF Q&A with source quoting, resume parsing with multimodal vision AI, invoice data extraction via LlamaParse, document-to-study-notes conversion, ETL text pipelines, HTML-to-Markdown conversion, and more. Supports Claude, Gemini, MistralAI, and OpenAI models.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Process Documents with AI</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Process Documents with AI</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -30,7 +32,9 @@ Find 11 PDF and document processing templates for n8n. These workflows handle AI
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your AI provider credentials (OpenAI, Claude, Gemini, etc.)
@@ -40,7 +44,9 @@ Find 11 PDF and document processing templates for n8n. These workflows handle AI
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

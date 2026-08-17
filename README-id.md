@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> Koleksi template otomasi n8n open-source terbesar di GitHub. Jelajahi 280+ template workflow gratis dan siap impor yang mencakup Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets, dan puluhan platform lainnya. Terus diperbarui per Maret 2026.
+> Koleksi terkurasi berisi 280+ file template workflow n8n untuk Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets, dan puluhan platform lainnya. Tinjau, konfigurasi, dan uji setiap workflow sebelum digunakan. Terus diperbarui per Agustus 2026.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Coba_n8n_Gratis-Mulai_Otomasi-orange?style=for-the-badge" alt="Coba n8n Gratis" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="platform otomasi n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## Panduan Cepat: Cara Menggunakan Template Ini
 
-1. **[Daftar n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (gratis & open-source)
+1. **[Daftar n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (uji coba n8n Cloud tersedia)
+   <br />
+   <small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 2. Unduh file template `.json` dari repositori ini
 3. Di n8n, buka **Workflows → Import from File** lalu pilih file JSON
 4. Konfigurasikan kredensial Anda untuk setiap layanan yang terhubung
@@ -77,13 +83,15 @@
 
 ## Mengapa n8n?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) adalah platform otomasi workflow open-source yang memungkinkan Anda menghubungkan apa saja ke segalanya. Berbeda dengan alternatif closed-source, n8n memberi Anda kendali penuh atas data dan infrastruktur. Keunggulan utamanya meliputi:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) adalah platform otomasi workflow fair-code dengan kode sumber yang tersedia untuk menghubungkan layanan dan sistem. Platform ini dapat di-hosting sendiri, sehingga Anda memiliki kendali atas data dan infrastruktur. Keunggulan utamanya meliputi:
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
-- **Open-source dan dapat di-hosting sendiri** -- jalankan di server Anda sendiri tanpa ketergantungan vendor
+- **Fair-code, kode sumber tersedia, dan dapat di-hosting sendiri** -- jalankan di server Anda sendiri tanpa ketergantungan vendor
 - **400+ integrasi bawaan** -- terhubung ke hampir semua layanan atau API
 - **Editor workflow visual** -- bangun otomasi dengan drag and drop, tanpa perlu coding
 - **Kemampuan AI native** -- dukungan bawaan untuk OpenAI, Claude, Gemini, LangChain, dan vector database
-- **Gratis untuk memulai** -- free tier yang besar di n8n Cloud, atau self-host tanpa biaya
+- **Pilihan deployment** -- gunakan uji coba n8n Cloud atau hosting sendiri Community Edition sesuai lisensi n8n
 
 Baik Anda mengotomasi workflow email, membangun chatbot AI, memproses dokumen, atau mengorkestrasi pipeline DevOps, n8n menyediakan fondasi tempat template-template ini berjalan.
 
@@ -124,7 +132,9 @@ Koleksi ini mencakup 9 template otomasi email untuk n8n yang meliputi Gmail, Out
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | Asisten email AI untuk Outlook yang memproses email dan menetapkan kategori menggunakan aturan dari Airtable dan Monday.com. | Operasional | [Link ke Template](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | Mengekstrak berita keuangan dari FT.com dan mengirimkan pembaruan harian ke inbox Outlook Anda. | Eksekutif | [Link ke Template](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara mengotomasi bot Telegram dengan n8n?
 
@@ -153,7 +163,9 @@ Jelajahi 20 template otomasi Telegram untuk n8n, termasuk chatbot AI dengan Lang
 | Translate Telegram audio messages with AI (55 supported languages) | Menerima pesan suara, mentranskripsi, dan mengirim terjemahan dalam lebih dari 50 bahasa. | Dukungan | [Link ke Template](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | Workflow eksternal untuk meningkatkan chatbot AI dengan memori jangka panjang dan routing alat dinamis. | Dukungan | [Link ke Template](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Apa template n8n terbaik untuk Google Drive dan Google Sheets?
 
@@ -175,7 +187,9 @@ Jelajahi 13 template otomasi Google Drive dan Google Sheets untuk n8n. Termasuk 
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Menyaring pelamar kerja menggunakan AI, memberi notifikasi ke HR, dan menyimpan data ke Google Sheet. | SDM | [Link ke Template](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Merangkum umpan balik dari Google Forms yang tersimpan di Google Sheets menggunakan GPT-4. | Pemasaran | [Link ke Template](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara mengotomasi WordPress dengan n8n?
 
@@ -190,7 +204,9 @@ Bagian ini menampilkan 6 template otomasi WordPress untuk n8n. Otomasi kategoris
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Mengintegrasikan chatbot AI ke WordPress menggunakan Supabase dan OpenAI untuk meningkatkan pengalaman pengguna. | Dukungan Pelanggan/Pemasaran | [Link ke Template](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | Menulis artikel WordPress dengan AI hanya dari beberapa kata kunci, menyederhanakan proses pembuatan konten. | Pemasaran/Konten | [Link ke Template](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Template n8n apa yang tersedia untuk pemrosesan PDF dan dokumen?
 
@@ -210,7 +226,9 @@ Temukan 11 template pemrosesan PDF dan dokumen untuk n8n. Workflow ini menangani
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Mengekstrak teks dari PDF dan gambar menggunakan Vertex AI (Gemini) dan mengonversinya ke format CSV. | Ekstraksi Data/TI | [Link ke Template](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | Mengekstrak data terstruktur dari invoice menggunakan LlamaParse dan OpenAI untuk ekstraksi data invoice terperinci. | Keuangan/Admin | [Link ke Template](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara mengotomasi Discord dengan n8n?
 
@@ -222,7 +240,9 @@ Bagian ini berisi 3 template otomasi Discord untuk n8n. Bangun bot Discord berte
 | Send daily translated Calvin and Hobbes Comics to Discord | Mengotomasi pengambilan komik Calvin and Hobbes harian, menerjemahkan dialog, dan memposting ke Discord. | Pemasaran/Konten | [Link ke Template](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | Membagikan video YouTube baru di Discord beserta ringkasan konten yang dibuat oleh AI. | Pemasaran | [Link ke Template](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Apa template n8n terbaik untuk otomasi database dan penyimpanan?
 
@@ -236,7 +256,9 @@ Temukan 5 template otomasi database dan penyimpanan untuk n8n. Chat dengan Postg
 | Supabase Insertion & Upsertion & Retrieval | Mendemonstrasikan operasi insertion, upsertion, dan retrieval di Supabase untuk vector embedding dan metadata. | Engineering | [Link ke Template](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | Memungkinkan pengguna berinteraksi dengan database SQLite menggunakan agen AI LangChain via bahasa alami. | Analisis Data | [Link ke Template](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Template n8n apa yang tersedia untuk DevOps dan otomasi server?
 
@@ -247,7 +269,9 @@ Bagian ini mencakup 2 template otomasi DevOps dan server untuk n8n. Jalankan pem
 | Linux System Update via Webhook | Memicu update & upgrade server berbasis Debian via permintaan POST terotentikasi dan SSH. | SSH Tools | [Link ke Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Memulai atau menghentikan layanan Docker Compose di server via permintaan HTTP POST terotentikasi dengan n8n + SSH. | SSH Tools | [Link ke Template](devops/docker-compose-controller.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara mengotomasi Airtable dengan n8n?
 
@@ -261,7 +285,9 @@ Jelajahi 5 template otomasi Airtable untuk n8n. Otomasi manajemen proyek dan tin
 | Handling Job Application Submissions with AI and n8n Forms | Mengotomasi pemrosesan lamaran kerja dengan mengekstrak informasi dari resume (PDF) menggunakan AI. | SDM | [Link ke Template](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | Mengintegrasikan asisten OpenAI dengan HubSpot Chat dan Airtable untuk respons otomatis dan pengelolaan interaksi pelanggan. | Penjualan | [Link ke Template](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Apa template n8n terbaik untuk Notion?
 
@@ -280,7 +306,9 @@ Temukan 10 template otomasi Notion untuk n8n. Simpan umpan balik positif dari Ty
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | Mengubah email menjadi tugas yang diperkaya AI di Notion dengan dukungan multi-user via Gmail, Airtable, dan Softr. | Operasional | [Link ke Template](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | Mengelola dokumen besar dengan memecah menjadi chunk, membuat embedding, dan meng-upsert ke Supabase vector store. | Engineering | [Link ke Template](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara mengotomasi Slack dengan n8n?
 
@@ -298,7 +326,9 @@ Jelajahi 9 template otomasi Slack untuk n8n. Pantau feed RSS dengan ringkasan be
 | Slack slash commands AI Chat Bot | Chatbot AI yang dapat diakses via slash commands Slack untuk memproses perintah dan merespons langsung. | TI | [Link ke Template](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Bot Slack untuk manajemen sertifikat dengan Venafi Cloud, termasuk cek status dan peringatan sertifikat. | Keamanan | [Link ke Template](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Template n8n apa yang tersedia untuk OpenAI, LLM, dan agen AI?
 
@@ -324,7 +354,9 @@ Ini adalah kategori terbesar dengan 17 template AI dan LLM untuk n8n. Template m
 | AI: Ask questions about any data source (using the n8n workflow retriever) | Memungkinkan pengguna bertanya tentang berbagai sumber data menggunakan workflow retriever n8n. | AI/Analisis Data/Otomasi Workflow | [Link ke Template](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Merangkum episode podcast dan memperkayanya dengan informasi dari Wikipedia menggunakan AI. | Pembuatan Konten/AI/Analisis Data | [Link ke Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara membuat chatbot WhatsApp dengan n8n?
 
@@ -337,7 +369,9 @@ Bagian ini mencakup 4 template otomasi WhatsApp untuk n8n. Otomasi persiapan rap
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | Membangun chatbot RAG bisnis WhatsApp lengkap bertenaga AI menggunakan OpenAI. | Layanan Pelanggan/AI/Pengembangan | [Link ke Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | Mengaktifkan respons profesional bertenaga AI untuk pesan WhatsApp. | Layanan Pelanggan/AI/Komunikasi | [Link ke Template](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Apa template n8n terbaik untuk otomasi media sosial?
 
@@ -356,7 +390,9 @@ Jelajahi 10 template otomasi media sosial untuk n8n yang mencakup Instagram, Twi
 | Twitter Virtual AI Influencer | Mengelola akun Twitter influencer AI virtual. | Pemasaran/AI | [Link ke Template](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | Memperbarui banner Twitter menggunakan HTTP request. | Pemasaran/Pengembangan | [Link ke Template](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Template integrasi n8n apa lagi yang tersedia?
 
@@ -394,7 +430,9 @@ Bagian ini mencakup 27 template integrasi n8n tambahan yang meliputi berbagai pl
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | Membuat visualisasi dari query SQL menggunakan OpenAI dan Quickchart.io. | Analisis Data/Visualisasi | [Link ke Template](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Membuat ringkasan rapat, tugas ClickUp, dan menjadwalkan tindak lanjut dari rapat Zoom. | Produktivitas/Komunikasi | [Link ke Template](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Bagaimana cara mengotomasi formulir dan survei dengan n8n?
 
@@ -406,7 +444,9 @@ Bagian ini berisi 3 template otomasi formulir dan survei untuk n8n. Lakukan wawa
 | Email Subscription Service with n8n Forms, Airtable and AI | Mengelola langganan email dengan n8n Forms, menyimpan data di Airtable, dan menggunakan AI untuk pemrosesan. | Pemasaran/Komunikasi | [Link ke Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Menggunakan AI untuk mengkualifikasi dan memproses permintaan janji temu yang dikirimkan melalui n8n Forms. | Penjualan/Dukungan | [Link ke Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Template n8n apa yang tersedia untuk riset AI, RAG, dan analisis data?
 
@@ -454,7 +494,9 @@ Jelajahi 39 template riset AI, RAG, dan analisis data untuk n8n -- kategori terb
 | Visual Regression Testing with Apify and AI Vision Model | Melakukan pengujian regresi visual menggunakan Apify dan model AI vision untuk mendeteksi perubahan UI. | QA, Riset AI | [Visual Regression Testing with Apify and AI Vision Model.txt](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Mengubah riset Perplexity AI menjadi konten HTML untuk pembuatan konten bertenaga AI. | Pembuatan Konten, Riset AI | [🔍 Perplexity Research to HTML_ AI-Powered Content Creation.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **Otomasi workflow apa pun.** [Buat akun n8n gratis dan mulai membangun →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Otomasi workflow apa pun.** [Mulai uji coba n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Lainnya
 
@@ -464,8 +506,10 @@ Jelajahi 39 template riset AI, RAG, dan analisis data untuk n8n -- kategori terb
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Buat_Akun_n8n_Gratis-Mulai_Otomasi-orange?style=for-the-badge" alt="Buat Akun n8n Gratis" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 </p>
 
 ## FAQ
@@ -473,14 +517,18 @@ Jelajahi 39 template riset AI, RAG, dan analisis data untuk n8n -- kategori terb
 ### Bagaimana cara mengimpor template n8n dari repositori ini?
 
 Unduh file `.json` untuk template yang ingin Anda gunakan. Buka instance n8n Anda (baik self-hosted atau di [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe)), navigasikan ke Workflows, klik "Import from File," dan pilih file JSON yang telah diunduh. Workflow akan muncul di editor Anda siap untuk dikonfigurasi. Anda perlu menambahkan kredensial sendiri untuk setiap layanan yang terhubung sebelum mengaktifkan workflow.
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Apa itu n8n dan mengapa saya harus menggunakannya untuk otomasi?
 
-n8n adalah platform otomasi workflow gratis dan open-source dengan lebih dari 400 integrasi bawaan. Berbeda dengan alternatif SaaS seperti Zapier atau Make, n8n dapat di-hosting sendiri di infrastruktur Anda, memberi Anda kendali penuh atas data. Platform ini memiliki editor drag-and-drop visual, dukungan AI dan LLM native, serta komunitas yang aktif. Anda dapat [mulai menggunakan n8n secara gratis](https://n8n.partnerlinks.io/h1pwwf5m4toe) di platform cloud mereka atau deploy di server Anda sendiri.
+n8n adalah platform otomasi workflow fair-code dengan kode sumber yang tersedia dan ratusan integrasi. Platform ini dapat di-hosting di infrastruktur Anda sendiri serta menyediakan editor visual dan dukungan AI dan LLM. Anda dapat [memulai uji coba n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) atau men-deploy Community Edition di server sendiri.
+<br />
+<small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 
 ### Apakah template ini gratis untuk digunakan?
 
-Ya, semua template di repositori ini sepenuhnya gratis untuk diunduh dan digunakan. Template dikumpulkan dari sumber-sumber yang tersedia secara publik di internet dan dibagikan di sini untuk kemudahan akses. n8n sendiri adalah open-source dan gratis untuk self-host. Platform n8n Cloud juga menawarkan free tier dengan batas yang besar, sehingga Anda bisa mulai tanpa biaya apa pun.
+File template dapat diunduh tanpa biaya dari repositori ini, tetapi setiap template mungkin tunduk pada ketentuan lisensi pembuat aslinya. n8n bersifat fair-code dan kode sumbernya tersedia; Community Edition dapat di-hosting sendiri. n8n Cloud menawarkan uji coba yang dilanjutkan dengan paket berbayar.
 
 ### Bisakah saya menyumbangkan template saya sendiri?
 
@@ -524,16 +572,20 @@ Kontribusi sangat disambut. Jika Anda memiliki template workflow n8n untuk dibag
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Impor_280+_Template-Buat_Akun_n8n_Gratis-orange?style=for-the-badge" alt="Impor Template" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="platform otomasi n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Tautan referral — proyek ini menerima komisi dari pembelian yang memenuhi syarat.</small>
 </p>
 
 ---
 
-*Terakhir diperbarui: Maret 2026*
+*Terakhir diperbarui: Agustus 2026*

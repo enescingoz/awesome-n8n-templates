@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Airtable Automation Templates for n8n | Awesome n8n Templates"
-description: "5 free n8n Airtable templates. Project management with Fireflies, AI data agents, Obsidian integration, job application processing, and HubSpot chat."
+description: "5 n8n Airtable templates. Project management with Fireflies, AI data agents, Obsidian integration, job application processing, and HubSpot chat."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Airtable</nav>
@@ -10,7 +10,9 @@ description: "5 free n8n Airtable templates. Project management with Fireflies, 
 
 Browse 5 Airtable automation templates for n8n. Automate project management and meeting follow-ups with Fireflies transcripts, chat with Airtable data using AI agents, integrate with Obsidian Notes, process job applications with AI-powered resume parsing, or connect HubSpot Chat with OpenAI and Airtable for customer support.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Automate Airtable</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Automate Airtable</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -24,7 +26,9 @@ Browse 5 Airtable automation templates for n8n. Automate project management and 
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your Airtable API key or personal access token
@@ -34,7 +38,9 @@ Browse 5 Airtable automation templates for n8n. Automate project management and 
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

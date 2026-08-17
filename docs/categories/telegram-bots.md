@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Telegram Bot Templates for n8n | Awesome n8n Templates"
-description: "20 free n8n Telegram automation templates. AI chatbots with LangChain, voice-to-text in 55 languages, PDF chat, image analysis, and Spotify integration."
+description: "20 n8n Telegram automation templates. AI chatbots with LangChain, voice-to-text in 55 languages, PDF chat, image analysis, and Spotify integration."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Telegram Bots</nav>
@@ -10,7 +10,9 @@ description: "20 free n8n Telegram automation templates. AI chatbots with LangCh
 
 Explore 20 Telegram automation templates for n8n, including AI chatbots with LangChain and OpenAI, voice-to-text translation across 55 languages, PDF chat functionality, image analysis bots, and Spotify integration. These templates cover support, marketing, and content moderation use cases for Telegram.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Build Telegram Bots</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Build Telegram Bots</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -39,7 +41,9 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your Telegram Bot API token (get it from @BotFather)
@@ -49,7 +53,9 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

@@ -55,6 +55,15 @@
       opacity: 0.85;
     }
     .site-header nav a:hover { opacity: 1; text-decoration: underline; }
+    .header-links { text-align: right; }
+    .affiliate-disclosure {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: var(--text-muted);
+    }
+    .site-header .affiliate-disclosure { color: #d0d7de; }
     /* Main content */
     main {
       padding: 32px 0 64px;
@@ -190,11 +199,14 @@
   <header class="site-header">
     <div class="container">
       <a href="{{ site.baseurl }}/" class="site-title">Awesome n8n Templates</a>
-      <nav>
-        <a href="{{ site.baseurl }}/">Home</a>
-        <a href="https://github.com/enescingoz/awesome-n8n-templates">GitHub</a>
-        <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">Try n8n Free</a>
-      </nav>
+      <div class="header-links">
+        <nav>
+          <a href="{{ site.baseurl }}/">Home</a>
+          <a href="https://github.com/enescingoz/awesome-n8n-templates">GitHub</a>
+          <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">Start n8n Cloud Trial</a>
+        </nav>
+        <small class="affiliate-disclosure">* Referral link — this project receives a commission on eligible purchases.</small>
+      </div>
     </div>
   </header>
 
@@ -208,9 +220,10 @@
     <div class="container">
       <p>
         <a href="https://github.com/enescingoz/awesome-n8n-templates">GitHub Repository</a> &middot;
-        <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">Try n8n Free</a> &middot;
+        <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">Start n8n Cloud Trial</a> &middot;
         CC-BY-4.0 License
       </p>
+      <small class="affiliate-disclosure">* Referral link — this project receives a commission on eligible purchases.</small>
       <p>Curated by <a href="https://github.com/enescingoz">Enes Cingoz</a></p>
     </div>
   </footer>

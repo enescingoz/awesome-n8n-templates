@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you find this collection useful, please cite it as below."
 title: "Awesome n8n Templates"
-abstract: "A curated collection of 280+ ready-to-use n8n automation workflow templates covering Gmail, Telegram, Slack, Discord, OpenAI/LLM, Google Drive, Notion, WordPress, WhatsApp, and more."
+abstract: "A curated collection of 280+ n8n automation workflow template files covering Gmail, Telegram, Slack, Discord, OpenAI/LLM, Google Drive, Notion, WordPress, WhatsApp, and more. Review, configure, and test each workflow before use."
 type: dataset
 authors:
   - family-names: Cingoz

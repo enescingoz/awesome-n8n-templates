@@ -247,19 +247,8 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/images/generations",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer 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"
-            },
-            {
-              "name": "Content-type",
-              "value": "application/json"
-            }
-          ]
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [

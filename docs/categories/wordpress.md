@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "WordPress Automation Templates for n8n | Awesome n8n Templates"
-description: "6 free n8n WordPress templates. AI blog categorization, auto-tagging, content generation with DeepSeek R1, AI chatbot embedding, and keyword-based writing."
+description: "6 n8n WordPress templates. AI blog categorization, auto-tagging, content generation with DeepSeek R1, AI chatbot embedding, and keyword-based writing."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / WordPress</nav>
@@ -10,7 +10,9 @@ description: "6 free n8n WordPress templates. AI blog categorization, auto-taggi
 
 This section features 6 WordPress automation templates for n8n. Automate blog post categorization and tagging with AI, generate content in your brand voice, use DeepSeek R1 for rapid content creation, embed an AI chatbot with Supabase and OpenAI, or write full blog posts from just a few keywords.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Automate WordPress</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Automate WordPress</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -25,7 +27,9 @@ This section features 6 WordPress automation templates for n8n. Automate blog po
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your WordPress credentials (REST API or Application Password)
@@ -35,7 +39,9 @@ This section features 6 WordPress automation templates for n8n. Automate blog po
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

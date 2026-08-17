@@ -1,14 +1,16 @@
 ---
 layout: default
-title: "Awesome n8n Templates - 280+ Free Workflow Automations"
-description: "The largest curated collection of 280+ free, ready-to-use n8n automation workflow templates. AI agents, RAG chatbots, email automation, and more."
+title: "Awesome n8n Templates - 280+ Workflow Automations"
+description: "A curated collection of 280+ n8n automation workflow template files. AI agents, RAG chatbots, email automation, and more."
 ---
 
 # Awesome n8n Templates
 
-**The largest open-source collection of n8n automation templates on GitHub.** Browse 280+ free, ready-to-import workflow templates covering Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets, and dozens more platforms. Every template is a JSON file you can import into n8n in under a minute.
+**A curated collection of 280+ n8n workflow template files.** Browse examples covering Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets, and dozens more platforms. Review, configure, and test each workflow before use.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Start Automating</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 <div class="stats">
   <div class="stat-card">
@@ -33,7 +35,9 @@ description: "The largest curated collection of 280+ free, ready-to-use n8n auto
 
 ## Quick Start: How to Import These Templates
 
-1. **[Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (free and open-source)
+1. **[Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (n8n Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download any `.json` template file from the [GitHub repository](https://github.com/enescingoz/awesome-n8n-templates)
 3. In n8n, go to **Workflows > Import from File** and select the JSON
 4. Configure your credentials for each connected service
@@ -43,13 +47,15 @@ description: "The largest curated collection of 280+ free, ready-to-use n8n auto
 
 ## Why n8n?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) is an open-source workflow automation platform that lets you connect anything to everything. Unlike closed-source alternatives like Zapier or Make, n8n gives you full control over your data and infrastructure:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) is a fair-code, source-available workflow automation platform that connects services and systems. It can be self-hosted, giving you control over your data and infrastructure:
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
-- **Open-source and self-hostable** -- run it on your own server with no vendor lock-in
+- **Fair-code, source-available, and self-hostable** -- run it on your own server with no vendor lock-in
 - **400+ built-in integrations** -- connect to virtually any service or API
 - **Visual workflow editor** -- build automations by dragging and dropping nodes
 - **AI-native capabilities** -- built-in support for OpenAI, Claude, Gemini, LangChain, and vector databases
-- **Free to start** -- generous free tier on n8n Cloud, or self-host at no cost
+- **Deployment options** -- use the n8n Cloud trial or self-host Community Edition under n8n's license
 
 ---
 
@@ -174,14 +180,18 @@ description: "The largest curated collection of 280+ free, ready-to-use n8n auto
 ### How do I import an n8n template from this repository?
 
 Download the `.json` file for any template you want to use. Open your n8n instance (either self-hosted or on [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe)), navigate to Workflows, click "Import from File," and select the downloaded JSON file. The workflow will appear in your editor ready for configuration. You will need to add your own credentials for each connected service before activating the workflow.
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ### What is n8n and why should I use it for automation?
 
-n8n is a free, open-source workflow automation platform with over 400 built-in integrations. Unlike SaaS alternatives like Zapier or Make, n8n can be self-hosted on your own infrastructure, giving you full control over your data. It features a visual drag-and-drop editor, native AI and LLM support, and an active community. You can [start using n8n for free](https://n8n.partnerlinks.io/h1pwwf5m4toe).
+n8n is a fair-code, source-available workflow automation platform with hundreds of integrations. It can be self-hosted on your own infrastructure, giving you control over your data, and includes a visual editor plus AI and LLM support. You can [start an n8n Cloud trial](https://n8n.partnerlinks.io/h1pwwf5m4toe) or deploy Community Edition on your own server.
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ### Are these templates free to use?
 
-Yes, all 280+ templates in this repository are completely free to download and use under the CC-BY-4.0 license. n8n itself is open-source and free to self-host. The n8n Cloud platform also offers a free tier with generous limits.
+Template files can be downloaded from this repository at no charge, but individual templates may be subject to their original authors’ license terms. n8n is fair-code and source-available; Community Edition can be self-hosted. n8n Cloud offers a trial followed by paid plans.
 
 ### What AI models are supported in these templates?
 
@@ -198,7 +208,9 @@ Absolutely. Contributions are welcome. Open a pull request on the [GitHub reposi
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Create Your Free n8n Account -- Import 280+ Templates</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 <p style="text-align: center;">

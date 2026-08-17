@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> Крупнейшая открытая коллекция шаблонов автоматизации n8n на GitHub. Более 280 бесплатных готовых шаблонов рабочих процессов для Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets и десятков других платформ. Регулярно обновляется, актуально на март 2026 года.
+> Курируемая коллекция из более чем 280 файлов шаблонов рабочих процессов n8n для Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets и десятков других платформ. Перед использованием проверьте, настройте и протестируйте каждый процесс. Регулярно обновляется, актуально на август 2026 года.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Попробуйте_n8n_бесплатно-Начните_автоматизацию-orange?style=for-the-badge" alt="Попробуйте n8n бесплатно" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="Платформа автоматизации n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## Быстрый старт: как использовать эти шаблоны
 
-1. **[Зарегистрируйтесь в n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (бесплатно, с открытым исходным кодом)
+1. **[Зарегистрируйтесь в n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (доступен пробный период n8n Cloud)
+   <br />
+   <small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 2. Скачайте любой файл шаблона `.json` из этого репозитория
 3. В n8n перейдите в **Workflows → Import from File** и выберите JSON-файл
 4. Настройте учётные данные для каждого подключённого сервиса
@@ -77,13 +83,15 @@
 
 ## Почему n8n?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) -- это платформа автоматизации рабочих процессов с открытым исходным кодом, которая позволяет связать всё со всем. В отличие от закрытых аналогов, n8n даёт полный контроль над данными и инфраструктурой. Ключевые преимущества:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) -- это fair-code платформа автоматизации рабочих процессов с доступным исходным кодом, которая связывает сервисы и системы. Её можно развернуть на собственной инфраструктуре, сохраняя контроль над данными. Ключевые преимущества:
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
-- **Открытый исходный код и возможность самостоятельного хостинга** -- запускайте на своём сервере без привязки к вендору
+- **Fair-code, доступный исходный код и самостоятельный хостинг** -- запускайте на своём сервере без привязки к вендору
 - **400+ встроенных интеграций** -- подключайтесь практически к любому сервису или API
 - **Визуальный редактор рабочих процессов** -- создавайте автоматизации перетаскиванием узлов, без необходимости программирования
 - **Нативная поддержка AI** -- встроенная интеграция с OpenAI, Claude, Gemini, LangChain и векторными базами данных
-- **Бесплатный старт** -- щедрый бесплатный тариф на n8n Cloud или бесплатный self-hosting
+- **Варианты развёртывания** -- используйте пробный период n8n Cloud или самостоятельно разверните Community Edition по лицензии n8n
 
 Независимо от того, автоматизируете ли вы электронную почту, создаёте AI-чат-ботов, обрабатываете документы или управляете DevOps-пайплайнами -- n8n является основой, на которой работают эти шаблоны.
 
@@ -124,7 +132,9 @@
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | AI-ассистент для Outlook, обрабатывающий письма и назначающий категории по правилам из Airtable с интеграцией Monday.com. | Операции | [Ссылка на шаблон](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | Извлекает финансовые новости с FT.com и ежедневно доставляет обновления в ваш Outlook. | Руководство | [Ссылка на шаблон](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как автоматизировать Telegram-ботов с помощью n8n?
 
@@ -153,7 +163,9 @@
 | Translate Telegram audio messages with AI (55 supported languages) | Получает голосовые сообщения, транскрибирует их и отправляет переводы на более чем 50 языков. | Поддержка | [Ссылка на шаблон](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | Расширяет возможности AI-чат-бота долгосрочной памятью и динамической маршрутизацией инструментов. | Поддержка | [Ссылка на шаблон](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие лучшие шаблоны n8n для Google Drive и Google Sheets?
 
@@ -175,7 +187,9 @@
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Автоматический скрининг кандидатов через AI с уведомлением HR и сохранением данных в Google Sheet. | HR | [Ссылка на шаблон](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Суммаризирует обратную связь из Google Forms в Google Sheets с помощью GPT-4 для быстрого анализа. | Маркетинг | [Ссылка на шаблон](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как автоматизировать WordPress с помощью n8n?
 
@@ -190,7 +204,9 @@
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Интеграция AI-чат-бота в WordPress через Supabase и OpenAI для улучшения взаимодействия с пользователями. | Поддержка/Маркетинг | [Ссылка на шаблон](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | Написание постов WordPress через AI на основе нескольких ключевых слов. | Маркетинг/Контент | [Ссылка на шаблон](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие шаблоны n8n существуют для обработки PDF и документов?
 
@@ -210,7 +226,9 @@
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Извлекает текст из PDF и изображений через Vertex AI (Gemini) и конвертирует в CSV-формат. | Извлечение данных/ИТ | [Ссылка на шаблон](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | Извлекает структурированные данные из счетов с помощью LlamaParse и OpenAI. | Финансы/Администрирование | [Ссылка на шаблон](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как автоматизировать Discord с помощью n8n?
 
@@ -222,7 +240,9 @@
 | Send daily translated Calvin and Hobbes Comics to Discord | Ежедневно получает комиксы Calvin and Hobbes, переводит диалоги и публикует в Discord. | Маркетинг/Контент | [Ссылка на шаблон](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | Автоматически публикует новые YouTube-видео в Discord с AI-суммаризацией их содержания. | Маркетинг | [Ссылка на шаблон](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие лучшие шаблоны n8n для автоматизации баз данных и хранилищ?
 
@@ -236,7 +256,9 @@
 | Supabase Insertion & Upsertion & Retrieval | Демонстрирует операции вставки, обновления и извлечения в Supabase для работы с векторными эмбеддингами. | Инженерия | [Ссылка на шаблон](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | Позволяет взаимодействовать с базой SQLite через AI-агент LangChain на естественном языке. | Аналитика | [Ссылка на шаблон](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие шаблоны n8n доступны для DevOps и серверной автоматизации?
 
@@ -247,7 +269,9 @@
 | Linux System Update via Webhook | Запуск обновления Debian-сервера через аутентифицированный POST-запрос и SSH. | SSH Tools | [Ссылка на шаблон](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Запуск и остановка сервисов Docker Compose на сервере через аутентифицированный HTTP POST-запрос с n8n + SSH. | SSH Tools | [Ссылка на шаблон](devops/docker-compose-controller.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как автоматизировать Airtable с помощью n8n?
 
@@ -261,7 +285,9 @@
 | Handling Job Application Submissions with AI and n8n Forms | Автоматическая обработка заявок: извлечение информации из резюме (PDF) через AI и сохранение в Airtable. | HR | [Ссылка на шаблон](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | Интеграция OpenAI-ассистента с HubSpot Chat и Airtable для автоматических ответов и управления взаимодействиями с клиентами. | Продажи | [Ссылка на шаблон](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие лучшие шаблоны n8n для Notion?
 
@@ -280,7 +306,9 @@
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | Превращает письма в AI-задачи в Notion с поддержкой нескольких пользователей через Gmail, Airtable и Softr. | Операции | [Ссылка на шаблон](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | Разбивает большие документы на фрагменты, генерирует эмбеддинги и загружает в векторное хранилище Supabase из Notion. | Инженерия | [Ссылка на шаблон](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как автоматизировать Slack с помощью n8n?
 
@@ -298,7 +326,9 @@
 | Slack slash commands AI Chat Bot | AI-чат-бот через слеш-команды Slack для обработки запросов пользователей. | ИТ | [Ссылка на шаблон](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Slack-бот для управления сертификатами через Venafi Cloud: проверка статуса, оповещения и действия с сертификатами. | Безопасность | [Ссылка на шаблон](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие шаблоны n8n доступны для OpenAI, LLM и AI-агентов?
 
@@ -324,7 +354,9 @@
 | AI: Ask questions about any data source (using the n8n workflow retriever) | Задавайте вопросы к любому источнику данных через n8n workflow retriever. | AI/Аналитика/Автоматизация | [Ссылка на шаблон](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Суммаризирует эпизоды подкастов и обогащает информацией из Wikipedia через AI. | Контент/AI/Аналитика | [Ссылка на шаблон](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как создать чат-ботов WhatsApp с помощью n8n?
 
@@ -337,7 +369,9 @@
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | Полноценный бизнес-RAG-чат-бот для WhatsApp на OpenAI. | Поддержка/AI/Разработка | [Ссылка на шаблон](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | Профессиональные AI-ответы на сообщения WhatsApp. | Поддержка/AI/Коммуникации | [Ссылка на шаблон](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие лучшие шаблоны n8n для автоматизации социальных сетей?
 
@@ -356,7 +390,9 @@
 | Twitter Virtual AI Influencer | Управление аккаунтом виртуального AI-инфлюенсера в Twitter. | Маркетинг/AI | [Ссылка на шаблон](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | Обновление баннера Twitter через HTTP-запросы. | Маркетинг/Разработка | [Ссылка на шаблон](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие другие шаблоны интеграций n8n доступны?
 
@@ -394,7 +430,9 @@
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | Визуализация SQL-запросов через OpenAI и Quickchart.io. | Аналитика/Визуализация | [Ссылка на шаблон](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Создание резюме встреч, задач в ClickUp и планирование последующих звонков из Zoom-конференций. | Продуктивность/Коммуникации | [Ссылка на шаблон](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Как автоматизировать формы и опросы с помощью n8n?
 
@@ -406,7 +444,9 @@
 | Email Subscription Service with n8n Forms, Airtable and AI | Управление email-подписками через n8n Forms с хранением в Airtable и обработкой через AI. | Маркетинг/Коммуникации | [Ссылка на шаблон](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Квалификация и обработка заявок на встречи через n8n Forms с помощью AI. | Продажи/Поддержка | [Ссылка на шаблон](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Какие шаблоны n8n существуют для AI-исследований, RAG и анализа данных?
 
@@ -454,7 +494,9 @@
 | Visual Regression Testing with Apify and AI Vision Model | Визуальное регрессионное тестирование через Apify и AI-модель компьютерного зрения для обнаружения изменений UI. | QA, AI-исследования | [Ссылка на шаблон](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Преобразование исследований Perplexity AI в HTML-контент. | Создание контента, AI-исследования | [Ссылка на шаблон](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **Автоматизируйте любой процесс.** [Создайте бесплатный аккаунт n8n и начните строить →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Автоматизируйте любой процесс.** [Начать пробный период n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Прочее
 
@@ -464,8 +506,10 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Создайте_бесплатный_аккаунт_n8n-Начните_автоматизацию-orange?style=for-the-badge" alt="Создайте бесплатный аккаунт n8n" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 </p>
 
 ## Частые вопросы (FAQ)
@@ -473,14 +517,18 @@
 ### Как импортировать шаблон n8n из этого репозитория?
 
 Скачайте файл `.json` нужного шаблона. Откройте ваш экземпляр n8n (self-hosted или [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe)), перейдите в Workflows, нажмите «Import from File» и выберите скачанный JSON-файл. Рабочий процесс появится в редакторе, готовый к настройке. Перед активацией вам нужно будет добавить свои учётные данные для каждого подключённого сервиса.
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Что такое n8n и зачем использовать его для автоматизации?
 
-n8n -- это бесплатная платформа автоматизации рабочих процессов с открытым исходным кодом и более чем 400 встроенными интеграциями. В отличие от SaaS-альтернатив вроде Zapier или Make, n8n можно развернуть на собственной инфраструктуре, сохраняя полный контроль над данными. Платформа предлагает визуальный drag-and-drop редактор, нативную поддержку AI и LLM, а также активное сообщество. Вы можете [начать использовать n8n бесплатно](https://n8n.partnerlinks.io/h1pwwf5m4toe) в облаке или развернуть на своём сервере.
+n8n -- это fair-code платформа автоматизации рабочих процессов с доступным исходным кодом и сотнями интеграций. Её можно развернуть на собственной инфраструктуре; доступны визуальный редактор и поддержка AI и LLM. Вы можете [начать пробный период n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) или развернуть Community Edition на своём сервере.
+<br />
+<small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 
 ### Эти шаблоны бесплатны?
 
-Да, все шаблоны в этом репозитории полностью бесплатны для скачивания и использования. Они были собраны из открытых источников и размещены здесь для удобного доступа. Сам n8n имеет открытый исходный код и бесплатен для self-hosting. Облачная платформа n8n Cloud также предлагает бесплатный тариф с щедрыми лимитами, так что вы можете начать без каких-либо затрат.
+Файлы шаблонов можно скачать из этого репозитория бесплатно, однако на отдельные шаблоны могут распространяться условия лицензий их первоначальных авторов. n8n использует модель fair-code с доступным исходным кодом; Community Edition можно развернуть самостоятельно. После пробного периода n8n Cloud предлагает платные тарифы.
 
 ### Могу ли я добавить свои шаблоны?
 
@@ -524,16 +572,20 @@ n8n -- это бесплатная платформа автоматизации
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Импортируйте_280+_шаблонов-Создайте_бесплатный_аккаунт_n8n-orange?style=for-the-badge" alt="Импортируйте шаблоны" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="Платформа автоматизации n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Реферальная ссылка — проект получает комиссию за отвечающие условиям покупки.</small>
 </p>
 
 ---
 
-*Последнее обновление: март 2026*
+*Последнее обновление: август 2026*

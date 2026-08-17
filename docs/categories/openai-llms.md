@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "OpenAI & LLM Templates for n8n | Awesome n8n Templates"
-description: "18 free n8n AI and LLM templates. AI agent demos, web scraping agents, stock analysis, sentiment analysis, lead management, RAG pipelines, and more."
+description: "18 n8n AI and LLM templates. AI agent demos, web scraping agents, stock analysis, sentiment analysis, lead management, RAG pipelines, and more."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / OpenAI & LLMs</nav>
@@ -10,7 +10,9 @@ description: "18 free n8n AI and LLM templates. AI agent demos, web scraping age
 
 This is one of the largest categories with 18 AI and LLM templates for n8n. Templates include advanced AI agent demos, web scraping agents, stock analysis crews, customer feedback sentiment analysis, AI-powered lead management with ERPNext, fitness coaching via Strava, candidate shortlisting for HR, RAG pipelines for email and stock reports, social media amplification, WooCommerce support agents, YouTube summarization, and podcast enhancement with Wikipedia.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Build AI Agents</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Build AI Agents</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -36,7 +38,9 @@ This is one of the largest categories with 18 AI and LLM templates for n8n. Temp
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your OpenAI API key or other LLM provider credentials
@@ -46,7 +50,9 @@ This is one of the largest categories with 18 AI and LLM templates for n8n. Temp
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

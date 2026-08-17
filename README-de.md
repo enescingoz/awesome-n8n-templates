@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> Die umfangreichste Open-Source-Sammlung von n8n-Automatisierungsvorlagen auf GitHub. Durchsuche mehr als 280 kostenlose, sofort importierbare Workflow-Vorlagen fuer Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets und Dutzende weitere Plattformen. Laufend aktualisiert, Stand Maerz 2026.
+> Eine kuratierte Sammlung von mehr als 280 n8n-Workflow-Vorlagen fuer Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets und Dutzende weitere Plattformen. Pruefe, konfiguriere und teste jeden Workflow vor der Verwendung. Laufend aktualisiert, Stand August 2026.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/n8n_kostenlos_testen-Jetzt_automatisieren-orange?style=for-the-badge" alt="n8n kostenlos testen" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n Automatisierungsplattform" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## Schnellstart: So verwendest du diese Vorlagen
 
-1. **[Registriere dich bei n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (kostenlos und Open Source)
+1. **[Registriere dich bei n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (Testversion von n8n Cloud verfuegbar)
+   <br />
+   <small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 2. Lade eine beliebige `.json`-Vorlagendatei aus diesem Repository herunter
 3. Gehe in n8n zu **Workflows --> Import from File** und waehle die JSON-Datei aus
 4. Konfiguriere deine Zugangsdaten fuer jeden verbundenen Dienst
@@ -77,13 +83,15 @@
 
 ## Warum n8n?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) ist eine Open-Source-Plattform zur Workflow-Automatisierung, mit der du alles mit allem verbinden kannst. Im Gegensatz zu proprietaeren Alternativen gibt dir n8n die volle Kontrolle ueber deine Daten und Infrastruktur. Die wichtigsten Vorteile:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) ist eine Fair-Code- und Source-Available-Plattform zur Workflow-Automatisierung, mit der du Dienste und Systeme verbinden kannst. Sie kann selbst gehostet werden und gibt dir damit Kontrolle ueber deine Daten und Infrastruktur. Die wichtigsten Vorteile:
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
-- **Open Source und selbst hostbar** -- betreibe es auf deinem eigenen Server ohne Herstellerabhaengigkeit
+- **Fair-Code, source-available und selbst hostbar** -- betreibe es auf deinem eigenen Server ohne Herstellerabhaengigkeit
 - **Ueber 400 integrierte Verbindungen** -- verknuepfe praktisch jeden Dienst oder jede API
 - **Visueller Workflow-Editor** -- erstelle Automatisierungen per Drag-and-Drop, ganz ohne Programmierkenntnisse
 - **KI-nativ** -- integrierte Unterstuetzung fuer OpenAI, Claude, Gemini, LangChain und Vektordatenbanken
-- **Kostenlos starten** -- grosszuegiges Gratiskontingent auf n8n Cloud oder kostenlos selbst hosten
+- **Bereitstellungsoptionen** -- nutze die n8n-Cloud-Testphase oder hoste die Community Edition gemaess der n8n-Lizenz selbst
 
 Egal ob du E-Mail-Workflows automatisierst, KI-Chatbots baust, Dokumente verarbeitest oder DevOps-Pipelines orchestrierst -- n8n ist die Basis, auf der diese Vorlagen laufen.
 
@@ -124,7 +132,9 @@ Diese Sammlung umfasst 9 E-Mail-Automatisierungsvorlagen fuer n8n, die Gmail, Ou
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | Ein KI-gestuetzter Assistent fuer Outlook, der E-Mails verarbeitet, Inhalte bereinigt und Kategorien anhand von Regeln aus Airtable zuweist. Integration mit Monday.com fuer Kontaktverwaltung. | Ops | [Link zur Vorlage](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | Extrahiert Finanznachrichten von FT.com und liefert taegliche Updates in dein Outlook-Postfach. Automatisiert Inhaltsextraktion und E-Mail-Zustellung fuer aktuelle Markteinblicke. | Fuehrung | [Link zur Vorlage](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie kann ich Telegram-Bots mit n8n automatisieren?
 
@@ -153,7 +163,9 @@ Entdecke 20 Telegram-Automatisierungsvorlagen fuer n8n, darunter KI-Chatbots mit
 | Translate Telegram audio messages with AI (55 supported languages) | Empfaengt Sprachnachrichten, transkribiert sie und sendet Uebersetzungen in ueber 50 Sprachen zurueck. | Support | [Link zur Vorlage](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | Externer Workflow, der einen KI-Chatbot um Langzeitgedaechtnis und dynamisches Tool-Routing erweitert. | Support | [Link zur Vorlage](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Was sind die besten n8n-Vorlagen fuer Google Drive und Google Sheets?
 
@@ -175,7 +187,9 @@ Durchsuche 13 Google-Drive- und Google-Sheets-Automatisierungsvorlagen fuer n8n.
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Automatisiert das Screening von Bewerbern mittels KI, benachrichtigt die Personalabteilung ueber qualifizierte Kandidaten und speichert Bewerberdaten in einem Google Sheet. | HR | [Link zur Vorlage](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Fasst Feedback aus Google Formularen, gespeichert in Google Sheets, mithilfe von OpenAI GPT-4 zusammen und liefert schnelle Einblicke aus Umfrageantworten. | Marketing | [Link zur Vorlage](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie automatisiere ich WordPress mit n8n?
 
@@ -190,7 +204,9 @@ Dieser Abschnitt umfasst 6 WordPress-Automatisierungsvorlagen fuer n8n. Automati
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Dieser Workflow integriert einen KI-Chatbot in WordPress mit Supabase und OpenAI, um das Nutzererlebnis durch intelligente Interaktionen zu verbessern. | Kundensupport/Marketing | [Link zur Vorlage](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | Dieser Workflow nutzt KI, um WordPress-Beitraege aus wenigen Stichworten zu schreiben und vereinfacht den Content-Erstellungsprozess. | Marketing/Content | [Link zur Vorlage](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Welche n8n-Vorlagen gibt es fuer PDF- und Dokumentenverarbeitung?
 
@@ -210,7 +226,9 @@ Finde 11 Vorlagen zur PDF- und Dokumentenverarbeitung fuer n8n. Diese Workflows 
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Dieser Workflow extrahiert Text aus PDFs und Bildern mit Vertex AI (Gemini), sortiert nach Dateityp und konvertiert die extrahierten Daten ins CSV-Format. | Datenextraktion/IT | [Link zur Vorlage](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | Dieser Workflow extrahiert strukturierte Daten aus Rechnungen mit LlamaParse und OpenAI und verarbeitet sie mit einem strukturierten Output-Parser fuer detaillierte Rechnungsdatenextraktion. | Finanzen/Verwaltung | [Link zur Vorlage](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie kann ich Discord mit n8n automatisieren?
 
@@ -222,7 +240,9 @@ Dieser Abschnitt enthaelt 3 Discord-Automatisierungsvorlagen fuer n8n. Baue eine
 | Send daily translated Calvin and Hobbes Comics to Discord | Dieser Workflow automatisiert den taeglichen Abruf von Calvin-und-Hobbes-Comics, uebersetzt die Dialoge ins Englische und Koreanische (oder andere Sprachen) und postet sie auf Discord. | Marketing/Content | [Link zur Vorlage](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | Dieser Workflow teilt automatisch neue YouTube-Videos auf Discord zusammen mit KI-generierten Zusammenfassungen ihrer Inhalte auf Basis von Untertiteldaten. | Marketing | [Link zur Vorlage](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Was sind die besten n8n-Vorlagen fuer Datenbanken und Speicher?
 
@@ -236,7 +256,9 @@ Finde 5 Datenbank- und Speicher-Automatisierungsvorlagen fuer n8n. Chatte mit Po
 | Supabase Insertion & Upsertion & Retrieval | Dieser Workflow demonstriert das Einfuegen, Aktualisieren und Abrufen von Daten in Supabase, speziell fuer Vektor-Embeddings und zugehoerige Metadaten. | Engineering | [Link zur Vorlage](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | Dieser Workflow ermoeglicht die Interaktion mit einer SQLite-Datenbank ueber einen LangChain-KI-Agenten fuer Abfragen in natuerlicher Sprache und Datenabruf. | Datenanalyse | [Link zur Vorlage](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Welche n8n-Vorlagen gibt es fuer DevOps und Server-Automatisierung?
 
@@ -247,7 +269,9 @@ Dieser Abschnitt umfasst 2 DevOps- und Server-Automatisierungsvorlagen fuer n8n.
 | Linux System Update via Webhook | Loest Update und Upgrade deines Debian-basierten Servers ueber einen authentifizierten POST-Request und SSH aus. | SSH Tools | [Link zur Vorlage](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Startet oder stoppt Docker-Compose-Dienste auf deinem Server ueber einen authentifizierten HTTP-POST-Request mit n8n und SSH. | SSH Tools | [Link zur Vorlage](devops/docker-compose-controller.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie automatisiere ich Airtable mit n8n?
 
@@ -261,7 +285,9 @@ Durchsuche 5 Airtable-Automatisierungsvorlagen fuer n8n. Automatisiere Projektma
 | Handling Job Application Submissions with AI and n8n Forms | Dieser Workflow automatisiert die Verarbeitung von Bewerbungen durch Extraktion von Informationen aus Lebenslaeufen (PDFs) mittels KI, Parsing in ein strukturiertes Format und moegliche Speicherung in Airtable. | HR | [Link zur Vorlage](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | Dieser Workflow integriert einen OpenAI-Assistenten mit HubSpot Chat und Airtable fuer automatisierte Antworten und Verwaltung von Kundeninteraktionen. Er ruft Chat-Nachrichten ab, verarbeitet sie mit KI und kann relevante Informationen in Airtable speichern. | Vertrieb | [Link zur Vorlage](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Was sind die besten n8n-Vorlagen fuer Notion?
 
@@ -280,7 +306,9 @@ Entdecke 10 Notion-Automatisierungsvorlagen fuer n8n. Speichere positives Feedba
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | Wandelt E-Mails in KI-erweiterte Aufgaben in Notion um, mit Mehrbenutzersupport. Integriert Gmail fuer E-Mail-Trigger, Airtable fuer Routing und Softr fuer die Benutzeroberflaeche. | Ops | [Link zur Vorlage](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | Verwaltet grosse Dokumente durch Aufteilen in Abschnitte, Generierung von Embeddings und Upsert in einen Supabase-Vektorspeicher, wobei Notion als Dokumentenquelle dient. | Engineering | [Link zur Vorlage](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie kann ich Slack mit n8n automatisieren?
 
@@ -298,7 +326,9 @@ Entdecke 9 Slack-Automatisierungsvorlagen fuer n8n. Ueberwache RSS-Feeds mit KI-
 | Slack slash commands AI Chat Bot | Implementiert einen KI-Chatbot, der ueber Slack-Slash-Befehle erreichbar ist, Nutzerbefehle verarbeitet, mit einem KI-Modell interagiert und innerhalb von Slack antwortet. | IT | [Link zur Vorlage](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Bietet einen Slack-Bot, der mit Venafi Cloud fuer Zertifikatsverwaltung interagiert und es Nutzern ermoeglicht, Zertifikatsstatus zu pruefen, Benachrichtigungen zu erhalten oder Zertifikatsaktionen ueber Slack anzufordern. | Sicherheit | [Link zur Vorlage](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Welche n8n-Vorlagen gibt es fuer OpenAI, LLMs und KI-Agenten?
 
@@ -324,7 +354,9 @@ Dies ist die groesste Kategorie mit 17 KI- und LLM-Vorlagen fuer n8n. Die Vorlag
 | AI: Ask questions about any data source (using the n8n workflow retriever) | Ermoeglicht es Nutzern, Fragen zu verschiedenen Datenquellen ueber einen n8n-Workflow-Retriever zu stellen. | KI/Datenanalyse/Workflow-Automatisierung | [Link zur Vorlage](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Fasst Podcast-Episoden zusammen und ergaenzt die Zusammenfassung mit Informationen aus Wikipedia mittels KI. | Content-Erstellung/KI/Datenanalyse | [Link zur Vorlage](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie erstelle ich WhatsApp-Chatbots mit n8n?
 
@@ -337,7 +369,9 @@ Dieser Abschnitt umfasst 4 WhatsApp-Automatisierungsvorlagen fuer n8n. Automatis
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | Dieser Workflow erstellt einen vollstaendigen geschaeftlichen WhatsApp-KI-RAG-Chatbot mit OpenAI. | Kundenservice/KI/Entwicklung | [Link zur Vorlage](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | Dieser Workflow ermoeglicht professionelle KI-gesteuerte Antworten auf WhatsApp-Nachrichten. | Kundenservice/KI/Kommunikation | [Link zur Vorlage](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Was sind die besten n8n-Vorlagen fuer Social-Media-Automatisierung?
 
@@ -356,7 +390,9 @@ Entdecke 10 Social-Media-Automatisierungsvorlagen fuer n8n fuer Instagram, Twitt
 | Twitter Virtual AI Influencer | Verwaltet den Twitter-Account eines virtuellen KI-Influencers. | Marketing/KI | [Link zur Vorlage](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | Aktualisiert ein Twitter-Banner per HTTP-Anfragen. | Marketing/Entwicklung | [Link zur Vorlage](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Welche weiteren n8n-Integrationsvorlagen sind verfuegbar?
 
@@ -394,7 +430,9 @@ Dieser Abschnitt umfasst 27 weitere n8n-Integrationsvorlagen fuer eine breite Pa
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | Erstellt Visualisierungen aus SQL-Abfragen mit OpenAI und Quickchart.io. | Datenanalyse/Visualisierung | [Link zur Vorlage](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Erstellt Meeting-Zusammenfassungen, ClickUp-Aufgaben und plant Follow-up-Termine aus Zoom-Meetings. | Produktivitaet/Kommunikation | [Link zur Vorlage](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Wie automatisiere ich Formulare und Umfragen mit n8n?
 
@@ -406,7 +444,9 @@ Dieser Abschnitt enthaelt 3 Formular- und Umfrage-Automatisierungsvorlagen fuer 
 | Email Subscription Service with n8n Forms, Airtable and AI | Verwaltet E-Mail-Abonnements mit n8n Forms, speichert Daten in Airtable und nutzt KI zur Verarbeitung. | Marketing/Kommunikation | [Link zur Vorlage](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Nutzt KI zur Qualifizierung und Verarbeitung von Terminanfragen, die ueber n8n Forms eingereicht werden. | Vertrieb/Support | [Link zur Vorlage](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Welche n8n-Vorlagen gibt es fuer KI-Forschung, RAG und Datenanalyse?
 
@@ -454,7 +494,9 @@ Entdecke 39 Vorlagen fuer KI-Forschung, RAG und Datenanalyse fuer n8n -- die gro
 | Visual Regression Testing with Apify and AI Vision Model | Fuehrt visuelles Regressionstesting mit Apify und einem KI-Vision-Modell zur Erkennung von UI-Aenderungen durch. | QA, KI-Forschung | [Visual Regression Testing with Apify and AI Vision Model.txt](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Wandelt Perplexity-KI-Recherchen in HTML-Inhalte fuer KI-gesteuerte Content-Erstellung um. | Content-Erstellung, KI-Forschung | [🔍 Perplexity Research to HTML_ AI-Powered Content Creation.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **Automatisiere jeden Workflow.** [Erstelle dein kostenloses n8n-Konto und leg los →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatisiere jeden Workflow.** [Starte eine n8n-Cloud-Testphase →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Sonstiges
 
@@ -464,8 +506,10 @@ Entdecke 39 Vorlagen fuer KI-Forschung, RAG und Datenanalyse fuer n8n -- die gro
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Kostenloses_n8n_Konto_erstellen-Jetzt_automatisieren-orange?style=for-the-badge" alt="Create Free n8n Account" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 </p>
 
 ## FAQ
@@ -473,14 +517,18 @@ Entdecke 39 Vorlagen fuer KI-Forschung, RAG und Datenanalyse fuer n8n -- die gro
 ### Wie importiere ich eine n8n-Vorlage aus diesem Repository?
 
 Lade die `.json`-Datei fuer die gewuenschte Vorlage herunter. Oeffne deine n8n-Instanz (entweder selbst gehostet oder auf [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe)), navigiere zu Workflows, klicke auf "Import from File" und waehle die heruntergeladene JSON-Datei aus. Der Workflow erscheint in deinem Editor und ist bereit zur Konfiguration. Du musst deine eigenen Zugangsdaten fuer jeden verbundenen Dienst hinzufuegen, bevor du den Workflow aktivierst.
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Was ist n8n und warum sollte ich es fuer Automatisierung nutzen?
 
-n8n ist eine kostenlose, quelloffene Workflow-Automatisierungsplattform mit ueber 400 integrierten Verbindungen. Im Gegensatz zu SaaS-Alternativen wie Zapier oder Make kann n8n auf der eigenen Infrastruktur selbst gehostet werden, wodurch du die volle Kontrolle ueber deine Daten behaeltst. Es bietet einen visuellen Drag-and-Drop-Editor, native KI- und LLM-Unterstuetzung sowie eine aktive Community. Du kannst [n8n kostenlos nutzen](https://n8n.partnerlinks.io/h1pwwf5m4toe) auf der Cloud-Plattform oder es auf deinem eigenen Server bereitstellen.
+n8n ist eine Fair-Code- und Source-Available-Plattform zur Workflow-Automatisierung mit Hunderten von Integrationen. Sie kann auf der eigenen Infrastruktur selbst gehostet werden und bietet einen visuellen Editor sowie KI- und LLM-Unterstuetzung. Du kannst eine [n8n-Cloud-Testphase starten](https://n8n.partnerlinks.io/h1pwwf5m4toe) oder die Community Edition auf deinem eigenen Server bereitstellen.
+<br />
+<small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 
 ### Sind diese Vorlagen kostenlos nutzbar?
 
-Ja, alle Vorlagen in diesem Repository sind vollstaendig kostenlos zum Herunterladen und Verwenden. Sie wurden aus oeffentlich zugaenglichen Quellen im Internet gesammelt und werden hier zum einfachen Zugriff geteilt. n8n selbst ist quelloffen und kostenlos selbst hostbar. Die n8n-Cloud-Plattform bietet ebenfalls ein kostenloses Kontingent mit grosszuegigen Limits, sodass du ohne jegliche Kosten starten kannst.
+Die Vorlagendateien koennen kostenlos aus diesem Repository heruntergeladen werden; fuer einzelne Vorlagen koennen jedoch die Lizenzbedingungen ihrer urspruenglichen Urheber gelten. n8n ist Fair-Code und source-available; die Community Edition kann selbst gehostet werden. n8n Cloud bietet eine Testphase mit anschliessend kostenpflichtigen Tarifen.
 
 ### Kann ich eigene Vorlagen beitragen?
 
@@ -524,16 +572,20 @@ Beitraege sind willkommen. Wenn du eine n8n-Workflow-Vorlage teilen moechtest, o
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/280+_Vorlagen_importieren-Kostenloses_n8n_Konto_erstellen-orange?style=for-the-badge" alt="Vorlagen importieren" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n Automatisierungsplattform" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Empfehlungslink — dieses Projekt erhält bei qualifizierten Käufen eine Provision.</small>
 </p>
 
 ---
 
-*Zuletzt aktualisiert: Maerz 2026*
+*Zuletzt aktualisiert: August 2026*

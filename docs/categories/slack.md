@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Slack Automation Templates for n8n | Awesome n8n Templates"
-description: "9 free n8n Slack templates. AI bots with Gemini, RSS monitoring, support ticketing with Linear, security ops with Qualys, CRM enrichment, and IT knowledge bots."
+description: "9 n8n Slack templates. AI bots with Gemini, RSS monitoring, support ticketing with Linear, security ops with Qualys, CRM enrichment, and IT knowledge bots."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Slack</nav>
@@ -10,7 +10,9 @@ description: "9 free n8n Slack templates. AI bots with Gemini, RSS monitoring, s
 
 Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered summaries, build Slack bots using Google Gemini, automate customer support ticketing with Linear, enhance security operations with Qualys integration, enrich Pipedrive CRM data, create IT knowledge base chatbots, track sentiment on support issues, and manage certificates via Venafi Cloud.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Automate Slack</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Automate Slack</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -28,7 +30,9 @@ Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered 
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your Slack Bot token and workspace credentials
@@ -38,7 +42,9 @@ Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered 
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Google Drive & Sheets Templates for n8n | Awesome n8n Templates"
-description: "13 free n8n templates for Google Drive and Google Sheets. RAG chatbots, OpenAI fine-tuning, lead qualification with GPT-4, and document summarization."
+description: "13 n8n templates for Google Drive and Google Sheets. RAG chatbots, OpenAI fine-tuning, lead qualification with GPT-4, and document summarization."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Google Drive & Sheets</nav>
@@ -10,7 +10,9 @@ description: "13 free n8n templates for Google Drive and Google Sheets. RAG chat
 
 Browse 13 Google Drive and Google Sheets automation templates for n8n. Includes RAG chatbots for company documents, OpenAI model fine-tuning pipelines, automated background removal, lead qualification with GPT-4, applicant screening for HR, and document summarization workflows. Perfect for operations, sales, marketing, and engineering teams.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Automate Google Workspace</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Automate Google Workspace</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -32,7 +34,9 @@ Browse 13 Google Drive and Google Sheets automation templates for n8n. Includes 
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your Google account credentials (Drive and/or Sheets)
@@ -42,7 +46,9 @@ Browse 13 Google Drive and Google Sheets automation templates for n8n. Includes 
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

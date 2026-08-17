@@ -1,6 +1,6 @@
 # Awesome n8n Şablonları
 
-> GitHub'daki en büyük açık kaynaklı n8n otomasyon şablonları koleksiyonu. Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets ve onlarca farklı platformu kapsayan 280'den fazla ücretsiz, içe aktarmaya hazır iş akışı şablonunu keşfedin. Mart 2026 itibarıyla sürekli güncellenmektedir.
+> Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets ve onlarca farklı platform için 280'den fazla n8n iş akışı şablonu dosyasından oluşan seçilmiş bir koleksiyon. Her iş akışını kullanmadan önce inceleyin, yapılandırın ve test edin. Ağustos 2026 itibarıyla sürekli güncellenmektedir.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/n8n'i_Ücretsiz_Dene-Otomasyona_Başla-orange?style=for-the-badge" alt="n8n'i Ücretsiz Dene" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n otomasyon platformu" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## Hızlı Başlangıç: Bu Şablonlar Nasıl Kullanılır?
 
-1. **[n8n'e kaydolun](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (ücretsiz ve açık kaynak)
+1. **[n8n'e kaydolun](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (n8n Cloud deneme sürümü mevcut)
+   <br />
+   <small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 2. Bu depodan istediğiniz `.json` şablon dosyasını indirin
 3. n8n'de **Workflows → Import from File** yolunu izleyin ve JSON dosyasını seçin
 4. Bağlı her hizmet için kimlik bilgilerinizi yapılandırın
@@ -77,13 +83,15 @@
 
 ## Neden n8n?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe), her şeyi her şeye bağlamanızı sağlayan açık kaynaklı bir iş akışı otomasyon platformudur. Kapalı kaynak alternatiflerin aksine, n8n verileriniz ve altyapınız üzerinde tam kontrol sağlar. Başlıca avantajları:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe), hizmetleri ve sistemleri bağlamanızı sağlayan fair-code ve kaynak kodu erişilebilir bir iş akışı otomasyon platformudur. Kendi altyapınızda barındırılabilir ve verileriniz üzerinde kontrol sağlar. Başlıca avantajları:
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
-- **Açık kaynak ve kendi sunucunuzda barındırılabilir** -- herhangi bir satıcıya bağımlılık olmadan kendi sunucunuzda çalıştırın
+- **Fair-code, kaynak kodu erişilebilir ve kendi sunucunuzda barındırılabilir** -- herhangi bir satıcıya bağımlılık olmadan kendi sunucunuzda çalıştırın
 - **400'den fazla yerleşik entegrasyon** -- neredeyse her hizmete veya API'ye bağlanın
 - **Görsel iş akışı düzenleyici** -- sürükle-bırak ile otomasyon oluşturun, kod yazmaya gerek yok
 - **Yapay zeka destekli yetenekler** -- OpenAI, Claude, Gemini, LangChain ve vektör veritabanları için yerleşik destek
-- **Ücretsiz başlangıç** -- n8n Cloud'da cömert ücretsiz plan veya sıfır maliyetle kendi sunucunuzda barındırma
+- **Dağıtım seçenekleri** -- n8n Cloud deneme sürümünü kullanın veya Community Edition'ı n8n lisansı kapsamında kendi sunucunuzda barındırın
 
 E-posta iş akışlarını otomatikleştiriyor, yapay zeka sohbet botları oluşturuyor, belgeleri işliyor veya DevOps süreçlerini yönetiyor olun -- n8n, bu şablonların çalıştığı temel platformdur.
 
@@ -124,7 +132,9 @@ Bu koleksiyon, Gmail, Outlook ve IMAP'i kapsayan 9 adet n8n e-posta otomasyon ş
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | Outlook için yapay zeka destekli asistan. E-postaları işler, Airtable kurallarına göre kategorize eder ve Monday.com ile entegre çalışır. | Operasyon | [Link to Template](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | FT.com'dan finansal haberleri çıkarır ve günlük güncellemeleri Outlook gelen kutunuza iletir. | Yönetim | [Link to Template](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile Telegram botları nasıl otomatikleştirilir?
 
@@ -153,7 +163,9 @@ LangChain ve OpenAI ile yapay zeka sohbet botları, 55 dilde sesli metin çeviri
 | Translate Telegram audio messages with AI (55 supported languages) | Sesli mesajları alır, yazıya döker ve 50'den fazla dilde çeviri gönderir. | Destek | [Link to Template](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | Yapay zeka sohbet botunu uzun süreli bellek ve dinamik araç yönlendirme ile güçlendiren harici iş akışı. | Destek | [Link to Template](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Google Drive ve Google Sheets için en iyi n8n şablonları hangileri?
 
@@ -175,7 +187,9 @@ LangChain ve OpenAI ile yapay zeka sohbet botları, 55 dilde sesli metin çeviri
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Yapay zeka ile iş başvurularını tarar, İK'yı bilgilendirir ve verileri Google Sheets'e kaydeder. | İK | [Link to Template](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Google Forms üzerinden toplanan geri bildirimleri GPT-4 ile özetler. | Pazarlama | [Link to Template](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile WordPress nasıl otomatikleştirilir?
 
@@ -190,7 +204,9 @@ Bu bölümde 6 adet n8n WordPress otomasyon şablonu bulunmaktadır. Blog yazıl
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Supabase ve OpenAI kullanarak WordPress'e yapay zeka sohbet botu entegre eder. | Müşteri Desteği/Pazarlama | [Link to Template](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | Birkaç anahtar kelimeden yola çıkarak yapay zeka ile WordPress yazısı oluşturur. | Pazarlama/İçerik | [Link to Template](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### PDF ve belge işleme için hangi n8n şablonları var?
 
@@ -210,7 +226,9 @@ Bu bölümde 6 adet n8n WordPress otomasyon şablonu bulunmaktadır. Blog yazıl
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Vertex AI (Gemini) ile PDF ve görsellerden metin çıkarır ve CSV formatına dönüştürür. | Veri Çıkarma/BT | [Link to Template](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | LlamaParse ve OpenAI ile faturalardan yapılandırılmış veri çıkarır. | Finans/İdari | [Link to Template](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile Discord nasıl otomatikleştirilir?
 
@@ -222,7 +240,9 @@ Bu bölümde 3 adet n8n Discord otomasyon şablonu bulunmaktadır. Mesajları do
 | Send daily translated Calvin and Hobbes Comics to Discord | Calvin and Hobbes çizgi romanlarını günlük olarak alır, çevirir ve Discord'a gönderir. | Pazarlama/İçerik | [Link to Template](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | Yeni YouTube videolarını yapay zeka tarafından oluşturulan özetlerle Discord'da paylaşır. | Pazarlama | [Link to Template](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### En iyi n8n veritabanı ve depolama otomasyon şablonları hangileri?
 
@@ -236,7 +256,9 @@ Bu bölümde 3 adet n8n Discord otomasyon şablonu bulunmaktadır. Mesajları do
 | Supabase Insertion & Upsertion & Retrieval | Supabase'de vektör gömmeler ve meta veriler için ekleme, güncelleme ve sorgulama işlemleri. | Mühendislik | [Link to Template](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | LangChain yapay zeka ajanı ile SQLite veritabanını doğal dilde sorgulama imkanı. | Veri Analitiği | [Link to Template](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### DevOps ve sunucu otomasyonu için hangi n8n şablonları mevcut?
 
@@ -247,7 +269,9 @@ Bu bölümde 2 adet n8n DevOps ve sunucu otomasyon şablonu bulunmaktadır. Kiml
 | Linux System Update via Webhook | Kimlik doğrulamalı POST isteği ve SSH aracılığıyla Debian tabanlı sunucunuzu güncelleyin. | SSH Araçları | [Link to Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | n8n ve SSH ile kimlik doğrulamalı HTTP POST isteği aracılığıyla Docker Compose hizmetlerini başlatın veya durdurun. | SSH Araçları | [Link to Template](devops/docker-compose-controller.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile Airtable nasıl otomatikleştirilir?
 
@@ -261,7 +285,9 @@ Bu bölümde 2 adet n8n DevOps ve sunucu otomasyon şablonu bulunmaktadır. Kiml
 | Handling Job Application Submissions with AI and n8n Forms | Yapay zeka ile özgeçmişlerden bilgi çıkararak iş başvurularını otomatik işler. | İK | [Link to Template](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | OpenAI ile HubSpot Chat ve Airtable'ı entegre ederek otomatik yanıtlar ve müşteri etkileşimi yönetimi sağlar. | Satış | [Link to Template](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Notion için en iyi n8n şablonları hangileri?
 
@@ -280,7 +306,9 @@ Bu bölümde 2 adet n8n DevOps ve sunucu otomasyon şablonu bulunmaktadır. Kiml
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | E-postaları yapay zeka ile zenginleştirilmiş Notion görevlerine dönüştürür; çok kullanıcılı destek sunar. | Operasyon | [Link to Template](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | Büyük belgeleri parçalayıp Supabase vektör deposuna gömer; Notion'ı belge kaynağı olarak kullanır. | Mühendislik | [Link to Template](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile Slack nasıl otomatikleştirilir?
 
@@ -298,7 +326,9 @@ Bu bölümde 2 adet n8n DevOps ve sunucu otomasyon şablonu bulunmaktadır. Kiml
 | Slack slash commands AI Chat Bot | Slack slash komutları aracılığıyla erişilebilen yapay zeka sohbet botu. | BT | [Link to Template](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Sertifika durumu kontrolü, uyarı alma ve sertifika işlemleri için Venafi Cloud Slack botu. | Güvenlik | [Link to Template](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### OpenAI, LLM'ler ve yapay zeka ajanları için hangi n8n şablonları mevcut?
 
@@ -324,7 +354,9 @@ Bu bölümde 2 adet n8n DevOps ve sunucu otomasyon şablonu bulunmaktadır. Kiml
 | AI: Ask questions about any data source (using the n8n workflow retriever) | n8n iş akışı alıcısı ile çeşitli veri kaynakları hakkında soru sorma imkanı. | YZ/Veri Analizi/İş Akışı Otomasyonu | [Link to Template](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Podcast bölümlerini özetler ve Wikipedia bilgileriyle zenginleştirir. | İçerik Üretimi/YZ/Veri Analizi | [Link to Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile WhatsApp chatbotları nasıl oluşturulur?
 
@@ -337,7 +369,9 @@ Bu bölümde 4 adet n8n WhatsApp otomasyon şablonu bulunmaktadır. Yapay zeka v
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | OpenAI ile tam teşekküllü iş WhatsApp RAG sohbet botu oluşturur. | Müşteri Hizmetleri/YZ/Geliştirme | [Link to Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | WhatsApp mesajlarına profesyonel yapay zeka destekli yanıtlar sağlar. | Müşteri Hizmetleri/YZ/İletişim | [Link to Template](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Sosyal medya otomasyonu için en iyi n8n şablonları hangileri?
 
@@ -356,7 +390,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn ve daha fazlasını kapsayan 10 
 | Twitter Virtual AI Influencer | Sanal yapay zeka influencer'ının Twitter hesabını yönetir. | Pazarlama/YZ | [Link to Template](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | HTTP istekleri ile Twitter bannerını günceller. | Pazarlama/Geliştirme | [Link to Template](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Başka hangi n8n entegrasyon şablonları mevcut?
 
@@ -394,7 +430,9 @@ Bu bölümde geniş bir platform ve kullanım alanını kapsayan 27 ek n8n enteg
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | OpenAI ve Quickchart.io ile SQL sorgularından görselleştirmeler oluşturur. | Veri Analizi/Görselleştirme | [Link to Template](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Zoom toplantılarından toplantı özetleri, ClickUp görevleri ve takip planları oluşturur. | Verimlilik/İletişim | [Link to Template](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n ile formlar ve anketler nasıl otomatikleştirilir?
 
@@ -406,7 +444,9 @@ Bu bölümde 3 adet form ve anket otomasyon şablonu bulunmaktadır. n8n Forms a
 | Email Subscription Service with n8n Forms, Airtable and AI | n8n Forms ile e-posta aboneliklerini yönetir, verileri Airtable'da depolar ve yapay zeka ile işler. | Pazarlama/İletişim | [Link to Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | n8n Forms üzerinden gönderilen randevu taleplerini yapay zeka ile değerlendirir ve işler. | Satış/Destek | [Link to Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Yapay zeka araştırma, RAG ve veri analizi için hangi n8n şablonları var?
 
@@ -454,7 +494,9 @@ Bu koleksiyondaki en büyük kategori olan 39 adet yapay zeka araştırma, RAG v
 | Visual Regression Testing with Apify and AI Vision Model | Apify ve yapay zeka görüntü modeli ile görsel regresyon testi yaparak UI değişikliklerini tespit eder. | KG, YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Perplexity AI araştırmasını yapay zeka destekli içerik oluşturma için HTML'ye dönüştürür. | İçerik Üretimi, YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [Ücretsiz n8n hesabınızı oluşturun ve oluşturmaya başlayın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Herhangi bir iş akışını otomatikleştirin.** [n8n Cloud deneme sürümünü başlatın →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Diğer
 
@@ -464,8 +506,10 @@ Bu koleksiyondaki en büyük kategori olan 39 adet yapay zeka araştırma, RAG v
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Ücretsiz_n8n_Hesabı_Oluştur-Otomasyona_Başla-orange?style=for-the-badge" alt="Ücretsiz n8n Hesabı Oluştur" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 </p>
 
 ## SSS
@@ -473,14 +517,18 @@ Bu koleksiyondaki en büyük kategori olan 39 adet yapay zeka araştırma, RAG v
 ### Bu depodan bir n8n şablonunu nasıl içe aktarırım?
 
 Kullanmak istediğiniz şablonun `.json` dosyasını indirin. n8n örneğinizi (kendi sunucunuzda veya [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) üzerinde) açın, Workflows bölümüne gidin, "Import from File" seçeneğine tıklayın ve indirdiğiniz JSON dosyasını seçin. İş akışı düzenleyicinizde yapılandırmaya hazır şekilde görünecektir. İş akışını etkinleştirmeden önce bağlı her hizmet için kendi kimlik bilgilerinizi eklemeniz gerekecektir.
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### n8n nedir ve otomasyon için neden kullanmalıyım?
 
-n8n, 400'den fazla yerleşik entegrasyona sahip ücretsiz, açık kaynaklı bir iş akışı otomasyon platformudur. Zapier veya Make gibi SaaS alternatiflerin aksine, n8n kendi altyapınızda barındırılabilir ve verileriniz üzerinde tam kontrol sağlar. Görsel sürükle-bırak düzenleyici, yerleşik yapay zeka ve LLM desteği ve aktif bir topluluğa sahiptir. Bulut platformlarında [n8n'i ücretsiz kullanmaya başlayabilir](https://n8n.partnerlinks.io/h1pwwf5m4toe) veya kendi sunucunuza kurabilirsiniz.
+n8n, yüzlerce entegrasyona sahip fair-code ve kaynak kodu erişilebilir bir iş akışı otomasyon platformudur. Kendi altyapınızda barındırılabilir; görsel düzenleyici ile yapay zeka ve LLM desteği sunar. [n8n Cloud deneme sürümünü başlatabilir](https://n8n.partnerlinks.io/h1pwwf5m4toe) veya Community Edition'ı kendi sunucunuza kurabilirsiniz.
+<br />
+<small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 
 ### Bu şablonlar ücretsiz mi?
 
-Evet, bu depodaki tüm şablonlar tamamen ücretsiz olarak indirilebilir ve kullanılabilir. İnternetteki kamuya açık kaynaklardan toplanmış olup kolay erişim için burada paylaşılmaktadır. n8n'in kendisi açık kaynaklıdır ve kendi sunucunuzda ücretsiz barındırılabilir. n8n Cloud platformu da cömert limitli ücretsiz bir plan sunar, böylece hiçbir maliyet olmadan başlayabilirsiniz.
+Şablon dosyaları bu depodan ücretsiz indirilebilir; ancak her şablon özgün yazarının lisans koşullarına tabi olabilir. n8n fair-code'dur ve kaynak kodu erişilebilirdir; Community Edition kendi sunucunuzda barındırılabilir. n8n Cloud, deneme süresinin ardından ücretli planlar sunar.
 
 ### Kendi şablonlarımla katkıda bulunabilir miyim?
 
@@ -524,16 +572,20 @@ Katkılar memnuniyetle karşılanır. Paylaşmak istediğiniz bir n8n iş akış
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/280+_Şablonu_İçe_Aktar-Ücretsiz_n8n_Hesabı_Oluştur-orange?style=for-the-badge" alt="Şablonları İçe Aktar" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n otomasyon platformu" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Yönlendirme bağlantısı — bu proje uygun satın alımlardan komisyon alır.</small>
 </p>
 
 ---
 
-*Son güncelleme: Mart 2026*
+*Son güncelleme: Ağustos 2026*

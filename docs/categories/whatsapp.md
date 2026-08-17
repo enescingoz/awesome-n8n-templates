@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "WhatsApp Chatbot Templates for n8n | Awesome n8n Templates"
-description: "4 free n8n WhatsApp templates. Sales meeting prep with AI, first chatbot setup, RAG chatbot with OpenAI, and professional AI-powered message responses."
+description: "4 n8n WhatsApp templates. Sales meeting prep with AI, first chatbot setup, RAG chatbot with OpenAI, and professional AI-powered message responses."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / WhatsApp</nav>
@@ -10,7 +10,9 @@ description: "4 free n8n WhatsApp templates. Sales meeting prep with AI, first c
 
 This section includes 4 WhatsApp automation templates for n8n. Automate sales meeting preparation with AI and Apify, build your first WhatsApp chatbot, create a full business RAG chatbot powered by OpenAI, or set up professional AI-powered message responses. Ideal for customer service, sales, and business communication workflows.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Build WhatsApp Bots</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Build WhatsApp Bots</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -23,7 +25,9 @@ This section includes 4 WhatsApp automation templates for n8n. Automate sales me
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your WhatsApp Business API credentials
@@ -33,7 +37,9 @@ This section includes 4 WhatsApp automation templates for n8n. Automate sales me
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

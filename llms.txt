@@ -1,10 +1,10 @@
 # Awesome n8n Templates
 
-> The largest curated collection of 280+ free, ready-to-use n8n automation workflow templates on GitHub. Organized by platform (Gmail, Telegram, Slack, Discord, WhatsApp, Google Drive, Notion, WordPress) and use case (AI/LLM integration, email automation, social media, HR, DevOps, document processing). 19,000+ GitHub stars. Updated monthly. Created by Enes Cingoz.
+> A curated collection of 280+ n8n automation workflow template files. Organized by platform (Gmail, Telegram, Slack, Discord, WhatsApp, Google Drive, Notion, WordPress) and use case (AI/LLM integration, email automation, social media, HR, DevOps, document processing). Review, configure, and test each workflow before use. Created by Enes Cingoz.
 
 ## What is this repository?
 
-Awesome n8n Templates is an open-source collection of n8n workflow automation templates sourced from the community. n8n is an open-source workflow automation platform (similar to Zapier and Make) that can be self-hosted. Each template is a JSON file that can be imported directly into n8n to create a working automation workflow.
+Awesome n8n Templates is a curated collection of n8n workflow automation examples sourced from the community. n8n is a fair-code, source-available workflow automation platform that can be self-hosted. Each template is a JSON workflow example that should be reviewed, configured, and tested before use.
 
 ## Template Categories
 

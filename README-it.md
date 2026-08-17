@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> La piu grande raccolta open-source di template di automazione n8n su GitHub. Sfoglia oltre 280 modelli di workflow gratuiti e pronti da importare per Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets e decine di altre piattaforme. Aggiornato costantemente a marzo 2026.
+> Una raccolta curata di oltre 280 file di template per workflow n8n dedicati a Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets e decine di altre piattaforme. Verifica, configura e testa ogni workflow prima dell'uso. Aggiornato costantemente a agosto 2026.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Prova_n8n_Gratis-Inizia_ad_Automatizzare-orange?style=for-the-badge" alt="Prova n8n Gratis" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="piattaforma di automazione n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## Guida Rapida: Come Usare Questi Template
 
-1. **[Registrati su n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (gratuito e open-source)
+1. **[Registrati su n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (prova di n8n Cloud disponibile)
+   <br />
+   <small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 2. Scarica qualsiasi file template `.json` da questo repository
 3. In n8n, vai su **Workflows -> Import from File** e seleziona il file JSON
 4. Configura le tue credenziali per ogni servizio collegato
@@ -77,13 +83,15 @@
 
 ## Perche n8n?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) e una piattaforma di automazione dei workflow open-source che ti permette di collegare qualsiasi cosa a qualsiasi altra. A differenza delle alternative closed-source, n8n ti offre il pieno controllo sui tuoi dati e sulla tua infrastruttura. I vantaggi principali includono:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) e una piattaforma di automazione dei workflow fair-code con codice sorgente disponibile, che consente di collegare servizi e sistemi. Puo essere installata sulla propria infrastruttura, offrendo controllo su dati e sistemi. I vantaggi principali includono:
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
-- **Open-source e self-hostable** -- eseguilo sul tuo server senza vincoli con il fornitore
+- **Fair-code, source-available e self-hostable** -- eseguilo sul tuo server senza vincoli con il fornitore
 - **Oltre 400 integrazioni native** -- collegati virtualmente a qualsiasi servizio o API
 - **Editor visuale dei workflow** -- costruisci automazioni trascinando e rilasciando nodi, senza bisogno di codice
 - **Funzionalita AI native** -- supporto integrato per OpenAI, Claude, Gemini, LangChain e database vettoriali
-- **Gratuito per iniziare** -- piano gratuito generoso su n8n Cloud, oppure self-hosting a costo zero
+- **Opzioni di distribuzione** -- usa la prova di n8n Cloud o installa Community Edition sul tuo server secondo la licenza n8n
 
 Che tu stia automatizzando workflow email, costruendo chatbot AI, elaborando documenti o orchestrando pipeline DevOps, n8n fornisce le fondamenta su cui girano questi template.
 
@@ -124,7 +132,9 @@ Questa raccolta include 9 template di automazione email per n8n che coprono Gmai
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | Assistente AI per Outlook che elabora le email, sanifica il contenuto e assegna categorie usando regole da Airtable e Monday.com. | Ops | [Link al Template](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | Estrae notizie finanziarie da FT.com e le invia quotidianamente alla tua casella Outlook per aggiornamenti tempestivi sui mercati. | Dirigenza | [Link al Template](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come posso automatizzare i bot Telegram con n8n?
 
@@ -153,7 +163,9 @@ Esplora 20 template di automazione Telegram per n8n, inclusi chatbot AI con Lang
 | Translate Telegram audio messages with AI (55 supported languages) | Riceve messaggi vocali, li trascrive e invia traduzioni in oltre 50 lingue. | Supporto | [Link al Template](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | Workflow esterno che potenzia un chatbot AI con memoria a lungo termine e routing dinamico degli strumenti. | Supporto | [Link al Template](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali sono i migliori template n8n per Google Drive e Google Sheets?
 
@@ -175,7 +187,9 @@ Sfoglia 13 template di automazione per Google Drive e Google Sheets con n8n. Inc
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Automatizza lo screening dei candidati con AI, notifica le risorse umane e salva i dati in Google Sheet. | HR | [Link al Template](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Sintetizza il feedback raccolto tramite Google Forms e archiviato in Google Sheets usando GPT-4. | Marketing | [Link al Template](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come automatizzare WordPress con n8n?
 
@@ -190,7 +204,9 @@ Questa sezione presenta 6 template di automazione WordPress per n8n. Automatizza
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Integra un chatbot AI in WordPress usando Supabase e OpenAI per migliorare l'esperienza utente. | Assistenza Clienti/Marketing | [Link al Template](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | Usa l'AI per scrivere articoli WordPress partendo da poche parole chiave, semplificando la creazione di contenuti. | Marketing/Contenuti | [Link al Template](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali template n8n esistono per PDF e l'elaborazione di documenti?
 
@@ -210,7 +226,9 @@ Trova 11 template per l'elaborazione di PDF e documenti con n8n. Questi workflow
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Estrae testo da PDF e immagini usando Vertex AI (Gemini) e converte i dati in formato CSV. | Estrazione Dati/IT | [Link al Template](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | Estrae dati strutturati dalle fatture usando LlamaParse e OpenAI per un'analisi dettagliata. | Finanza/Amministrazione | [Link al Template](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come posso automatizzare Discord con n8n?
 
@@ -222,7 +240,9 @@ Questa sezione contiene 3 template di automazione Discord per n8n. Crea un bot D
 | Send daily translated Calvin and Hobbes Comics to Discord | Automatizza il recupero giornaliero dei fumetti Calvin e Hobbes, li traduce e li pubblica su Discord. | Marketing/Contenuti | [Link al Template](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | Condivide automaticamente nuovi video YouTube su Discord con riepiloghi generati dall'AI. | Marketing | [Link al Template](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali sono i migliori template n8n per database e storage?
 
@@ -236,7 +256,9 @@ Trova 5 template di automazione per database e storage con n8n. Chatta con Postg
 | Supabase Insertion & Upsertion & Retrieval | Dimostra operazioni di inserimento, aggiornamento e recupero con Supabase per embedding vettoriali e metadati. | Ingegneria | [Link al Template](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | Permette di interagire con un database SQLite tramite un agente AI LangChain con query in linguaggio naturale. | Analisi Dati | [Link al Template](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali template n8n sono disponibili per DevOps e l'automazione server?
 
@@ -247,7 +269,9 @@ Questa sezione include 2 template di automazione DevOps e server per n8n. Avvia 
 | Linux System Update via Webhook | Avvia aggiornamento del server Debian tramite richiesta POST autenticata e SSH. | SSH Tools | [Link al Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Avvia o arresta servizi Docker Compose sul server tramite richiesta HTTP POST autenticata con n8n + SSH. | SSH Tools | [Link al Template](devops/docker-compose-controller.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come automatizzare Airtable con n8n?
 
@@ -261,7 +285,9 @@ Sfoglia 5 template di automazione Airtable per n8n. Automatizza la gestione prog
 | Handling Job Application Submissions with AI and n8n Forms | Automatizza l'elaborazione delle candidature estraendo informazioni dai curriculum PDF con AI. | HR | [Link al Template](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | Integra un assistente OpenAI con HubSpot Chat e Airtable per risposte automatizzate e gestione interazioni. | Vendite | [Link al Template](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali sono i migliori template n8n per Notion?
 
@@ -280,7 +306,9 @@ Scopri 10 template di automazione Notion per n8n. Archivia feedback positivi da 
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | Trasforma le email in task potenziati dall'AI in Notion con supporto multi-utente, integrandosi con Gmail e Airtable. | Ops | [Link al Template](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | Gestisce documenti di grandi dimensioni suddividendoli in blocchi e caricandoli in un vector store Supabase con Notion come fonte. | Ingegneria | [Link al Template](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come posso automatizzare Slack con n8n?
 
@@ -298,7 +326,9 @@ Esplora 9 template di automazione Slack per n8n. Monitora feed RSS con riepilogh
 | Slack slash commands AI Chat Bot | Chatbot AI accessibile tramite comandi slash di Slack per interazioni rapide con modelli AI. | IT | [Link al Template](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Bot Slack per la gestione certificati con Venafi Cloud, con controllo stato e avvisi. | Sicurezza | [Link al Template](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali template n8n sono disponibili per OpenAI, LLM e agenti AI?
 
@@ -324,7 +354,9 @@ Questa e la categoria piu ampia con 17 template AI e LLM per n8n. Include demo a
 | AI: Ask questions about any data source (using the n8n workflow retriever) | Permette di fare domande su qualsiasi fonte dati usando il retriever workflow di n8n. | AI/Analisi Dati/Automazione Workflow | [Link al Template](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Sintetizza episodi podcast e arricchisce il riepilogo con informazioni da Wikipedia. | Creazione Contenuti/AI/Analisi Dati | [Link al Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come creare chatbot WhatsApp con n8n?
 
@@ -337,7 +369,9 @@ Questa sezione include 4 template di automazione WhatsApp per n8n. Automatizza l
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | Costruisce un chatbot RAG aziendale completo per WhatsApp con OpenAI. | Assistenza Clienti/AI/Sviluppo | [Link al Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | Abilita risposte professionali ai messaggi WhatsApp tramite AI. | Assistenza Clienti/AI/Comunicazione | [Link al Template](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali sono i migliori template n8n per l'automazione dei social media?
 
@@ -356,7 +390,9 @@ Esplora 10 template di automazione social media per n8n che coprono Instagram, T
 | Twitter Virtual AI Influencer | Gestisce l'account Twitter di un influencer virtuale AI. | Marketing/AI | [Link al Template](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | Aggiorna il banner Twitter tramite richieste HTTP. | Marketing/Sviluppo | [Link al Template](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali altri template di integrazione n8n sono disponibili?
 
@@ -394,7 +430,9 @@ Questa sezione include 27 template di integrazione aggiuntivi per n8n che copron
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | Crea visualizzazioni da query SQL usando OpenAI e Quickchart.io. | Analisi Dati/Visualizzazione | [Link al Template](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Crea riepiloghi delle riunioni, task ClickUp e programma follow-up dalle riunioni Zoom. | Produttivita/Comunicazione | [Link al Template](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Come automatizzare form e sondaggi con n8n?
 
@@ -406,7 +444,9 @@ Questa sezione contiene 3 template di automazione per form e sondaggi con n8n. C
 | Email Subscription Service with n8n Forms, Airtable and AI | Gestisce le iscrizioni email con n8n Forms, archivia i dati in Airtable e usa l'AI per l'elaborazione. | Marketing/Comunicazione | [Link al Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Usa l'AI per qualificare e gestire le richieste di appuntamento inviate tramite n8n Forms. | Vendite/Supporto | [Link al Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Quali template n8n esistono per ricerca AI, RAG e analisi dati?
 
@@ -454,7 +494,9 @@ Esplora 39 template di ricerca AI, RAG e analisi dati per n8n -- la categoria pi
 | Visual Regression Testing with Apify and AI Vision Model | Esegue test di regressione visuale con Apify e modello AI Vision per rilevare cambiamenti nell'interfaccia. | QA, Ricerca AI | [Visual Regression Testing with Apify and AI Vision Model.txt](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Trasforma ricerche Perplexity AI in contenuti HTML per la creazione di contenuti con AI. | Creazione Contenuti, Ricerca AI | [🔍 Perplexity Research to HTML_ AI-Powered Content Creation.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **Automatizza qualsiasi workflow.** [Crea il tuo account n8n gratuito e inizia a costruire ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Automatizza qualsiasi workflow.** [Avvia una prova di n8n Cloud →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Altro
 
@@ -464,8 +506,10 @@ Esplora 39 template di ricerca AI, RAG e analisi dati per n8n -- la categoria pi
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Crea_Account_n8n_Gratuito-Inizia_ad_Automatizzare-orange?style=for-the-badge" alt="Crea Account n8n Gratuito" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 </p>
 
 ## FAQ
@@ -473,14 +517,18 @@ Esplora 39 template di ricerca AI, RAG e analisi dati per n8n -- la categoria pi
 ### Come importo un template n8n da questo repository?
 
 Scarica il file `.json` del template che desideri utilizzare. Apri la tua istanza n8n (self-hosted o su [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe)), vai su Workflows, clicca su "Import from File" e seleziona il file JSON scaricato. Il workflow apparira nel tuo editor pronto per la configurazione. Dovrai aggiungere le tue credenziali per ogni servizio collegato prima di attivare il workflow.
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Cos'e n8n e perche dovrei usarlo per l'automazione?
 
-n8n e una piattaforma di automazione dei workflow gratuita e open-source con oltre 400 integrazioni native. A differenza delle alternative SaaS come Zapier o Make, n8n puo essere installato sul proprio server, dandoti il pieno controllo sui tuoi dati. Offre un editor visuale drag-and-drop, supporto nativo per AI e LLM, e una community attiva. Puoi [iniziare a usare n8n gratuitamente](https://n8n.partnerlinks.io/h1pwwf5m4toe) sulla loro piattaforma cloud o installarlo sul tuo server.
+n8n e una piattaforma di automazione dei workflow fair-code con codice sorgente disponibile e centinaia di integrazioni. Puo essere installata sulla propria infrastruttura e include un editor visuale e il supporto per AI e LLM. Puoi [avviare una prova di n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) o distribuire Community Edition sul tuo server.
+<br />
+<small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 
 ### Questi template sono gratuiti?
 
-Si, tutti i template in questo repository sono completamente gratuiti da scaricare e utilizzare. Sono stati raccolti da fonti pubblicamente disponibili su internet e condivisi qui per facilitarne l'accesso. n8n stesso e open-source e gratuito da self-hostare. La piattaforma n8n Cloud offre anche un piano gratuito con limiti generosi, cosi puoi iniziare senza alcun costo.
+I file dei template possono essere scaricati gratuitamente da questo repository, ma ogni template puo essere soggetto ai termini di licenza del suo autore originale. n8n e fair-code e il codice sorgente e disponibile; Community Edition puo essere installata sul proprio server. n8n Cloud offre una prova seguita da piani a pagamento.
 
 ### Posso contribuire con i miei template?
 
@@ -524,16 +572,20 @@ I contributi sono benvenuti. Se hai un template di workflow n8n da condividere, 
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Importa_280+_Template-Crea_Account_n8n_Gratuito-orange?style=for-the-badge" alt="Importa Template" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="piattaforma di automazione n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Link di affiliazione — questo progetto riceve una commissione sugli acquisti idonei.</small>
 </p>
 
 ---
 
-*Ultimo aggiornamento: marzo 2026*
+*Ultimo aggiornamento: agosto 2026*

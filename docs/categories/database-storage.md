@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Database & Storage Automation Templates for n8n | Awesome n8n Templates"
-description: "5 free n8n database templates. Chat with PostgreSQL using natural language, AI-generated SQL, MongoDB recommendations, Supabase vectors, and SQLite agents."
+description: "5 n8n database templates. Chat with PostgreSQL using natural language, AI-generated SQL, MongoDB recommendations, Supabase vectors, and SQLite agents."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / Database & Storage</nav>
@@ -10,7 +10,9 @@ description: "5 free n8n database templates. Chat with PostgreSQL using natural 
 
 Find 5 database and storage automation templates for n8n. Chat with PostgreSQL using natural language, generate SQL queries from schema with AI, get intelligent movie recommendations from MongoDB, manage Supabase vector embeddings, or query SQLite databases through a LangChain AI agent.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Automate Your Database</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Automate Your Database</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -24,7 +26,9 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your database credentials (PostgreSQL, MongoDB, SQLite, or Supabase)
@@ -34,7 +38,9 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)

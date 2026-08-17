@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> GitHub par n8n automation templates ka sabse bada open-source collection. 280+ muft, turant import hone wale workflow templates browse karein -- Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets aur darjanon aur platforms ke liye. March 2026 tak lagaataar updated.
+> Gmail, Telegram, OpenAI, WhatsApp, Slack, Discord, WordPress, Google Sheets aur darjanon anya platforms ke liye 280+ n8n workflow template files ka curated collection. Har workflow ko use karne se pehle review, configure aur test karein. August 2026 tak lagaataar updated.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/n8n_Muft_Aazmaayein-Automation_Shuru_Karein-orange?style=for-the-badge" alt="n8n Muft Aazmaayein" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n automation platform" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## Shuruat Kaise Karein: In Templates Ka Upyog
 
-1. **[n8n ke liye sign up karein](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (muft aur open-source)
+1. **[n8n ke liye sign up karein](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (n8n Cloud trial uplabdh hai)
+   <br />
+   <small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 2. Is repository se koi bhi `.json` template file download karein
 3. n8n mein **Workflows -> Import from File** par jaayein aur JSON select karein
 4. Har connected service ke liye apne credentials configure karein
@@ -77,13 +83,15 @@
 
 ## n8n Kyun?
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) ek open-source workflow automation platform hai jo aapko kisi bhi cheez ko kisi bhi cheez se connect karne deta hai. Band-source vikalpon ke vipareet, n8n aapko apne data aur infrastructure par poora niyantran deta hai. Pramukh fayde:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) ek fair-code, source-available workflow automation platform hai jo services aur systems ko connect karta hai. Ise apne infrastructure par self-host kiya ja sakta hai, jisse aapko apne data par control milta hai. Pramukh fayde:
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
-- **Open-source aur self-hostable** -- apne server par chalaayein, koi vendor lock-in nahin
+- **Fair-code, source-available aur self-hostable** -- apne server par chalaayein, koi vendor lock-in nahin
 - **400+ built-in integrations** -- lagbhag kisi bhi service ya API se connect karein
 - **Visual workflow editor** -- drag-and-drop se automation banaayein, coding ki zaroorat nahin
 - **AI-native kshamtaayein** -- OpenAI, Claude, Gemini, LangChain, aur vector databases ka built-in support
-- **Muft shuruat** -- n8n Cloud par generous free tier, ya apne server par bina kisi kharche ke host karein
+- **Deployment options** -- n8n Cloud trial use karein ya n8n license ke tahat Community Edition self-host karein
 
 Chahe aap email workflows automate kar rahe hon, AI chatbots bana rahe hon, documents process kar rahe hon, ya DevOps pipelines orchestrate kar rahe hon, n8n woh foundation provide karta hai jis par ye templates chalte hain.
 
@@ -124,7 +132,9 @@ Is collection mein Gmail, Outlook, aur IMAP ke liye 9 email automation templates
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | Outlook ke liye AI assistant jo Monday.com aur Airtable se juda hai. | Ops | [Link to Template](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | FT.com se daily financial news Outlook inbox mein bhejta hai. | Executive | [Link to Template](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se Telegram bots kaise automate karein?
 
@@ -153,7 +163,9 @@ Telegram ke liye 20 automation templates -- AI chatbots, LangChain, voice-to-tex
 | Translate Telegram audio messages with AI (55 supported languages) | Voice messages ka 50+ bhaashaon mein anuvaad karta hai. | Support | [Link to Template](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | AI chatbot mein long-term memory aur dynamic tool routing. | Support | [Link to Template](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Google Drive aur Google Sheets ke liye sabse achhe n8n templates
 
@@ -175,7 +187,9 @@ Google Drive aur Google Sheets ke liye 13 automation templates. RAG chatbots, Op
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | AI se aavedakon ki screening, HR ko notify, Sheet mein save. | HR | [Link to Template](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Google Forms feedback ka GPT-4 se saaransh. | Marketing | [Link to Template](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se WordPress kaise automate karein?
 
@@ -190,7 +204,9 @@ WordPress ke liye 6 automation templates -- AI se blog categorization, tagging, 
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | Supabase aur OpenAI se WordPress mein AI chatbot. | Support/Marketing | [Link to Template](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | Kuch keywords se AI se WordPress post likhta hai. | Marketing/Content | [Link to Template](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### PDF aur document processing ke liye kaun se n8n templates hain?
 
@@ -210,7 +226,9 @@ PDF aur document processing ke liye 11 templates. AI-powered PDF Q&A, resume par
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | Vertex AI se PDF/image se text nikalkar CSV mein save. | Data/IT | [Link to Template](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | LlamaParse aur OpenAI se invoices se data extraction. | Finance/Admin | [Link to Template](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se Discord kaise automate karein?
 
@@ -222,7 +240,9 @@ Discord ke liye 3 automation templates. AI-powered bot jo messages route karta h
 | Send daily translated Calvin and Hobbes Comics to Discord | Daily Calvin and Hobbes comics ka anuvaad karke Discord par post. | Marketing/Content | [Link to Template](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | YouTube videos ka AI summary Discord par share karta hai. | Marketing | [Link to Template](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Database aur storage automation ke sabse achhe n8n templates
 
@@ -236,7 +256,9 @@ Database aur storage ke liye 5 automation templates. PostgreSQL se natural langu
 | Supabase Insertion & Upsertion & Retrieval | Supabase mein vector embeddings ka insertion aur retrieval. | Engineering | [Link to Template](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | LangChain AI Agent se SQLite se baat karein. | Data Analytics | [Link to Template](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### DevOps aur server automation ke liye kaun se n8n templates hain?
 
@@ -247,7 +269,9 @@ DevOps aur server automation ke liye 2 templates. Webhook se SSH dwara Linux sys
 | Linux System Update via Webhook | Authenticated POST aur SSH se server update trigger karein. | SSH Tools | [Link to Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | HTTP POST se Docker Compose services start/stop karein. | SSH Tools | [Link to Template](devops/docker-compose-controller.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se Airtable kaise automate karein?
 
@@ -261,7 +285,9 @@ Airtable ke liye 5 automation templates. Fireflies transcripts se project manage
 | Handling Job Application Submissions with AI and n8n Forms | AI se job applications ka resume parsing aur processing. | HR | [Link to Template](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | HubSpot Chat ke liye OpenAI+Airtable assistant. | Sales | [Link to Template](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Notion ke liye sabse achhe n8n templates
 
@@ -280,7 +306,9 @@ Notion ke liye 10 automation templates. Typeform feedback sentiment analysis, Hu
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | Emails ko AI tasks mein badalkar Notion mein save karta hai. | Ops | [Link to Template](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | Bade documents ko chunk karke Supabase vector store mein store. | Engineering | [Link to Template](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se Slack kaise automate karein?
 
@@ -298,7 +326,9 @@ Slack ke liye 9 automation templates. RSS feeds monitoring, Google Gemini Slack 
 | Slack slash commands AI Chat Bot | Slack slash commands se AI chatbot. | IT | [Link to Template](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Slack se Venafi Cloud certificate management. | Suraksha | [Link to Template](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### OpenAI, LLMs aur AI agents ke liye kaun se n8n templates hain?
 
@@ -324,7 +354,9 @@ Sabse badi category -- 17 AI aur LLM templates. Advanced AI agent demos, web scr
 | AI: Ask questions about any data source (using the n8n workflow retriever) | Kisi bhi data source se sawaal poochein. | AI/Data | [Link to Template](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | Podcast ka AI saaransh Wikipedia se enrich karta hai. | Content/AI | [Link to Template](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se WhatsApp chatbots kaise banaayein?
 
@@ -337,7 +369,9 @@ WhatsApp ke liye 4 automation templates. AI+Apify se sales meeting prep, pehla W
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | OpenAI se complete business WhatsApp RAG chatbot. | Support/AI | [Link to Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | WhatsApp messages ka professional AI jawaab. | Support/AI | [Link to Template](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Social media automation ke liye sabse achhe n8n templates
 
@@ -356,7 +390,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn ke liye 10 social media template
 | Twitter Virtual AI Influencer | Virtual AI influencer ka Twitter account manage karta hai. | Marketing/AI | [Link to Template](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | HTTP request se Twitter banner update karta hai. | Marketing/Dev | [Link to Template](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Anya n8n integration templates
 
@@ -394,7 +430,9 @@ Instagram, Twitter/X, Reddit, YouTube, LinkedIn ke liye 10 social media template
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | OpenAI aur Quickchart.io se SQL queries ka visualization. | Data/Analytics | [Link to Template](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | Zoom meetings ka AI summary, ClickUp tasks aur follow-ups. | Productivity | [Link to Template](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n se forms aur surveys kaise automate karein?
 
@@ -406,7 +444,9 @@ Forms aur surveys ke liye 3 automation templates. AI-powered conversational inte
 | Email Subscription Service with n8n Forms, Airtable and AI | n8n Forms aur Airtable se email subscription management. | Marketing | [Link to Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | AI se n8n Forms dwara appointment requests qualify. | Sales/Support | [Link to Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### AI research, RAG aur data analysis ke liye kaun se n8n templates hain?
 
@@ -454,7 +494,9 @@ Forms aur surveys ke liye 3 automation templates. AI-powered conversational inte
 | Visual Regression Testing with Apify and AI Vision Model | Apify+AI Vision se visual regression testing. | QA/AI | [Visual Regression Testing with Apify and AI Vision Model.txt](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Perplexity AI research ko HTML content mein convert. | Content/AI | [🔍 Perplexity Research to HTML_ AI-Powered Content Creation.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **Koi bhi workflow automate karein.** [Apna muft n8n account banaayein aur building shuru karein ->](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **Koi bhi workflow automate karein.** [n8n Cloud trial shuru karein →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Anya
 
@@ -464,8 +506,10 @@ Forms aur surveys ke liye 3 automation templates. AI-powered conversational inte
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Muft_n8n_Account_Banaayein-Automation_Shuru_Karein-orange?style=for-the-badge" alt="Muft n8n Account Banaayein" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 </p>
 
 ## FAQ
@@ -473,14 +517,18 @@ Forms aur surveys ke liye 3 automation templates. AI-powered conversational inte
 ### Is repository se n8n template kaise import karein?
 
 Kisi bhi template ki `.json` file download karein. Apna n8n instance kholein (self-hosted ya [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) par), Workflows par jaayein, "Import from File" par click karein, aur download ki gayi JSON file select karein. Workflow aapke editor mein configuration ke liye taiyaar dikhai dega. Workflow activate karne se pehle har connected service ke liye apne credentials add karne honge.
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### n8n kya hai aur automation ke liye ise kyun use karein?
 
-n8n ek muft, open-source workflow automation platform hai jismein 400+ built-in integrations hain. Zapier ya Make jaise SaaS vikalpon ke vipareet, n8n ko apne infrastructure par self-host kiya ja sakta hai, jisse aapke data par poora niyantran rahta hai. Ismein visual drag-and-drop editor, native AI aur LLM support, aur ek active community hai. Aap [n8n muft mein shuru kar sakte hain](https://n8n.partnerlinks.io/h1pwwf5m4toe) unke cloud platform par ya apne server par deploy kar sakte hain.
+n8n ek fair-code, source-available workflow automation platform hai jismein saikadon integrations hain. Ise apne infrastructure par self-host kiya ja sakta hai aur ismein visual editor ke saath AI aur LLM support bhi hai. Aap [n8n Cloud trial shuru kar sakte hain](https://n8n.partnerlinks.io/h1pwwf5m4toe) ya Community Edition apne server par deploy kar sakte hain.
+<br />
+<small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 
 ### Kya ye templates muft hain?
 
-Haan, is repository ke sabhi templates poori tarah se muft hain download aur use ke liye. Ye internet par publicly uplabdh sources se ikattha kiye gaye hain aur yahaan aasaan pahunch ke liye saajha kiye gaye hain. n8n khud open-source hai aur self-host karne ke liye muft hai. n8n Cloud platform bhi generous limits ke saath muft tier pradan karta hai, toh aap bina kisi kharche ke shuru kar sakte hain.
+Template files is repository se bina shulk download ki ja sakti hain, lekin har template apne mool lekhak ki license sharton ke adheen ho sakta hai. n8n fair-code aur source-available hai; Community Edition self-host ki ja sakti hai. n8n Cloud trial ke baad paid plans deta hai.
 
 ### Kya main apne templates contribute kar sakta hoon?
 
@@ -524,16 +572,20 @@ Yogdaan ka swaagat hai. Agar aapke paas saajha karne ke liye n8n workflow templa
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/280+_Templates_Import_Karein-Muft_n8n_Account_Banaayein-orange?style=for-the-badge" alt="Templates Import Karein" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n automation platform" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* Referral link — eligible purchases par is project ko commission milta hai.</small>
 </p>
 
 ---
 
-*Aakhri baar update kiya gaya: March 2026*
+*Aakhri baar update kiya gaya: August 2026*

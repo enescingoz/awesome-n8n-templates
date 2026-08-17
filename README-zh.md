@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> GitHub 上最大的 n8n 自动化模板开源合集。浏览 280+ 个免费、可直接导入的工作流模板，涵盖 Gmail、Telegram、OpenAI、WhatsApp、Slack、Discord、WordPress、Google Sheets 等数十个平台。持续更新，截至 2026 年 3 月。
+> 精选收录 280+ 个 n8n 工作流模板文件，涵盖 Gmail、Telegram、OpenAI、WhatsApp、Slack、Discord、WordPress、Google Sheets 等数十个平台。使用前请检查、配置并测试每个工作流。持续更新，截至 2026 年 8 月。
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/免费试用_n8n-立即开始自动化-orange?style=for-the-badge" alt="免费试用 n8n" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n 自动化平台" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## 快速上手：如何使用这些模板
 
-1. **[注册 n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)**（免费且开源）
+1. **[注册 n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)**（提供 n8n Cloud 试用）
+   <br />
+   <small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 2. 从本仓库下载任意 `.json` 模板文件
 3. 在 n8n 中，进入 **Workflows -> Import from File**，选择下载的 JSON 文件
 4. 为每个连接的服务配置你的凭据
@@ -77,13 +83,15 @@
 
 ## 为什么选择 n8n？
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) 是一个开源的工作流自动化平台，让你可以将任何服务连接到一起。与闭源替代方案不同，n8n 让你完全掌控自己的数据和基础设施。核心优势包括：
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) 是一个采用 fair-code、源代码可用的工作流自动化平台，可连接各种服务和系统。它支持自托管，让你能够管理自己的数据和基础设施。核心优势包括：
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
-- **开源且可自托管** -- 在你自己的服务器上运行，无供应商锁定
+- **Fair-code、源代码可用且支持自托管** -- 在你自己的服务器上运行，无供应商锁定
 - **400+ 内置集成** -- 几乎可以连接任何服务或 API
 - **可视化工作流编辑器** -- 通过拖放节点构建自动化，无需编码
 - **AI 原生能力** -- 内置支持 OpenAI、Claude、Gemini、LangChain 和向量数据库
-- **免费起步** -- n8n Cloud 提供慷慨的免费额度，也可零成本自托管
+- **部署选项** -- 使用 n8n Cloud 试用，或根据 n8n 许可证自托管 Community Edition
 
 无论你是在自动化邮件工作流、构建 AI 聊天机器人、处理文档，还是编排 DevOps 流水线，n8n 都能为这些模板提供运行基础。
 
@@ -124,7 +132,9 @@
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | 一个由AI驱动的Outlook助手，处理邮件，清理内容，并使用来自Airtable的规则分配类别。与Monday.com集成以提供联系支持。 | 运营 | [模板链接](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | 从FT.com提取财经新闻并将每日更新发送到您的Outlook收件箱。自动化内容提取和邮件传递以获取及时的市场洞察。 | 执行 | [模板链接](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 实现 Telegram 机器人自动化？
 
@@ -153,7 +163,9 @@
 | Translate Telegram audio messages with AI (55 supported languages) | 接收语音消息，转录它们，并以超过50种语言发送回翻译。 | 支持 | [模板链接](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | 外部工作流程，通过长期记忆和动态工具路由功能增强AI聊天机器人。 | 支持 | [模板链接](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些好用的 n8n Google Drive 和 Google Sheets 模板？
 
@@ -175,7 +187,9 @@
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | 使用AI自动化筛选工作申请人，通知HR合格的候选人，并将申请人数据保存到Google Sheet中。 | HR | [模板链接](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | 使用OpenAI的GPT-4总结通过Google Forms收集并存储在Google Sheets中的反馈，从调查回复中提供快速洞察。 | 营销 | [模板链接](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 自动化 WordPress？
 
@@ -190,7 +204,9 @@
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | 此工作流程使用Supabase和OpenAI将AI聊天机器人集成到WordPress中，通过提供智能交互来增强用户体验。 | 客户支持/营销 | [模板链接](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | 此工作流程使用AI基于几个关键词撰写WordPress文章，简化内容创建过程。 | 营销/内容 | [模板链接](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些 n8n 模板用于 PDF 和文档处理？
 
@@ -210,7 +226,9 @@
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | 此工作流程使用Vertex AI（Gemini）从PDF和图像中提取文本，基于文件类型路由，并将提取的数据转换为CSV格式。 | 数据提取/IT | [模板链接](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | 此工作流程使用LlamaParse和OpenAI从发票中提取结构化数据，然后使用结构化输出解析器进行详细的发票数据提取。 | 财务/管理 | [模板链接](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 实现 Discord 自动化？
 
@@ -222,7 +240,9 @@
 | Send daily translated Calvin and Hobbes Comics to Discord | 此工作流程自动化每日检索Calvin和Hobbes漫画，将对话翻译成英语和韩语（或其他语言），并将它们发布到Discord。 | 营销/内容 | [模板链接](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | 此工作流程自动在Discord上分享新的YouTube视频以及AI生成的内容摘要，利用字幕数据。 | 营销 | [模板链接](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些好用的 n8n 数据库和存储自动化模板？
 
@@ -236,7 +256,9 @@
 | Supabase Insertion & Upsertion & Retrieval | 此工作流程演示如何对Supabase执行插入、更新和检索操作，特别是处理向量嵌入和关联元数据。 | 工程 | [模板链接](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | 此工作流程允许用户使用LangChain AI代理与SQLite数据库交互，实现自然语言查询和从数据库检索数据。 | 数据分析 | [模板链接](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些 n8n 模板用于 DevOps 和服务器自动化？
 
@@ -247,7 +269,9 @@
 | Linux System Update via Webhook | 通过经过身份验证的 POST 请求和 SSH 触发 Debian 系服务器的更新和升级。 | [模板链接](devops/linux-update-via-webhook.json) |
 | Docker Compose Controller via Webhook | 通过经过身份验证的 HTTP POST 请求，使用 n8n + SSH 在服务器上启动或停止 Docker Compose 服务。 | [模板链接](devops/docker-compose-controller.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 自动化 Airtable？
 
@@ -261,7 +285,9 @@
 | Handling Job Application Submissions with AI and n8n Forms | 此工作流程通过使用AI从简历（PDF）中提取信息来自动化工作申请提交的处理，将其解析为结构化格式，并可能存储在Airtable中。 | HR | [模板链接](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | 此工作流程将OpenAI助手与HubSpot聊天和Airtable集成，以提供自动回复并管理客户交互。它获取聊天消息，用AI处理它们，并可以在Airtable中存储相关信息。 | 销售 | [模板链接](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些好用的 n8n Notion 模板？
 
@@ -280,7 +306,9 @@
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | 将邮件转换为Notion中的AI增强任务，支持多用户。它与Gmail集成以触发邮件，与Airtable集成以路由，与Softr集成以提供用户界面。 | 运营 | [模板链接](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | 通过将大型文档分割成块，生成嵌入，并将它们更新到Supabase向量存储中来管理大型文档，Notion作为文档源。 | 工程 | [模板链接](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 实现 Slack 自动化？
 
@@ -298,7 +326,9 @@
 | Slack slash commands AI Chat Bot | 实现可通过Slack斜杠命令访问的AI聊天机器人，处理用户命令，与AI模型交互，并在Slack内响应。 | IT | [模板链接](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | 提供与Venafi Cloud交互以进行证书管理的Slack机器人，允许用户检查证书状态、接收警报或通过Slack请求证书操作。 | 安全 | [模板链接](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些 n8n 模板用于 OpenAI、LLM 和 AI Agent？
 
@@ -324,7 +354,9 @@
 | AI: Ask questions about any data source (using the n8n workflow retriever) | 允许用户使用n8n工作流程检索器询问各种数据源的问题。 | AI/数据分析/工作流程自动化 | [模板链接](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | 使用AI总结播客集并使用维基百科的信息增强摘要。 | 内容创建/AI/数据分析 | [模板链接](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 构建 WhatsApp 聊天机器人？
 
@@ -337,7 +369,9 @@
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | 此工作流程使用OpenAI构建完整的商业WhatsApp AI驱动RAG聊天机器人。 | 客户服务/AI/开发 | [模板链接](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | 此工作流程实现专业的AI驱动WhatsApp消息回复。 | 客户服务/AI/沟通 | [模板链接](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些好用的 n8n 社交媒体自动化模板？
 
@@ -356,7 +390,9 @@
 | Twitter Virtual AI Influencer | 管理虚拟AI影响者的Twitter账户。 | 营销/AI | [模板链接](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | 使用HTTP请求更新Twitter横幅。 | 营销/开发 | [模板链接](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 还有哪些其他 n8n 集成模板可用？
 
@@ -394,7 +430,9 @@
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | 使用OpenAI和Quickchart.io从SQL查询创建可视化。 | 数据分析/可视化 | [模板链接](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | 从Zoom会议创建会议摘要、ClickUp任务并安排跟进。 | 生产力/沟通 | [模板链接](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 如何使用 n8n 自动化表单和调查？
 
@@ -406,7 +444,9 @@
 | Email Subscription Service with n8n Forms, Airtable and AI | 使用n8n表单管理邮件订阅，在Airtable中存储数据，并使用AI进行处理。 | 营销/沟通 | [模板链接](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | 使用AI筛选和处理通过n8n表单提交的预约请求。 | 销售/支持 | [模板链接](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 有哪些 n8n 模板用于 AI 研究、RAG 和数据分析？
 
@@ -454,7 +494,9 @@
 | Visual Regression Testing with Apify and AI Vision Model | 使用Apify和AI视觉模型执行视觉回归测试以检测UI变化。 | QA，AI研究 | [视觉回归测试.txt](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | 将Perplexity AI研究转换为HTML内容以进行AI驱动的内容创建。 | 内容创建，AI研究 | [🔍 Perplexity研究到HTML.txt](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **自动化任何工作流程。** [创建免费 n8n 账户，开始构建 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **自动化任何工作流程。** [开始 n8n Cloud 试用 →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 其他
 
@@ -464,8 +506,10 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/创建免费_n8n_账户-开始自动化-orange?style=for-the-badge" alt="Create Free n8n Account" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 </p>
 
 ## 常见问题
@@ -473,14 +517,18 @@
 ### 如何从本仓库导入 n8n 模板？
 
 下载你想使用的模板的 `.json` 文件。打开你的 n8n 实例（自托管或 [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) 均可），导航到 Workflows，点击 "Import from File"，然后选择下载的 JSON 文件。工作流将出现在你的编辑器中，可以直接配置使用。激活工作流前，你需要为每个连接的服务添加自己的凭据。
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 什么是 n8n？为什么应该用它来做自动化？
 
-n8n 是一个免费的开源工作流自动化平台，内置超过 400 种集成。与 Zapier 或 Make 等 SaaS 替代方案不同，n8n 可以自托管在你自己的基础设施上，让你完全掌控数据。它具有可视化拖放编辑器、原生 AI 和大语言模型支持，以及活跃的社区。你可以在 n8n 的云平台上[免费开始使用 n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)，也可以部署到你自己的服务器上。
+n8n 是一个采用 fair-code、源代码可用的工作流自动化平台，提供数百种集成。它可以自托管在你的基础设施上，并提供可视化编辑器以及 AI 和大语言模型支持。你可以[开始 n8n Cloud 试用](https://n8n.partnerlinks.io/h1pwwf5m4toe)，也可以在自己的服务器上部署 Community Edition。
+<br />
+<small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 
 ### 这些模板是免费使用的吗？
 
-是的，本仓库中的所有模板完全免费下载和使用。它们是从互联网上公开可用的来源收集而来，在此分享以便于访问。n8n 本身是开源的，可以免费自托管。n8n Cloud 平台也提供额度充裕的免费层级，因此你可以零成本开始使用。
+模板文件可以从本仓库免费下载，但各模板可能受其原作者许可条款约束。n8n 采用 fair-code 且源代码可用；Community Edition 可以自托管。n8n Cloud 提供试用，之后使用付费方案。
 
 ### 我可以贡献自己的模板吗？
 
@@ -524,16 +572,20 @@ n8n 是一个免费的开源工作流自动化平台，内置超过 400 种集�
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/导入_280+_模板-创建免费_n8n_账户-orange?style=for-the-badge" alt="导入模板" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="n8n 自动化平台" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* 推荐链接 — 本项目会从符合条件的购买中获得佣金。</small>
 </p>
 
 ---
 
-*最后更新：2026 年 3 月*
+*最后更新：2026 年 8 月*

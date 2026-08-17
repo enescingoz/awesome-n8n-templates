@@ -1,6 +1,6 @@
 # Awesome n8n Templates
 
-> أكبر مجموعة مفتوحة المصدر لقوالب أتمتة n8n على GitHub. تصفّح أكثر من 280 قالب عمل مجاني وجاهز للاستيراد يغطي Gmail وTelegram وOpenAI وWhatsApp وSlack وDiscord وWordPress وGoogle Sheets وعشرات المنصات الأخرى. يُحدَّث باستمرار حتى مارس 2026.
+> مجموعة منسّقة تضم أكثر من 280 ملف قالب لسير عمل n8n لخدمات Gmail وTelegram وOpenAI وWhatsApp وSlack وDiscord وWordPress وGoogle Sheets وعشرات المنصات الأخرى. راجع كل سير عمل واضبطه واختبره قبل الاستخدام. يُحدَّث باستمرار حتى أغسطس 2026.
 
 <p align="center">
   <a href="https://trendshift.io/repositories/14621" target="_blank">
@@ -20,14 +20,18 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Try_n8n_Free-Start_Automating-orange?style=for-the-badge" alt="جرّب n8n مجاناً" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="منصة أتمتة n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 </p>
 
 ---
@@ -67,7 +71,9 @@
 
 ## البداية السريعة: كيفية استخدام هذه القوالب
 
-1. **[سجّل في n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (مجاني ومفتوح المصدر)
+1. **[سجّل في n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe)** (تتوفر تجربة n8n Cloud)
+   <br />
+   <small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 2. حمّل أي ملف قالب بصيغة `.json` من هذا المستودع
 3. في n8n، انتقل إلى **Workflows ثم Import from File** واختر ملف JSON
 4. أضف بيانات الاعتماد الخاصة بك لكل خدمة متصلة
@@ -77,13 +83,15 @@
 
 ## لماذا n8n؟
 
-[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) هي منصة أتمتة سير العمل مفتوحة المصدر التي تتيح لك ربط أي شيء بكل شيء. على عكس البدائل مغلقة المصدر، تمنحك n8n تحكماً كاملاً في بياناتك وبنيتك التحتية. من أبرز مزاياها:
+[n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) هي منصة أتمتة سير عمل بنموذج fair-code وكود مصدر متاح، وتتيح ربط الخدمات والأنظمة. ويمكن استضافتها ذاتياً، مما يمنحك التحكم في بياناتك وبنيتك التحتية. من أبرز مزاياها:
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
-- **مفتوحة المصدر وقابلة للاستضافة الذاتية** -- شغّلها على خادمك الخاص دون تقييد من مزوّد
+- **Fair-code، والكود المصدري متاح، وقابلة للاستضافة الذاتية** -- شغّلها على خادمك الخاص دون تقييد من مزوّد
 - **أكثر من 400 تكامل مدمج** -- اتصل بأي خدمة أو واجهة برمجية تقريباً
 - **محرر مرئي لسير العمل** -- ابنِ الأتمتة بالسحب والإفلات بدون برمجة
 - **قدرات ذكاء اصطناعي أصيلة** -- دعم مدمج لـ OpenAI وClaude وGemini وLangChain وقواعد بيانات المتجهات
-- **مجاني للبدء** -- طبقة مجانية سخية على n8n Cloud أو استضافة ذاتية بلا تكلفة
+- **خيارات النشر** -- استخدم تجربة n8n Cloud أو استضف Community Edition ذاتياً وفق ترخيص n8n
 
 سواء كنت تؤتمت سير عمل البريد الإلكتروني أو تبني بوتات ذكاء اصطناعي أو تعالج مستندات أو تنسّق أنابيب DevOps، توفر n8n الأساس الذي تعمل عليه هذه القوالب.
 
@@ -124,7 +132,9 @@
 | Microsoft Outlook AI Email Assistant with contact support from Monday and Airtable | مساعد بريد Outlook ذكي مع دعم جهات اتصال من Monday وAirtable | عمليات | [رابط القالب](Gmail_and_Email_Automation/Microsoft%20Outlook%20AI%20Email%20Assistant%20with%20contact%20support%20from%20Monday%20and%20Airtable.json) |
 | 📈 Receive Daily Market News from FT.com to your Microsoft outlook inbox | استقبال أخبار السوق اليومية من FT.com إلى Outlook | إدارة | [رابط القالب](Gmail_and_Email_Automation/📈%20Receive%20Daily%20Market%20News%20from%20FT.com%20to%20your%20Microsoft%20outlook%20inbox.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف يمكنني أتمتة بوتات Telegram باستخدام n8n؟
 
@@ -153,7 +163,9 @@
 | Translate Telegram audio messages with AI (55 supported languages) | ترجمة الرسائل الصوتية بأكثر من 50 لغة | دعم | [رابط القالب](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | تعزيز بوت الدردشة بذاكرة طويلة وتوجيه أدوات ديناميكي | دعم | [رابط القالب](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما أفضل قوالب n8n لـ Google Drive وGoogle Sheets؟
 
@@ -175,7 +187,9 @@
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | فرز المتقدمين بالذكاء الاصطناعي وإبلاغ الموارد البشرية | موارد بشرية | [رابط القالب](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | تلخيص تعليقات النماذج في Google Sheets عبر GPT-4 | تسويق | [رابط القالب](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف أقوم بأتمتة WordPress باستخدام n8n؟
 
@@ -190,7 +204,9 @@
 | WordPress - AI Chatbot to enhance user experience - with Supabase and OpenAI | بوت دردشة ذكي لتحسين تجربة مستخدمي WordPress | دعم/تسويق | [رابط القالب](WordPress/WordPress%20-%20AI%20Chatbot%20to%20enhance%20user%20experience%20-%20with%20Supabase%20and%20OpenAI.json) |
 | Write a WordPress post with AI (starting from a few keywords) | كتابة مقال WordPress من كلمات مفتاحية قليلة بالذكاء الاصطناعي | تسويق/محتوى | [رابط القالب](WordPress/Write%20a%20WordPress%20post%20with%20AI%20(starting%20from%20a%20few%20keywords).json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما قوالب n8n الموجودة لمعالجة PDF والمستندات؟
 
@@ -210,7 +226,9 @@
 | Extract text from PDF and image using Vertex AI (Gemini) into CSV | استخراج النصوص من PDF والصور إلى CSV عبر Vertex AI | استخراج بيانات | [رابط القالب](PDF_and_Document_Processing/Extract%20text%20from%20PDF%20and%20image%20using%20Vertex%20AI%20(Gemini)%20into%20CSV.json) |
 | Invoice data extraction with LlamaParse and OpenAI | استخراج بيانات الفواتير عبر LlamaParse وOpenAI | مالية/إدارة | [رابط القالب](PDF_and_Document_Processing/Invoice%20data%20extraction%20with%20LlamaParse%20and%20OpenAI.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف يمكنني أتمتة Discord باستخدام n8n؟
 
@@ -222,7 +240,9 @@
 | Send daily translated Calvin and Hobbes Comics to Discord | نشر قصص Calvin and Hobbes المترجمة يومياً على Discord | تسويق/محتوى | [رابط القالب](Discord/Send%20daily%20translated%20Calvin%20and%20Hobbes%20Comics%20to%20Discord.json) |
 | Share YouTube Videos with AI Summaries on Discord | مشاركة فيديوهات YouTube مع ملخصات ذكية على Discord | تسويق | [رابط القالب](Discord/Share%20YouTube%20Videos%20with%20AI%20Summaries%20on%20Discord.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما أفضل قوالب n8n لأتمتة قواعد البيانات والتخزين؟
 
@@ -236,7 +256,9 @@
 | Supabase Insertion & Upsertion & Retrieval | إدراج واسترجاع متجهات البيانات في Supabase | هندسة | [رابط القالب](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | استعلام من SQLite بلغة طبيعية عبر وكيل LangChain | تحليل بيانات | [رابط القالب](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما قوالب n8n المتاحة لأتمتة DevOps والخوادم؟
 
@@ -247,7 +269,9 @@
 | Linux System Update via Webhook | تحديث خادم Linux عبر webhook مؤمّن وSSH | SSH Tools | [رابط القالب](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | تشغيل أو إيقاف خدمات Docker Compose عبر HTTP POST وSSH | SSH Tools | [رابط القالب](devops/docker-compose-controller.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف أقوم بأتمتة Airtable باستخدام n8n؟
 
@@ -261,7 +285,9 @@
 | Handling Job Application Submissions with AI and n8n Forms | معالجة طلبات التوظيف واستخراج بيانات السير الذاتية بالذكاء الاصطناعي | موارد بشرية | [رابط القالب](Airtable/Handling%20Job%20Application%20Submissions%20with%20AI%20and%20n8n%20Forms.json) |
 | vAssistant for Hubspot Chat using OpenAi and Airtable | مساعد ذكي لـ HubSpot Chat مع OpenAI وAirtable | مبيعات | [رابط القالب](Airtable/vAssistant%20for%20Hubspot%20Chat%20using%20OpenAi%20and%20Airtable.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما أفضل قوالب n8n لـ Notion؟
 
@@ -280,7 +306,9 @@
 | Turn Emails into AI-Enhanced Tasks in Notion (Multi-User Support) with Gmail, Airtable and Softr | تحويل البريد إلى مهام ذكية في Notion متعددة المستخدمين | عمليات | [رابط القالب](Notion/Turn%20Emails%20into%20AI-Enhanced%20Tasks%20in%20Notion%20(Multi-User%20Support)%20with%20Gmail,%20Airtable%20and%20Softr.json) |
 | Upsert huge documents in a vector store with Supabase and Notion | تخزين المستندات الكبيرة كمتجهات في Supabase من Notion | هندسة | [رابط القالب](Notion/Upsert%20huge%20documents%20in%20a%20vector%20store%20with%20Supabase%20and%20Notion.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف يمكنني أتمتة Slack باستخدام n8n؟
 
@@ -298,7 +326,9 @@
 | Slack slash commands AI Chat Bot | بوت دردشة ذكي عبر أوامر Slack المائلة | تقنية معلومات | [رابط القالب](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | بوت Slack لإدارة شهادات Venafi Cloud | أمن | [رابط القالب](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما قوالب n8n المتاحة لـ OpenAI والنماذج اللغوية ووكلاء الذكاء الاصطناعي؟
 
@@ -324,7 +354,9 @@
 | AI: Ask questions about any data source (using the n8n workflow retriever) | طرح أسئلة على أي مصدر بيانات عبر n8n | ذكاء اصطناعي/تحليل | [رابط القالب](OpenAI_and_LLMs/AI_%20Ask%20questions%20about%20any%20data%20source%20(using%20the%20n8n%20workflow%20retriever).json) |
 | AI: Summarize podcast episode and enhance using Wikipedia | تلخيص حلقات البودكاست وتعزيزها بمعلومات Wikipedia | محتوى/تحليل | [رابط القالب](OpenAI_and_LLMs/AI_%20Summarize%20podcast%20episode%20and%20enhance%20using%20Wikipedia.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف أبني بوتات WhatsApp باستخدام n8n؟
 
@@ -337,7 +369,9 @@
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | بوت WhatsApp تجاري كامل بتقنية RAG وOpenAI | دعم/ذكاء اصطناعي | [رابط القالب](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
 | Respond to WhatsApp Messages with AI Like a Pro! | ردود احترافية على رسائل WhatsApp بالذكاء الاصطناعي | دعم/تواصل | [رابط القالب](./WhatsApp/Respond%20to%20WhatsApp%20Messages%20with%20AI%20Like%20a%20Pro!.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما أفضل قوالب n8n لأتمتة وسائل التواصل الاجتماعي؟
 
@@ -356,7 +390,9 @@
 | Twitter Virtual AI Influencer | إدارة حساب مؤثر افتراضي على Twitter | تسويق/ذكاء اصطناعي | [رابط القالب](Instagram_Twitter_Social_Media/Twitter%20Virtual%20AI%20Influencer.json) |
 | Update Twitter banner using HTTP request | تحديث بانر Twitter عبر طلبات HTTP | تسويق/تطوير | [رابط القالب](Instagram_Twitter_Social_Media/Update%20Twitter%20banner%20using%20HTTP%20request.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما قوالب تكامل n8n الأخرى المتاحة؟
 
@@ -394,7 +430,9 @@
 | Visualize SQL Agent queries with OpenAI and Quickchart.io | تصوير استعلامات SQL عبر OpenAI وQuickchart.io | تحليل بيانات/تصوير | [رابط القالب](Other_Integrations_and_Use_Cases/Visualize%20your%20SQL%20Agent%20queries%20with%20OpenAI%20and%20Quickchart.io.json) |
 | Zoom AI Meeting Assistant | مساعد اجتماعات Zoom ذكي مع ملخصات ومتابعة | إنتاجية/تواصل | [رابط القالب](Other_Integrations_and_Use_Cases/Zoom%20AI%20Meeting%20Assistant%20creates%20mail%20summary,%20ClickUp%20tasks%20and%20follow-up%20call.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### كيف أقوم بأتمتة النماذج والاستبيانات باستخدام n8n؟
 
@@ -406,7 +444,9 @@
 | Email Subscription Service with n8n Forms, Airtable and AI | إدارة اشتراكات البريد عبر n8n Forms وAirtable | تسويق/تواصل | [رابط القالب](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | تأهيل طلبات المواعيد بالذكاء الاصطناعي | مبيعات/دعم | [رابط القالب](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما قوالب n8n الموجودة لبحث الذكاء الاصطناعي وRAG وتحليل البيانات؟
 
@@ -454,7 +494,9 @@
 | Visual Regression Testing with Apify and AI Vision Model | اختبار الانحدار المرئي عبر Apify ونموذج رؤية AI | ضمان جودة/بحث | [رابط القالب](./AI_Research_RAG_and_Data_Analysis/Visual%20Regression%20Testing%20with%20Apify%20and%20AI%20Vision%20Model.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | تحويل أبحاث Perplexity إلى محتوى HTML | إنشاء محتوى/بحث | [رابط القالب](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 
-> 🚀 **أتمت أي سير عمل.** [أنشئ حسابك المجاني على n8n وابدأ البناء ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+> 🚀 **أتمت أي سير عمل.** [ابدأ تجربة n8n Cloud ←](https://n8n.partnerlinks.io/h1pwwf5m4toe)
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### أخرى
 
@@ -464,8 +506,10 @@
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Create_Free_n8n_Account-Start_Automating-orange?style=for-the-badge" alt="أنشئ حساب n8n مجاني" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 </p>
 
 ## الأسئلة الشائعة
@@ -473,14 +517,18 @@
 ### كيف أستورد قالب n8n من هذا المستودع؟
 
 حمّل ملف `.json` لأي قالب تريد استخدامه. افتح نسخة n8n الخاصة بك (سواء مستضافة ذاتياً أو على [n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe))، انتقل إلى Workflows، انقر على "Import from File"، واختر ملف JSON الذي حمّلته. سيظهر سير العمل في المحرر جاهزاً للإعداد. ستحتاج إلى إضافة بيانات الاعتماد الخاصة بك لكل خدمة متصلة قبل تفعيل سير العمل.
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### ما هي n8n ولماذا يجب استخدامها للأتمتة؟
 
-n8n هي منصة أتمتة سير عمل مجانية ومفتوحة المصدر بأكثر من 400 تكامل مدمج. على عكس بدائل SaaS مثل Zapier أو Make، يمكن استضافة n8n ذاتياً على بنيتك التحتية مما يمنحك تحكماً كاملاً في بياناتك. تتميز بمحرر مرئي بالسحب والإفلات ودعم أصيل للذكاء الاصطناعي والنماذج اللغوية ومجتمع نشط. يمكنك [البدء باستخدام n8n مجاناً](https://n8n.partnerlinks.io/h1pwwf5m4toe) على منصتها السحابية أو نشرها على خادمك الخاص.
+n8n هي منصة أتمتة سير عمل بنموذج fair-code وكود مصدر متاح، وتضم مئات عمليات التكامل. ويمكن استضافتها على بنيتك التحتية، كما توفر محرراً مرئياً ودعماً للذكاء الاصطناعي والنماذج اللغوية. يمكنك [بدء تجربة n8n Cloud](https://n8n.partnerlinks.io/h1pwwf5m4toe) أو نشر Community Edition على خادمك الخاص.
+<br />
+<small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 
 ### هل هذه القوالب مجانية الاستخدام؟
 
-نعم، جميع القوالب في هذا المستودع مجانية تماماً للتحميل والاستخدام. تم جمعها من مصادر متاحة للعموم عبر الإنترنت وتُشارك هنا لتسهيل الوصول. n8n نفسها مفتوحة المصدر ومجانية للاستضافة الذاتية. كما توفر منصة n8n Cloud طبقة مجانية بحدود سخية للبدء دون أي تكلفة.
+يمكن تنزيل ملفات القوالب من هذا المستودع دون رسوم، لكن كل قالب قد يخضع لشروط ترخيص مؤلفه الأصلي. تعمل n8n بنموذج fair-code وكودها المصدري متاح، ويمكن استضافة Community Edition ذاتياً. تقدم n8n Cloud تجربة تليها خطط مدفوعة.
 
 ### هل يمكنني المساهمة بقوالبي الخاصة؟
 
@@ -524,16 +572,20 @@ n8n هي منصة أتمتة سير عمل مجانية ومفتوحة المص�
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
-    <img src="https://img.shields.io/badge/Import_280+_Templates-Create_Free_n8n_Account-orange?style=for-the-badge" alt="استيراد القوالب" />
+    <img src="https://img.shields.io/badge/n8n_Cloud-Start_Trial-orange?style=for-the-badge" alt="Start an n8n Cloud trial" />
   </a>
+  <br />
+  <small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 </p>
 
 <p align="center">
   <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe">
     <img src="/img/n8n.png" alt="منصة أتمتة n8n" style="max-height: 300px;" />
   </a>
+  <br />
+  <small>* رابط إحالة — يحصل هذا المشروع على عمولة من عمليات الشراء المؤهلة.</small>
 </p>
 
 ---
 
-*آخر تحديث: مارس 2026*
+*آخر تحديث: أغسطس 2026*

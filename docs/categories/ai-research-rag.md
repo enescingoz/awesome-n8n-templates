@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "AI Research, RAG & Data Analysis Templates for n8n | Awesome n8n Templates"
-description: "39 free n8n AI research and RAG templates. Deep research agents, autonomous crawlers, RAG chatbots with Qdrant and Pinecone, sentiment analysis, and vector database analysis."
+description: "39 n8n AI research and RAG templates. Deep research agents, autonomous crawlers, RAG chatbots with Qdrant and Pinecone, sentiment analysis, and vector database analysis."
 ---
 
 <nav class="breadcrumb"><a href="{{ site.baseurl }}/">Home</a> / AI Research, RAG & Data Analysis</nav>
@@ -10,7 +10,9 @@ description: "39 free n8n AI research and RAG templates. Deep research agents, a
 
 Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest category in this collection. Templates cover deep research agents with Apify and OpenAI, autonomous web crawlers, RAG chatbots with Qdrant and Pinecone, TradingView chart analysis, Hugging Face paper summarization, financial document assistants, SEO keyword generation, sentiment analysis, visual regression testing, and vector database analysis for anomaly detection and KNN classification.
 
-<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Try n8n Free -- Build AI Research Pipelines</a>
+<a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial -- Build AI Research Pipelines</a>
+<br />
+<small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ## Templates
 
@@ -58,7 +60,9 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 
 ## How to Use These Templates
 
-1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (free)
+1. [Sign up for n8n](https://n8n.partnerlinks.io/h1pwwf5m4toe) (Cloud trial available)
+   <br />
+   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 2. Download the JSON file for the template you want
 3. In n8n, go to **Workflows > Import from File**
 4. Connect your AI provider credentials (OpenAI, Mistral, Perplexity, etc.)
@@ -68,7 +72,9 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 ---
 
 <p style="text-align: center; margin: 40px 0;">
-  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Get Started with n8n Free</a>
+  <a href="https://n8n.partnerlinks.io/h1pwwf5m4toe" class="cta-button">Start an n8n Cloud Trial</a>
+  <br />
+  <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
 
 [Back to all categories]({{ site.baseurl }}/)
