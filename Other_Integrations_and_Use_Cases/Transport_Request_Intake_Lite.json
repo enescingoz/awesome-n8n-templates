@@ -1,0 +1,216 @@
+{
+  "name": "Transport Request Intake Lite",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "transport-intake-lite",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-start",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "disabled": false,
+      "description": "Accepts a transport request via POST webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-pickup-postcode",
+              "name": "pickup_postcode",
+              "value": "={{ $json.pickup_postcode != null ? String($json.pickup_postcode).trim() : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-delivery-postcode",
+              "name": "delivery_postcode",
+              "value": "={{ $json.delivery_postcode != null ? String($json.delivery_postcode).trim() : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-pickup-date",
+              "name": "pickup_date",
+              "value": "={{ $json.pickup_date != null ? String($json.pickup_date).trim() : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-weight-kg",
+              "name": "weight_kg",
+              "value": "={{ $json.weight_kg != null ? parseFloat(String($json.weight_kg).replace(/\\s/g, '').replace(',', '.')) : NaN }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "normalize-fields",
+      "name": "Normalize Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        220,
+        0
+      ],
+      "disabled": false,
+      "description": "Trim strings and convert weight to number"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-missing",
+              "name": "missing_fields",
+              "value": "={{ [\n  ($json.pickup_postcode === '' ? 'pickup_postcode' : null),\n  ($json.delivery_postcode === '' ? 'delivery_postcode' : null),\n  ($json.pickup_date === '' ? 'pickup_date' : null),\n  (isNaN($json.weight_kg) ? 'weight_kg' : null)\n].filter(f => f !== null) }}",
+              "type": "array"
+            },
+            {
+              "id": "field-status",
+              "name": "status",
+              "value": "={{ [\n  ($json.pickup_postcode === '' ? 'pickup_postcode' : null),\n  ($json.delivery_postcode === '' ? 'delivery_postcode' : null),\n  ($json.pickup_date === '' ? 'pickup_date' : null),\n  (isNaN($json.weight_kg) ? 'weight_kg' : null)\n].filter(f => f !== null).length === 0 ? 'ready' : 'needs_review' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "validate-required",
+      "name": "Validate Required Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        440,
+        0
+      ],
+      "disabled": false,
+      "description": "Check which of the four fields are empty and set status"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-status-out",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "field-missing-out",
+              "name": "missing_fields",
+              "value": "={{ $json.missing_fields }}",
+              "type": "array"
+            },
+            {
+              "id": "field-normalized",
+              "name": "normalized_request",
+              "value": "={{ {\n  pickup_postcode: $json.pickup_postcode,\n  delivery_postcode: $json.delivery_postcode,\n  pickup_date: $json.pickup_date,\n  weight_kg: isNaN($json.weight_kg) ? null : $json.weight_kg\n} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "build-result",
+      "name": "Build Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        660,
+        0
+      ],
+      "disabled": false,
+      "description": "Assemble the final output object"
+    },
+    {
+      "parameters": {
+        "responseCode": 200,
+        "body": "={{ JSON.stringify({\n  status: $json.status,\n  missing_fields: $json.missing_fields,\n  normalized_request: $json.normalized_request\n}, null, 2) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "disabled": false,
+      "description": "Return JSON response with status, missing fields, and normalized data"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Fields": {
+      "main": [
+        [
+          {
+            "node": "Validate Required Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Required Fields": {
+      "main": [
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Result": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": null,
+    "instanceBaseUrl": null
+  },
+  "pinData": {},
+  "versionId": "lite-1.0.0",
+  "description": "Free demonstration workflow - Transport Request Intake Lite by AW Automation. Normalizes four basic fields and returns ready or needs_review. No credentials or paid APIs required."
+}
