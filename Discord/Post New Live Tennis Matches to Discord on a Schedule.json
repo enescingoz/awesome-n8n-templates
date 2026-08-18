@@ -1,0 +1,167 @@
+{
+  "nodes": [
+    {
+      "id": "a1f2c3d4-0001-4a1b-8c2d-100000000001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        440,
+        40
+      ],
+      "parameters": {
+        "width": 520,
+        "height": 520,
+        "content": "## Post new live tennis matches to Discord\n\n### What it does\n- Every 5 minutes, fetches the currently live tennis matches from the Live Tennis API (`GET /matches?status=live`).\n- Splits the response into one item per match.\n- **Remove Duplicates** (seen in previous executions) keeps only matches that are newly live, so each match is announced **once**.\n- Posts a short message to a Discord channel via an Incoming Webhook.\n\n### Setup (~5 min)\n1. Get a free API key (live scores, no card): https://livetennisapi.com/subscribe/free\n2. In the **HTTP Request** node, create a **Header Auth** credential:\n   - Name: `X-API-Key`\n   - Value: your API key\n3. In the **Discord** node, add a **Discord Webhook** credential (a Discord channel Incoming Webhook URL).\n4. Activate the workflow.\n\nBase URL: `https://api.livetennisapi.com/api/public/v1`. Free tier = 30 req/min, 100 req/day, so a 5-minute schedule stays well within limits. Prefer a dedicated node? Swap the HTTP Request for the community node `n8n-nodes-livetennisapi`.\n\n_Disclosure: this template is contributed by the team behind the Live Tennis API — judge it on the merits._"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a1f2c3d4-0002-4a1b-8c2d-100000000002",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        1020,
+        280
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a1f2c3d4-0003-4a1b-8c2d-100000000003",
+      "name": "Get Live Matches",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1240,
+        280
+      ],
+      "parameters": {
+        "url": "https://api.livetennisapi.com/api/public/v1/matches",
+        "options": {},
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "live"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEADER_AUTH_CRED",
+          "name": "Live Tennis API (X-API-Key)"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "a1f2c3d4-0004-4a1b-8c2d-100000000004",
+      "name": "Split Out Matches",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1460,
+        280
+      ],
+      "parameters": {
+        "options": {},
+        "fieldToSplitOut": "data"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "a1f2c3d4-0005-4a1b-8c2d-100000000005",
+      "name": "Only New Matches",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "position": [
+        1680,
+        280
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "dedupeValue": "={{ $json.id }}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "a1f2c3d4-0006-4a1b-8c2d-100000000006",
+      "name": "Discord",
+      "type": "n8n-nodes-base.discord",
+      "position": [
+        1900,
+        280
+      ],
+      "parameters": {
+        "content": "=🎾 New live match: {{ $json.players.p1.name }} vs {{ $json.players.p2.name }} — {{ $json.status }}",
+        "options": {},
+        "authentication": "webhook"
+      },
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REPLACE_WITH_DISCORD_WEBHOOK_CRED",
+          "name": "Discord Webhook"
+        }
+      },
+      "typeVersion": 2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Live Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Live Matches": {
+      "main": [
+        [
+          {
+            "node": "Split Out Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Matches": {
+      "main": [
+        [
+          {
+            "node": "Only New Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only New Matches": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
