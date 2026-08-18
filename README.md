@@ -431,7 +431,7 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 44 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 45 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -479,7 +479,7 @@ This section includes 44 additional n8n integration templates covering a wide ra
 | VoiceAgent Lite - Phone Call Logger | Logs phone calls from Vapi.ai or Bland.ai to Google Sheets via webhook. Captures caller info, duration, and transcript summary. | Ops/Support | [Link to Template](Other_Integrations_and_Use_Cases/VoiceAgent%20Lite%20-%20Phone%20Call%20Logger.json) |
 | Generate Seedance videos with Vancine API and bounded polling | Submits a Seedance video generation task, polls its asynchronous status, and handles completion, failure, and bounded timeout paths. | Engineering | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20Seedance%20videos%20with%20Vancine%20API%20and%20bounded%20polling.json) |
 | Issue a Verifiable Certificate (Attestify API) | POST recipient and course data to a free API and receive a permanent, tamper-evident public verify page (Ed25519-signed — change one character and verification fails). Core HTTP node; no API key, no signup. | Education/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Issue%20a%20verifiable%20certificate%20(Attestify).json) |
-
+| Transport Request Intake Lite | Free n8n workflow for normalizing a simple transport request and validating required fields. | Ops/Sales | [Link to Template](Other_Integrations_and_Use_Cases/Transport_Request_Intake_Lite.json) |
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
 <small>* Referral link — this project receives a commission on eligible purchases.</small>
