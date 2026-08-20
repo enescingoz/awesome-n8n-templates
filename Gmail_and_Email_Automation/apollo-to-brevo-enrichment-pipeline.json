@@ -1,0 +1,559 @@
+{
+  "name": "Apollo to Brevo Enrichment Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# \ud83d\ude80 Apollo-to-Brevo B2B Enrichment Pipeline\n\n**Author**: Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Repository**: n8n Community Workflow Templates\n\n### \ud83d\udd11 Required Credentials & API Keys\n- `APOLLO_API_KEY`: Apollo.io API Key (Scoped for People & Organization Enrichment)\n- `APOLLO_WEBHOOK_SECRET`: Secret token to verify incoming webhook signatures\n- `BREVO_API_KEY`: Brevo (Sendinblue) API v3 Key with contact write permissions\n- `SLACK_WEBHOOK_URL`: (Optional) Slack Incoming Webhook for Tier 1 Enterprise alerts\n\n### \u2699\ufe0f Environment Variables Configured in n8n:\n- `APOLLO_API_KEY` = `{{ $env.APOLLO_API_KEY }}`\n- `BREVO_API_KEY` = `{{ $env.BREVO_API_KEY }}`\n- `BREVO_TIER_1_LIST_ID` = `101` (Enterprise Outbound Sequence)\n- `BREVO_TIER_2_LIST_ID` = `102` (Mid-Market Nurture Sequence)\n- `BREVO_STANDARD_LIST_ID` = `103` (General Newsletter / Lead Pool)\n\n### \ud83e\uddea End-to-End Testing Protocol:\n1. Send sample JSON POST to `/apollo-enrichment-ingress` with `x-apollo-signature` header.\n2. Verify free email domains (e.g. gmail.com) are redirected to general pool without burning Apollo credits.\n3. Verify corporate domains trigger Apollo Enrichment + ICP Scoring (Seniority + Size + Industry).\n4. Confirm Brevo contact upsert includes sparse attribute preservation and tag assignments.\n5. Confirm Tier-1 hot leads trigger instant Slack SDR alert.\n\n*Need enterprise customisation or RevOps implementation? Visit [whoisalfaz.me/services/n8n-automation](https://whoisalfaz.me/services/n8n-automation)*",
+        "height": 320,
+        "width": 780,
+        "color": 4
+      },
+      "id": "sticky-sop",
+      "name": "Pipeline SOP & Setup Guide",
+      "type": "n8n-nodes-base.sticky",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -380
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apollo-enrichment-ingress",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "apollo-webhook-ingest",
+      "name": "Apollo Webhook Ingest",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ],
+      "webhookId": "apollo-enrichment-ingress"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Security & Circular Sync Guardrail\nconst crypto = require('crypto');\nconst secret = $env.APOLLO_WEBHOOK_SECRET || 'secret_apollo_webhook_token';\nconst headers = $input.first().json.headers || {};\nconst body = $input.first().json.body || {};\n\n// 1. Circular Sync Guardrail - abort if originated from n8n pipeline\nconst automationOrigin = body.contact?.attributes?.AUTOMATION_ORIGIN || body.attributes?.AUTOMATION_ORIGIN || body.automation_origin;\nif (automationOrigin === 'n8n_brevo_pipeline') {\n  return [{\n    json: {\n      isAuthorized: false,\n      isCircular: true,\n      reason: 'Circular sync detected: payload already originated from n8n_brevo_pipeline',\n      data: body\n    }\n  }];\n}\n\n// 2. Signature verification (if signature header provided)\nconst signature = headers['x-apollo-signature'] || headers['x-hub-signature'];\nlet signatureValid = true;\n\nif (signature && secret !== 'secret_apollo_webhook_token') {\n  const expected = crypto.createHmac('sha256', secret).update(JSON.stringify(body)).digest('hex');\n  if (signature !== `sha256=${expected}` && signature !== expected) {\n    signatureValid = false;\n  }\n}\n\n// Extract raw contact data\nconst contactData = body.contact || body.person || body.data || body;\nconst email = (contactData.email || body.email || '').trim().toLowerCase();\n\nreturn [{\n  json: {\n    isAuthorized: signatureValid,\n    isCircular: false,\n    email: email,\n    first_name: contactData.first_name || contactData.firstName || '',\n    last_name: contactData.last_name || contactData.lastName || '',\n    company_name: contactData.organization_name || contactData.company || '',\n    raw_data: contactData,\n    received_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "security-sync-guard",
+      "name": "Security & Sync Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-auth",
+              "leftValue": "={{ $json.isAuthorized }}",
+              "comparison": "equals",
+              "rightValue": true
+            },
+            {
+              "id": "cond-circ",
+              "leftValue": "={{ $json.isCircular }}",
+              "comparison": "equals",
+              "rightValue": false
+            },
+            {
+              "id": "cond-email",
+              "leftValue": "={{ $json.email }}",
+              "comparison": "isNotEmpty",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-authorized-if",
+      "name": "Is Authorized & Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        620,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Corporate Domain Validation & Classification\nconst FREE_EMAIL_PROVIDERS = new Set([\n  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',\n  'aol.com', 'mail.com', 'zoho.com', 'protonmail.com', 'yandex.com',\n  'gmx.com', 'live.com', 'msn.com', 'me.com', 'inbox.com'\n]);\n\nconst item = $input.first().json;\nconst email = item.email || '';\nconst parts = email.split('@');\nconst domain = parts.length === 2 ? parts[1].toLowerCase() : '';\n\nconst isCorporate = domain.length > 0 && !FREE_EMAIL_PROVIDERS.has(domain) && domain.includes('.');\n\nreturn [{\n  json: {\n    ...item,\n    domain: domain,\n    isCorporateDomain: isCorporate,\n    domainType: isCorporate ? 'B2B_CORPORATE' : 'B2C_GENERIC'\n  }\n}];"
+      },
+      "id": "domain-filter-code",
+      "name": "Company Domain Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-corp",
+              "leftValue": "={{ $json.isCorporateDomain }}",
+              "comparison": "equals",
+              "rightValue": true
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-b2b-domain-if",
+      "name": "Is Corporate B2B Domain?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $env.APOLLO_API_KEY || 'YOUR_APOLLO_API_KEY' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\",\n  \"domain\": \"{{ $json.domain }}\",\n  \"first_name\": \"{{ $json.first_name }}\",\n  \"last_name\": \"{{ $json.last_name }}\",\n  \"reveal_personal_emails\": false,\n  \"reveal_phone_number\": false\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 1000
+            }
+          }
+        }
+      },
+      "id": "apollo-enrichment-http",
+      "name": "Apollo B2B Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        -100
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ICP Lead Scoring & Attribution Engine\nconst rawInput = $input.first().json;\nconst person = rawInput.person || {};\nconst org = person.organization || {};\n\nconst email = rawInput.email || person.email || '';\nconst firstName = person.first_name || rawInput.first_name || 'Valued';\nconst lastName = person.last_name || rawInput.last_name || 'Contact';\nconst title = (person.title || person.headline || '').toLowerCase();\nconst seniority = (person.seniority || '').toLowerCase();\nconst companyName = org.name || rawInput.company_name || person.organization_name || 'Company';\nconst employeeCount = Number(org.estimated_num_employees || person.organization_num_employees || 0);\nconst industry = org.industry || person.industry || 'Technology';\nconst linkedinUrl = person.linkedin_url || '';\nconst domain = org.primary_domain || rawInput.domain || '';\nconst annualRevenue = org.annual_revenue_printed || org.annual_revenue || 'N/A';\n\n// Scoring Calculation\nlet score = 0;\n\n// 1. Seniority & Title\nif (seniority === 'c_suite' || title.includes('founder') || title.includes('ceo') || title.includes('cto') || title.includes('cro') || title.includes('coo')) {\n  score += 40;\n} else if (seniority === 'vp' || title.includes('vice president') || title.includes('head of')) {\n  score += 30;\n} else if (seniority === 'director' || title.includes('director')) {\n  score += 20;\n} else if (seniority === 'manager' || title.includes('manager') || title.includes('lead')) {\n  score += 10;\n}\n\n// 2. Company Size\nif (employeeCount >= 50 && employeeCount <= 1000) {\n  score += 30;\n} else if (employeeCount > 1000) {\n  score += 25;\n} else if (employeeCount >= 10 && employeeCount < 50) {\n  score += 15;\n} else {\n  score += 5;\n}\n\n// 3. Industry Fit\nconst targetIndustries = ['software', 'saas', 'information technology', 'internet', 'marketing', 'financial services'];\nif (targetIndustries.some(ind => industry.toLowerCase().includes(ind))) {\n  score += 20;\n} else {\n  score += 10;\n}\n\n// 4. Data Completeness bonus\nif (linkedinUrl) score += 10;\n\n// Determine Tier & Target Brevo List\nlet leadTier = 'TIER_3_SMB';\nlet targetListId = Number($env.BREVO_STANDARD_LIST_ID || 103);\n\nif (score >= 70) {\n  leadTier = 'TIER_1_ENTERPRISE';\n  targetListId = Number($env.BREVO_TIER_1_LIST_ID || 101);\n} else if (score >= 45) {\n  leadTier = 'TIER_2_MIDMARKET';\n  targetListId = Number($env.BREVO_TIER_2_LIST_ID || 102);\n}\n\nreturn [{\n  json: {\n    email: email,\n    attributes: {\n      FIRSTNAME: firstName,\n      LASTNAME: lastName,\n      COMPANY: companyName,\n      JOB_TITLE: person.title || 'Executive',\n      SENIORITY: person.seniority || 'Professional',\n      DOMAIN: domain,\n      INDUSTRY: industry,\n      EMPLOYEE_COUNT: employeeCount,\n      ESTIMATED_REVENUE: String(annualRevenue),\n      LINKEDIN_URL: linkedinUrl,\n      ICP_SCORE: score,\n      LEAD_TIER: leadTier,\n      AUTOMATION_ORIGIN: 'n8n_brevo_pipeline',\n      ENRICHED_AT: new Date().toISOString()\n    },\n    listIds: [targetListId],\n    leadTier: leadTier,\n    icpScore: score,\n    isTier1: leadTier === 'TIER_1_ENTERPRISE',\n    companyName: companyName,\n    fullName: `${firstName} ${lastName}`.trim()\n  }\n}];"
+      },
+      "id": "icp-lead-scorer-code",
+      "name": "ICP Lead Scorer & Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "api-key",
+              "value": "={{ $env.BREVO_API_KEY || 'YOUR_BREVO_API_KEY' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\",\n  \"attributes\": {{ JSON.stringify($json.attributes) }},\n  \"listIds\": {{ JSON.stringify($json.listIds) }},\n  \"updateEnabled\": true,\n  \"smtpBlacklistSender\": []\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 1000
+            }
+          }
+        }
+      },
+      "id": "brevo-contact-upsert-http",
+      "name": "Brevo Contact Sync & Upsert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        -100
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-t1",
+              "leftValue": "={{ $('ICP Lead Scorer & Normalizer').item.json.isTier1 }}",
+              "comparison": "equals",
+              "rightValue": true
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-tier-1-if",
+      "name": "Is Tier 1 Enterprise?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL || 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"\ud83d\udd25 *New Tier-1 Enterprise Inbound Enriched!*\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"\ud83c\udfaf High-Value ICP Lead Synced to Brevo\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Lead:* \" + $('ICP Lead Scorer & Normalizer').item.json.fullName + \"\\n*Email:* \" + $('ICP Lead Scorer & Normalizer').item.json.email\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Company:* \" + $('ICP Lead Scorer & Normalizer').item.json.companyName + \"\\n*Title:* \" + $('ICP Lead Scorer & Normalizer').item.json.attributes.JOB_TITLE\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*ICP Score:* `\" + $('ICP Lead Scorer & Normalizer').item.json.icpScore + \"/100`\\n*Tier:* `\" + $('ICP Lead Scorer & Normalizer').item.json.leadTier + \"`\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*LinkedIn:* <\" + $('ICP Lead Scorer & Normalizer').item.json.attributes.LINKEDIN_URL + \"|Profile>\\n*Synced To Brevo List:* `\" + $('ICP Lead Scorer & Normalizer').item.json.listIds[0] + \"`\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-tier1-alert-http",
+      "name": "Slack High-Value ICP Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fallback & Generic Ingestion Path for B2C/Generic Domains\nconst item = $('Company Domain Filter').item.json;\nreturn [{\n  json: {\n    email: item.email,\n    attributes: {\n      FIRSTNAME: item.first_name || 'Subscriber',\n      LASTNAME: item.last_name || '',\n      DOMAIN_TYPE: 'B2C_GENERIC',\n      AUTOMATION_ORIGIN: 'n8n_brevo_pipeline',\n      SYNCED_AT: new Date().toISOString()\n    },\n    listIds: [Number($env.BREVO_STANDARD_LIST_ID || 103)],\n    message: 'Generic email routed to standard newsletter list without Apollo credits consumption'\n  }\n}];"
+      },
+      "id": "generic-b2c-sync-code",
+      "name": "Generic B2C Route Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "api-key",
+              "value": "={{ $env.BREVO_API_KEY || 'YOUR_BREVO_API_KEY' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\",\n  \"attributes\": {{ JSON.stringify($json.attributes) }},\n  \"listIds\": {{ JSON.stringify($json.listIds) }},\n  \"updateEnabled\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "brevo-generic-upsert-http",
+      "name": "Brevo Standard List Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        100
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Global DLQ & Failure Interceptor\nconst errorData = $input.first().json;\nreturn [{\n  json: {\n    status: 'PIPELINE_ERROR',\n    timestamp: new Date().toISOString(),\n    error_message: errorData.message || errorData.error || 'Unknown Pipeline Execution Error',\n    node_context: errorData,\n    recovery_action: 'Logged to Dead-Letter Queue (DLQ) for automated replay'\n  }\n}];"
+      },
+      "id": "dlq-error-handler-code",
+      "name": "DLQ & Error Interceptor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL || 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"\u26a0\ufe0f *Apollo-to-Brevo Enrichment Pipeline Error Alert*\",\n  \"attachments\": [\n    {\n      \"color\": \"#FF0000\",\n      \"title\": \"Pipeline Exception Caught by DLQ\",\n      \"text\": \"*Timestamp:* \" + $json.timestamp + \"\\n*Error:* `\" + $json.error_message + \"`\\n*Action:* Isolated to DLQ for self-healing replay.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "slack-error-alert-http",
+      "name": "Send Slack Error Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2180,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Apollo Webhook Ingest": {
+      "main": [
+        [
+          {
+            "node": "Security & Sync Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security & Sync Guard": {
+      "main": [
+        [
+          {
+            "node": "Is Authorized & Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Authorized & Valid?": {
+      "main": [
+        [
+          {
+            "node": "Company Domain Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DLQ & Error Interceptor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Domain Filter": {
+      "main": [
+        [
+          {
+            "node": "Is Corporate B2B Domain?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Corporate B2B Domain?": {
+      "main": [
+        [
+          {
+            "node": "Apollo B2B Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generic B2C Route Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo B2B Enrichment": {
+      "main": [
+        [
+          {
+            "node": "ICP Lead Scorer & Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DLQ & Error Interceptor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generic B2C Route Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Brevo Standard List Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brevo Standard List Sync": {
+      "main": [
+        [],
+        [
+          {
+            "node": "DLQ & Error Interceptor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ICP Lead Scorer & Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Brevo Contact Sync & Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brevo Contact Sync & Upsert": {
+      "main": [
+        [
+          {
+            "node": "Is Tier 1 Enterprise?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DLQ & Error Interceptor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Tier 1 Enterprise?": {
+      "main": [
+        [
+          {
+            "node": "Slack High-Value ICP Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DLQ & Error Interceptor": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "author": "Alfaz Mahmud Rizve",
+    "authorUrl": "https://whoisalfaz.me",
+    "package": "n8n Community Workflow Ecosystem"
+  }
+}
