@@ -164,13 +164,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.3,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a world-class WhatsApp AI SDR for Accelerated Growth Studio (founded by Alfaz Mahmud Rizve, whoisalfaz.me).\\n\\nGuidelines:\\n1. Generate a natural, helpful, conversational WhatsApp reply under 300 characters.\\n2. Acknowledge the user's specific interest (\" + $json.interest + \") and their question.\\n3. Keep formatting clean with friendly emojis.\\n4. Provide a clear next step (e.g. 'I can schedule a quick 15-min discovery call or share a tailored proposal').\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"User Name: \" + $json.first_name + \"\\nUser Message: \" + $json.user_message + \"\\nBudget: \" + $json.budget + \"\\nTimeline: \" + $json.timeline\n    }\n  ]\n}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
+        "options": {}
       },
       "id": "c1f7a01a-0002-4000-8000-000000000004",
       "name": "AI WhatsApp Copy Generator",
@@ -179,8 +173,7 @@
       "position": [
         920,
         0
-      ],
-      "onError": "continueErrorOutput"
+      ]
     },
     {
       "parameters": {
@@ -202,13 +195,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"email\": \"{{ $json.email || 'wa_' + $json.subscriber_id + '@whatsapp.lead' }}\",\n  \"attributes\": {\n    \"FIRSTNAME\": \"{{ $json.first_name }}\",\n    \"LASTNAME\": \"{{ $json.last_name }}\",\n    \"SMS\": \"{{ $json.phone }}\",\n    \"WHATSAPP_ID\": \"{{ $json.subscriber_id }}\",\n    \"LEAD_SCORE\": {{ $json.lead_score }},\n    \"LEAD_TIER\": \"{{ $json.lead_tier }}\",\n    \"INTEREST\": \"{{ $json.interest }}\",\n    \"BUDGET\": \"{{ $json.budget }}\",\n    \"AUTOMATION_ORIGIN\": \"manychat_async_engine\"\n  },\n  \"updateEnabled\": true\n}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
+        "options": {}
       },
       "id": "c1f7a01a-0002-4000-8000-000000000005",
       "name": "Brevo CRM Async Upsert",
@@ -217,8 +204,7 @@
       "position": [
         920,
         200
-      ],
-      "onError": "continueErrorOutput"
+      ]
     },
     {
       "parameters": {
@@ -253,19 +239,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"subscriber_id\": \"{{ $json.subscriber_id }}\",\n  \"data\": {\n    \"version\": \"v2\",\n    \"content\": {\n      \"messages\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"{{ $json.message_text.replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n') }}\"\n        }\n      ]\n    }\n  }\n}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "retry": {
-            "retry": {
-              "maxTries": 3,
-              "waitBetween": 1000
-            }
-          }
-        }
+        "options": {}
       },
       "id": "c1f7a01a-0002-4000-8000-000000000007",
       "name": "ManyChat WhatsApp Callback API",
@@ -274,8 +248,7 @@
       "position": [
         1520,
         0
-      ],
-      "onError": "continueErrorOutput"
+      ]
     },
     {
       "parameters": {
@@ -289,8 +262,11 @@
             {
               "id": "c1f7a01a-0003-4000-8000-000000000001",
               "leftValue": "={{ $('Format WhatsApp Message').item.json.isHotLead }}",
-              "comparison": "equals",
-              "rightValue": true
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
             }
           ],
           "combinator": "and"
