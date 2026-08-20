@@ -3,9 +3,9 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ⚡ ManyChat Async Webhook Timeout Handler\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** Chatbots / AI SDR / WhatsApp Automation\n\n### 💡 Overview\nManyChat enforces a strict **10-second timeout** on external webhooks. If an automation (LLM synthesis, CRM lookups, DB queries) takes longer than 10s, ManyChat marks the step as failed.\n\n### 🚀 The Solution\nThis workflow immediately returns an **HTTP 200 OK (<150ms)** handshake to satisfy ManyChat, then executes AI lead scoring, Brevo CRM contact sync, and pushes a personalized WhatsApp reply asynchronously via ManyChat's API.",
-        "height": 300,
-        "width": 500,
+        "content": "## ⚡ ManyChat Async Webhook Timeout Handler\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** Chatbots / AI SDR / WhatsApp Automation\n\n### 💡 Problem & Solution\nManyChat enforces a strict **10-second timeout** on external webhooks. This workflow immediately returns an **HTTP 200 OK (<150ms)** handshake, then independently executes AI qualification, CRM sync, and delivers a WhatsApp reply via ManyChat API.",
+        "height": 260,
+        "width": 560,
         "color": 5
       },
       "id": "c1f7a01a-0001-4000-8000-000000000001",
@@ -13,15 +13,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        100,
-        -340
+        0,
+        -350
       ]
     },
     {
       "parameters": {
-        "content": "### 🔑 Credentials Setup\nConfigure these environment variables or credentials:\n- **OpenAI API Key**: For GPT-4o-mini message generation\n- **Brevo API Key**: For CRM contact creation & scoring\n- **ManyChat API Key**: Access token for WhatsApp sendContent API\n- **Slack Webhook URL**: For SDR hot lead alerts",
-        "height": 300,
-        "width": 400,
+        "content": "### 🔑 Required Credentials & Setup\n- **OpenAI API Key**: Used for GPT-4o-mini message generation\n- **Brevo API Key**: Used for CRM contact upsert & lead score tracking\n- **ManyChat API Key**: Access token for WhatsApp `sendContent` API\n- **Slack Webhook URL**: Incoming webhook for SDR hot lead alerts",
+        "height": 260,
+        "width": 480,
         "color": 7
       },
       "id": "c1f7a01a-0001-4000-8000-000000000002",
@@ -29,14 +29,14 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        640,
-        -340
+        620,
+        -350
       ]
     },
     {
       "parameters": {
-        "content": "### 1. Ingestion & Fast Handshake (<150ms)\n- **Webhook Ingest**: Receives subscriber data from ManyChat.\n- **Respond to Webhook**: Returns instant HTTP 200 OK to bypass the 10-second timeout ceiling while n8n continues processing in the background.",
-        "height": 240,
+        "content": "### 1. Ingestion & Fast Handshake\nWebhook receives subscriber data and immediately returns HTTP 200 OK (<150ms) to satisfy ManyChat timeout.",
+        "height": 160,
         "width": 460,
         "color": 4
       },
@@ -45,15 +45,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        80,
-        20
+        0,
+        -50
       ]
     },
     {
       "parameters": {
-        "content": "### 2. Lead Qualification & Scoring\nExtracts custom fields (budget, timeline, intent), validates phone/email, and assigns an algorithmic lead score (Hot, Warm, Nurture).",
-        "height": 240,
-        "width": 260,
+        "content": "### 2. Lead Qualification\nParses custom fields (budget, timeline, intent) and calculates a 0-100 algorithmic lead score.",
+        "height": 160,
+        "width": 300,
         "color": 2
       },
       "id": "c1f7a01a-0001-4000-8000-000000000004",
@@ -61,15 +61,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        580,
-        20
+        540,
+        -50
       ]
     },
     {
       "parameters": {
-        "content": "### 3. Parallel AI Generation & CRM Sync\n- **AI WhatsApp Copy**: Uses GPT-4o-mini to draft a context-aware reply.\n- **Brevo CRM**: Upserts the lead with tags and lead score in parallel.",
-        "height": 400,
-        "width": 340,
+        "content": "### 3. Parallel AI Copy & CRM Sync\n- Top branch: GPT-4o-mini generates context-aware WhatsApp copy.\n- Bottom branch: Upserts lead & score into Brevo CRM.",
+        "height": 160,
+        "width": 360,
         "color": 6
       },
       "id": "c1f7a01a-0001-4000-8000-000000000005",
@@ -77,24 +77,24 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        880,
-        -80
+        920,
+        -50
       ]
     },
     {
       "parameters": {
-        "content": "### 4. WhatsApp Delivery & Alerts\n- **Format Payload**: Prepares text and contact IDs.\n- **ManyChat Callback**: Pushes WhatsApp message via `sendContent` API.\n- **Slack Alert**: Alerts sales team if lead is scored as HOT.",
-        "height": 400,
-        "width": 800,
+        "content": "### 4. WhatsApp Push & Sales Alert\n- ManyChat API: Pushes response back to WhatsApp subscriber.\n- IF & Slack: If lead is scored HOT, sends an instant alert to SDRs.",
+        "height": 160,
+        "width": 540,
         "color": 1
       },
       "id": "c1f7a01a-0001-4000-8000-000000000006",
-      "name": "Sticky: Step 4 WhatsApp Push",
+      "name": "Sticky: Step 4 Delivery",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1260,
-        -80
+        1360,
+        -50
       ]
     },
     {
@@ -109,8 +109,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        100,
-        100
+        0,
+        200
       ],
       "webhookId": "manychat-async-ingress"
     },
@@ -127,8 +127,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        360,
-        100
+        340,
+        200
       ]
     },
     {
@@ -140,8 +140,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        620,
-        100
+        680,
+        200
       ]
     },
     {
@@ -171,8 +171,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        920,
-        0
+        1020,
+        200
       ]
     },
     {
@@ -202,7 +202,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        920,
+        1360,
         200
       ]
     },
@@ -215,8 +215,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1280,
-        0
+        1700,
+        200
       ]
     },
     {
@@ -246,8 +246,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1520,
-        0
+        2040,
+        200
       ]
     },
     {
@@ -277,8 +277,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1780,
-        0
+        2380,
+        200
       ]
     },
     {
@@ -304,8 +304,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2040,
-        -100
+        2720,
+        200
       ]
     }
   ],
@@ -393,15 +393,5 @@
         ]
       ]
     }
-  },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "versionId": "c1f7a01a-0004-4000-8000-000000000001",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "whoisalfaz-n8n-production"
-  },
-  "tags": []
+  }
 }
