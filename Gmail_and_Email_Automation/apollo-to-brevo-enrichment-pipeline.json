@@ -3,9 +3,9 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## 🚀 Apollo.io to Brevo B2B Lead Enrichment Pipeline\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** Sales & Lead Generation / RevOps\n\n### 💡 Overview\nAutomates inbound B2B lead enrichment. Captures form webhooks, filters out consumer emails (Gmail, Yahoo), enriches prospect and company intelligence via Apollo.io, scores ICP fit, and syncs contacts into Brevo CRM.",
-        "height": 280,
-        "width": 480,
+        "content": "## 🚀 Apollo.io to Brevo B2B Lead Enrichment Pipeline\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** Sales & Lead Gen / RevOps\n\n### 💡 Problem & Solution\nEnriches incoming B2B web leads via Apollo.io, filters out consumer emails (gmail, yahoo), calculates a 100-point ICP fit score, and routes contacts into segmented Brevo CRM lists.",
+        "height": 260,
+        "width": 560,
         "color": 5
       },
       "id": "sticky-apollo-overview",
@@ -13,15 +13,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        100,
-        -320
+        0,
+        -350
       ]
     },
     {
       "parameters": {
-        "content": "### 🔑 Credentials Setup\n- **Apollo API Key**: For People & Organization match endpoints\n- **Brevo API Key**: For contact upsert and list segmentation\n- **Slack Webhook URL**: For Enterprise ICP notifications",
-        "height": 280,
-        "width": 340,
+        "content": "### 🔑 Required Credentials & Setup\n- **Apollo API Key**: Used for People & Org Match endpoints\n- **Brevo API Key**: Used for contact creation & tier segmentation\n- **Slack Webhook URL**: Used for Tier 1 Enterprise SDR alerts",
+        "height": 260,
+        "width": 480,
         "color": 7
       },
       "id": "sticky-apollo-creds",
@@ -30,14 +30,14 @@
       "typeVersion": 1,
       "position": [
         620,
-        -320
+        -350
       ]
     },
     {
       "parameters": {
-        "content": "### 1. Ingestion & Security Validation\n- Receives inbound lead webhook from website or landing page.\n- Validates cryptographic HMAC signature and prevents circular sync loops via `AUTOMATION_ORIGIN`.",
-        "height": 200,
-        "width": 360,
+        "content": "### 1. Ingestion & Security\nCaptures inbound lead webhook, validates HMAC authorization, and prevents circular sync loops.",
+        "height": 160,
+        "width": 480,
         "color": 4
       },
       "id": "sticky-apollo-step-1",
@@ -45,15 +45,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        80,
-        50
+        0,
+        -50
       ]
     },
     {
       "parameters": {
-        "content": "### 2. Corporate Domain Filter\nFilters out 15+ generic email domains (gmail, yahoo, hotmail, proton) to protect Apollo API credits for genuine corporate inbounds.",
-        "height": 200,
-        "width": 240,
+        "content": "### 2. Corporate Domain Filter\nFilters out generic consumer webmail (gmail, yahoo, proton) to save Apollo API credits.",
+        "height": 160,
+        "width": 320,
         "color": 2
       },
       "id": "sticky-apollo-step-2",
@@ -61,15 +61,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        480,
-        50
+        560,
+        -50
       ]
     },
     {
       "parameters": {
-        "content": "### 3. Apollo Match & ICP Scoring\n- Enriches job title, seniority, company headcount, revenue, and industry.\n- Calculates a 100-point ICP Score to separate Tier 1 Enterprise from standard leads.",
-        "height": 240,
-        "width": 440,
+        "content": "### 3. Apollo Intelligence & Scoring\nEnriches company size, revenue, seniority, and computes a 100-point ICP Score.",
+        "height": 160,
+        "width": 480,
         "color": 6
       },
       "id": "sticky-apollo-step-3",
@@ -77,15 +77,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        760,
-        50
+        960,
+        -50
       ]
     },
     {
       "parameters": {
-        "content": "### 4. CRM Ingestion & Tier Routing\n- Syncs enriched data to Brevo CRM.\n- Automatically routes lead into Tier 1 Enterprise List vs Standard Nurture Pool.\n- Pushes instant Slack notification for high-value prospects.",
-        "height": 240,
-        "width": 500,
+        "content": "### 4. Brevo CRM Segmentation & Slack Alert\nUpserts contacts into Tier-1 Enterprise vs Standard Nurture pools and alerts sales reps.",
+        "height": 160,
+        "width": 580,
         "color": 1
       },
       "id": "sticky-apollo-step-4",
@@ -93,8 +93,8 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1240,
-        50
+        1520,
+        -50
       ]
     },
     {
@@ -112,8 +112,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        100,
-        100
+        0,
+        200
       ],
       "webhookId": "apollo-enrichment-ingress"
     },
@@ -126,8 +126,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        360,
-        100
+        340,
+        200
       ]
     },
     {
@@ -166,8 +166,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        620,
-        100
+        680,
+        200
       ]
     },
     {
@@ -179,8 +179,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
-        0
+        1020,
+        200
       ]
     },
     {
@@ -207,8 +207,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1140,
-        0
+        1360,
+        200
       ]
     },
     {
@@ -254,8 +254,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1400,
-        -100
+        1700,
+        200
       ],
       "onError": "continueErrorOutput"
     },
@@ -268,8 +268,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1660,
-        -100
+        2040,
+        440
       ]
     },
     {
@@ -311,8 +311,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1920,
-        -100
+        2380,
+        200
       ],
       "onError": "continueErrorOutput"
     },
@@ -340,8 +340,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2180,
-        -100
+        2720,
+        200
       ]
     },
     {
@@ -367,8 +367,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2440,
-        -180
+        3060,
+        200
       ]
     },
     {
@@ -380,8 +380,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1400,
-        100
+        3400,
+        440
       ]
     },
     {
@@ -417,8 +417,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1660,
-        100
+        3740,
+        440
       ],
       "onError": "continueErrorOutput"
     },
@@ -431,8 +431,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
-        240
+        4080,
+        200
       ]
     },
     {
@@ -458,8 +458,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2180,
-        240
+        4420,
+        200
       ]
     }
   ],
