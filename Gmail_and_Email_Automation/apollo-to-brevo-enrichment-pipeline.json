@@ -3,18 +3,98 @@
   "nodes": [
     {
       "parameters": {
-        "content": "# \ud83d\ude80 Apollo-to-Brevo B2B Enrichment Pipeline\n\n**Author**: Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Repository**: n8n Community Workflow Templates\n\n### \ud83d\udd11 Required Credentials & API Keys\n- `APOLLO_API_KEY`: Apollo.io API Key (Scoped for People & Organization Enrichment)\n- `APOLLO_WEBHOOK_SECRET`: Secret token to verify incoming webhook signatures\n- `BREVO_API_KEY`: Brevo (Sendinblue) API v3 Key with contact write permissions\n- `SLACK_WEBHOOK_URL`: (Optional) Slack Incoming Webhook for Tier 1 Enterprise alerts\n\n### \u2699\ufe0f Environment Variables Configured in n8n:\n- `APOLLO_API_KEY` = `{{ $env.APOLLO_API_KEY }}`\n- `BREVO_API_KEY` = `{{ $env.BREVO_API_KEY }}`\n- `BREVO_TIER_1_LIST_ID` = `101` (Enterprise Outbound Sequence)\n- `BREVO_TIER_2_LIST_ID` = `102` (Mid-Market Nurture Sequence)\n- `BREVO_STANDARD_LIST_ID` = `103` (General Newsletter / Lead Pool)\n\n### \ud83e\uddea End-to-End Testing Protocol:\n1. Send sample JSON POST to `/apollo-enrichment-ingress` with `x-apollo-signature` header.\n2. Verify free email domains (e.g. gmail.com) are redirected to general pool without burning Apollo credits.\n3. Verify corporate domains trigger Apollo Enrichment + ICP Scoring (Seniority + Size + Industry).\n4. Confirm Brevo contact upsert includes sparse attribute preservation and tag assignments.\n5. Confirm Tier-1 hot leads trigger instant Slack SDR alert.\n\n*Need enterprise customisation or RevOps implementation? Visit [whoisalfaz.me/services/n8n-automation](https://whoisalfaz.me/services/n8n-automation)*",
-        "height": 320,
-        "width": 780,
-        "color": 4
+        "content": "## 🚀 Apollo.io to Brevo B2B Lead Enrichment Pipeline\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** Sales & Lead Generation / RevOps\n\n### 💡 Overview\nAutomates inbound B2B lead enrichment. Captures form webhooks, filters out consumer emails (Gmail, Yahoo), enriches prospect and company intelligence via Apollo.io, scores ICP fit, and syncs contacts into Brevo CRM.",
+        "height": 280,
+        "width": 480,
+        "color": 5
       },
-      "id": "sticky-sop",
-      "name": "Pipeline SOP & Setup Guide",
-      "type": "n8n-nodes-base.sticky",
+      "id": "sticky-apollo-overview",
+      "name": "Sticky: Overview",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         100,
-        -380
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 🔑 Credentials Setup\n- **Apollo API Key**: For People & Organization match endpoints\n- **Brevo API Key**: For contact upsert and list segmentation\n- **Slack Webhook URL**: For Enterprise ICP notifications",
+        "height": 280,
+        "width": 340,
+        "color": 7
+      },
+      "id": "sticky-apollo-creds",
+      "name": "Sticky: Credentials",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Ingestion & Security Validation\n- Receives inbound lead webhook from website or landing page.\n- Validates cryptographic HMAC signature and prevents circular sync loops via `AUTOMATION_ORIGIN`.",
+        "height": 200,
+        "width": 360,
+        "color": 4
+      },
+      "id": "sticky-apollo-step-1",
+      "name": "Sticky: Ingestion & Validation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Corporate Domain Filter\nFilters out 15+ generic email domains (gmail, yahoo, hotmail, proton) to protect Apollo API credits for genuine corporate inbounds.",
+        "height": 200,
+        "width": 240,
+        "color": 2
+      },
+      "id": "sticky-apollo-step-2",
+      "name": "Sticky: Domain Filter",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Apollo Match & ICP Scoring\n- Enriches job title, seniority, company headcount, revenue, and industry.\n- Calculates a 100-point ICP Score to separate Tier 1 Enterprise from standard leads.",
+        "height": 240,
+        "width": 440,
+        "color": 6
+      },
+      "id": "sticky-apollo-step-3",
+      "name": "Sticky: Apollo Match",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        760,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4. CRM Ingestion & Tier Routing\n- Syncs enriched data to Brevo CRM.\n- Automatically routes lead into Tier 1 Enterprise List vs Standard Nurture Pool.\n- Pushes instant Slack notification for high-value prospects.",
+        "height": 240,
+        "width": 500,
+        "color": 1
+      },
+      "id": "sticky-apollo-step-4",
+      "name": "Sticky: CRM Sync",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        50
       ]
     },
     {
@@ -279,7 +359,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"text\": \"\ud83d\udd25 *New Tier-1 Enterprise Inbound Enriched!*\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"\ud83c\udfaf High-Value ICP Lead Synced to Brevo\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Lead:* \" + $('ICP Lead Scorer & Normalizer').item.json.fullName + \"\\n*Email:* \" + $('ICP Lead Scorer & Normalizer').item.json.email\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Company:* \" + $('ICP Lead Scorer & Normalizer').item.json.companyName + \"\\n*Title:* \" + $('ICP Lead Scorer & Normalizer').item.json.attributes.JOB_TITLE\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*ICP Score:* `\" + $('ICP Lead Scorer & Normalizer').item.json.icpScore + \"/100`\\n*Tier:* `\" + $('ICP Lead Scorer & Normalizer').item.json.leadTier + \"`\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*LinkedIn:* <\" + $('ICP Lead Scorer & Normalizer').item.json.attributes.LINKEDIN_URL + \"|Profile>\\n*Synced To Brevo List:* `\" + $('ICP Lead Scorer & Normalizer').item.json.listIds[0] + \"`\"\n        }\n      ]\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"text\": \"🔥 *New Tier-1 Enterprise Inbound Enriched!*\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"🎯 High-Value ICP Lead Synced to Brevo\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Lead:* \" + $('ICP Lead Scorer & Normalizer').item.json.fullName + \"\\n*Email:* \" + $('ICP Lead Scorer & Normalizer').item.json.email\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Company:* \" + $('ICP Lead Scorer & Normalizer').item.json.companyName + \"\\n*Title:* \" + $('ICP Lead Scorer & Normalizer').item.json.attributes.JOB_TITLE\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*ICP Score:* `\" + $('ICP Lead Scorer & Normalizer').item.json.icpScore + \"/100`\\n*Tier:* `\" + $('ICP Lead Scorer & Normalizer').item.json.leadTier + \"`\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*LinkedIn:* <\" + $('ICP Lead Scorer & Normalizer').item.json.attributes.LINKEDIN_URL + \"|Profile>\\n*Synced To Brevo List:* `\" + $('ICP Lead Scorer & Normalizer').item.json.listIds[0] + \"`\"\n        }\n      ]\n    }\n  ]\n}",
         "options": {}
       },
       "id": "slack-tier1-alert-http",
@@ -370,7 +450,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"text\": \"\u26a0\ufe0f *Apollo-to-Brevo Enrichment Pipeline Error Alert*\",\n  \"attachments\": [\n    {\n      \"color\": \"#FF0000\",\n      \"title\": \"Pipeline Exception Caught by DLQ\",\n      \"text\": \"*Timestamp:* \" + $json.timestamp + \"\\n*Error:* `\" + $json.error_message + \"`\\n*Action:* Isolated to DLQ for self-healing replay.\"\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"text\": \"⚠️ *Apollo-to-Brevo Enrichment Pipeline Error Alert*\",\n  \"attachments\": [\n    {\n      \"color\": \"#FF0000\",\n      \"title\": \"Pipeline Exception Caught by DLQ\",\n      \"text\": \"*Timestamp:* \" + $json.timestamp + \"\\n*Error:* `\" + $json.error_message + \"`\\n*Action:* Isolated to DLQ for self-healing replay.\"\n    }\n  ]\n}",
         "options": {}
       },
       "id": "slack-error-alert-http",
