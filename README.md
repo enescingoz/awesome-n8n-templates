@@ -179,10 +179,11 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 
 ### What are the best n8n templates for Google Drive and Google Sheets?
 
-Browse 13 Google Drive and Google Sheets automation templates for n8n. Includes RAG chatbots for company documents, OpenAI model fine-tuning pipelines, automated background removal, lead qualification with GPT-4, applicant screening for HR, and document summarization workflows. Perfect for operations, sales, marketing, and engineering teams.
+Browse 17 Google Drive and Google Sheets automation templates for n8n. Includes RAG chatbots for company documents, OpenAI model fine-tuning pipelines, automated background removal, lead qualification and routing, applicant screening for HR, and document summarization workflows. Perfect for operations, sales, marketing, and engineering teams.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| B2B Demo Lead Rescue Desk - Enrich, Score, Route, and Escalate | Receives website leads by webhook, validates contact data, enriches page context, scores and routes each lead, logs the audit trail in Google Sheets, and sends tiered Gmail alerts with an executive SLA escalation path. | Sales/Ops | [Link to Template](Google_Drive_and_Google_Sheets/B2B%20Demo%20Lead%20Rescue%20Desk%20-%20Enrich%20Score%20Route%20and%20Escalate.json) |
 | Website leads to Google Sheets with Telegram alert and auto-reply (Italian) | Captures website form leads via webhook, appends them to Google Sheets, alerts the owner on Telegram and sends a courtesy reply to the lead. Docs in Italian. | Sales | [Link to Template](Google_Drive_and_Google_Sheets/Website%20leads%20to%20Google%20Sheets%20with%20Telegram%20alert%20and%20auto-reply%20%28Italian%29.json) |
 | Automatic payment reminders from Google Sheets (Italian) | Checks an invoices sheet every weekday morning and emails polite payment reminders for invoices due within 3 days or overdue. Docs in Italian. | Finance | [Link to Template](Google_Drive_and_Google_Sheets/Automatic%20payment%20reminders%20from%20Google%20Sheets%20%28Italian%29.json) |
 | Automated End-to-End Fine-Tuning of OpenAI Models with Google Drive Integration | Automates the fine-tuning of OpenAI models by integrating with Google Drive for data input and output, streamlining custom AI model training. | Engineering | [Link to Template](Google_Drive_and_Google_Sheets/Automated%20End-to-End%20Fine-Tuning%20of%20OpenAI%20Models%20with%20Google%20Drive%20Integration.json) |

@@ -1,0 +1,911 @@
+{
+  "name": "B2B Demo Lead Rescue Desk: Enrich, Score, Route, and SLA Escalate",
+  "nodes": [
+    {
+      "id": "note-overview",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1180,
+        -520
+      ],
+      "parameters": {
+        "content": "## B2B Demo Lead Rescue Desk: Enrich, Score, Route, and SLA Escalate\n\n### How it works\n\nThis workflow receives website demo, quote, and integration leads, normalizes inconsistent form payloads, enriches the submitted page context, scores buyer intent, assigns an SLA and owner, logs the lead to Google Sheets, routes Gmail alerts, and returns a structured webhook response.\n\n### Setup steps\n\n- Configure the Lead Intake Webhook URL in your website form or lead capture tool.\n- Replace placeholder Google Sheets credentials, sheet ID, and recipient Gmail addresses.\n- Test with one hot lead, one review lead, one normal lead, and one missing-contact payload.\n- Confirm SLA buckets, owner team routing, dedupe keys, and escalation terms match your sales process.\n\n### Customization\n\nAdjust scoring keywords, budget/timeline rules, recipient lists, and executive escalation thresholds to match your actual sales handoff.",
+        "width": 560,
+        "height": 840,
+        "color": 7
+      }
+    },
+    {
+      "id": "note-intake",
+      "name": "Receive and validate lead",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -220
+      ],
+      "parameters": {
+        "content": "## Receive and validate lead\n\nAccepts the incoming website lead webhook, normalizes common form field variants, scores contact quality, and rejects submissions that do not include a usable reply path.",
+        "width": 640,
+        "height": 360,
+        "color": 7
+      }
+    },
+    {
+      "id": "note-score-audit",
+      "name": "Score and audit lead",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        -260
+      ],
+      "parameters": {
+        "content": "## Score and audit lead\n\nFetches submitted-page context, extracts title and meta signals, combines page intent with message, budget, timeline, and integration keywords, builds a dedupe key, and appends a complete audit row to Google Sheets.",
+        "width": 900,
+        "height": 360,
+        "color": 7
+      }
+    },
+    {
+      "id": "note-missing-contact",
+      "name": "Reject missing contact",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        120,
+        180
+      ],
+      "parameters": {
+        "content": "## Reject missing contact\n\nBuilds a clear missing-contact response and returns it through the webhook branch before the workflow spends time on enrichment, Sheets logging, or alerts.",
+        "width": 560,
+        "height": 300,
+        "color": 7
+      }
+    },
+    {
+      "id": "note-routing",
+      "name": "Evaluate routing decisions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        -260
+      ],
+      "parameters": {
+        "content": "## Evaluate routing decisions\n\nRoutes hot, review, and normal leads to different alert payloads, then checks whether high-priority leads also need executive escalation.",
+        "width": 360,
+        "height": 600,
+        "color": 7
+      }
+    },
+    {
+      "id": "note-alerts",
+      "name": "Send alerts and response",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        -520
+      ],
+      "parameters": {
+        "content": "## Send alerts and response\n\nBuilds Gmail-ready messages for hot leads, review-queue leads, normal leads, and executive escalations, then returns a clean success payload to the website webhook caller.",
+        "width": 980,
+        "height": 860,
+        "color": 7
+      }
+    },
+    {
+      "id": "webhook",
+      "name": "Lead Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b2b-demo-lead-rescue",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "normalize",
+      "name": "Normalize, Score, and Assign Owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst pick = (...keys) => {\n  for (const key of keys) {\n    const value = body[key] ?? $json[key];\n    if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();\n  }\n  return '';\n};\nconst lead = {\n  received_at: new Date().toISOString(),\n  name: pick('name', 'full_name', 'contact_name'),\n  email: pick('email', 'work_email', 'business_email').toLowerCase(),\n  phone: pick('phone', 'mobile', 'tel'),\n  company: pick('company', 'organization', 'account'),\n  role: pick('role', 'job_title', 'title'),\n  message: pick('message', 'details', 'project', 'notes'),\n  budget: pick('budget', 'estimated_budget'),\n  timeline: pick('timeline', 'requested_timeline', 'deadline'),\n  page_url: pick('page_url', 'url', 'landing_page', 'referrer'),\n  source: pick('source', 'utm_source') || 'website',\n  utm_campaign: pick('utm_campaign'),\n};\nconst text = `${lead.message} ${lead.budget} ${lead.timeline} ${lead.page_url}`.toLowerCase();\nconst tags = [];\nconst tagIf = (condition, tag) => { if (condition) tags.push(tag); };\ntagIf(/demo|book|call|meeting|trial/.test(text), 'demo_request');\ntagIf(/pricing|quote|proposal|budget|cost|estimate/.test(text), 'commercial_intent');\ntagIf(/urgent|asap|today|tomorrow|this week|deadline/.test(text), 'time_sensitive');\ntagIf(/integration|api|crm|hubspot|salesforce|zapier|make|n8n|workflow|automation/.test(text), 'integration_need');\ntagIf(/migration|broken|not working|failed|stuck|error/.test(text), 'rescue_need');\ntagIf(/enterprise|security|compliance|sso|soc2|procurement/.test(text), 'enterprise_process');\nconst contactScore = lead.email.includes('@') ? 20 : (lead.phone.length >= 7 ? 12 : 0);\nconst companyScore = lead.company ? 10 : 0;\nconst roleScore = /founder|owner|ceo|cto|vp|director|head|ops|operations|revops|sales/i.test(lead.role) ? 10 : 0;\nconst budgetScore = lead.budget ? (/\\$|£|€|k|budget|approved/i.test(lead.budget) ? 18 : 8) : 0;\nconst tagScore = Math.min(42, tags.length * 7);\nconst score = Math.min(100, contactScore + companyScore + roleScore + budgetScore + tagScore + (lead.page_url ? 5 : 0));\nlead.intent_tags = tags.join(', ') || 'general_inquiry';\nlead.lead_score = score;\nlead.priority = score >= 72 ? 'hot' : score >= 42 ? 'review' : 'normal';\nlead.sla_minutes = score >= 72 ? 15 : score >= 42 ? 240 : 1440;\nlead.owner_team = /integration|api|workflow|automation|crm|hubspot|salesforce|make|n8n/.test(text) ? 'automation_ops' : 'sales';\nlead.needs_exec_escalation = score >= 82 || /enterprise|procurement|security|sso|soc2/.test(text);\nlead.dedupe_key = `${lead.email || lead.phone || 'unknown'}:${lead.company || 'no-company'}:${lead.page_url || lead.source}`.toLowerCase().replace(/\\s+/g, '-');\nlead.missing_contact = !(lead.email.includes('@') || lead.phone.length >= 7);\nreturn [{ json: lead }];"
+      }
+    },
+    {
+      "id": "has-contact",
+      "name": "Has Usable Contact?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.missing_contact === false }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "missing-response",
+      "name": "Build Missing Contact Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        260
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ false }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "needs_contact"
+            },
+            {
+              "id": "message",
+              "name": "response_message",
+              "type": "string",
+              "value": "Please include a work email or phone number so the team can follow up."
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-missing",
+      "name": "Respond Missing Contact",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        420,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: $json.ok, status: $json.status, message: $json.response_message } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "fetch-page",
+      "name": "Fetch Submitted Page Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        -100
+      ],
+      "parameters": {
+        "url": "={{ $json.page_url || \"https://example.com\" }}",
+        "options": {
+          "timeout": 8000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "page-signals",
+      "name": "Extract Page Signals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const lead = $('Normalize, Score, and Assign Owner').item.json;\nconst html = String($json.body || $json.data || '');\nconst title = (html.match(/<title[^>]*>([^<]+)<\\/title>/i)?.[1] || '').replace(/\\s+/g, ' ').trim();\nconst desc = (html.match(/<meta[^>]+name=[\"']description[\"'][^>]+content=[\"']([^\"']+)/i)?.[1] || '').replace(/\\s+/g, ' ').trim();\nconst pageText = `${title} ${desc}`.toLowerCase();\nconst pageTags = [];\nfor (const [term, tag] of [['pricing','pricing_page'], ['demo','demo_page'], ['case study','proof_page'], ['integration','integration_page'], ['contact','contact_page']]) {\n  if (pageText.includes(term)) pageTags.push(tag);\n}\nconst pageBoost = pageTags.includes('pricing_page') || pageTags.includes('demo_page') ? 8 : pageTags.length ? 3 : 0;\nconst score = Math.min(100, Number(lead.lead_score || 0) + pageBoost);\nreturn [{ json: { ...lead, page_title: title, page_description: desc, page_signal_tags: pageTags.join(', '), lead_score: score, priority: score >= 72 ? 'hot' : score >= 42 ? 'review' : 'normal', sla_minutes: score >= 72 ? 15 : score >= 42 ? 240 : 1440 } }];"
+      }
+    },
+    {
+      "id": "audit-row",
+      "name": "Build Audit Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "received",
+              "name": "received_at",
+              "type": "string",
+              "value": "={{ $json.received_at }}"
+            },
+            {
+              "id": "priority",
+              "name": "priority",
+              "type": "string",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "id": "score",
+              "name": "lead_score",
+              "type": "number",
+              "value": "={{ $json.lead_score }}"
+            },
+            {
+              "id": "sla",
+              "name": "sla_minutes",
+              "type": "number",
+              "value": "={{ $json.sla_minutes }}"
+            },
+            {
+              "id": "owner",
+              "name": "owner_team",
+              "type": "string",
+              "value": "={{ $json.owner_team }}"
+            },
+            {
+              "id": "tags",
+              "name": "intent_tags",
+              "type": "string",
+              "value": "={{ $json.intent_tags }}"
+            },
+            {
+              "id": "page_tags",
+              "name": "page_signal_tags",
+              "type": "string",
+              "value": "={{ $json.page_signal_tags }}"
+            },
+            {
+              "id": "dedupe",
+              "name": "dedupe_key",
+              "type": "string",
+              "value": "={{ $json.dedupe_key }}"
+            },
+            {
+              "id": "email",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "id": "company",
+              "name": "company",
+              "type": "string",
+              "value": "={{ $json.company }}"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "sheet",
+      "name": "Append Lead Audit Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        900,
+        -100
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_SHEETS_CREDENTIAL",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "route",
+      "name": "Route by Priority",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1140,
+        -100
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "review",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "hot-alert",
+      "name": "Build Hot Lead Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1380,
+        -280
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "subject",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ `[HOT ${$json.lead_score}] ${$json.company || $json.name || $json.email} - ${$json.intent_tags}` }}"
+            },
+            {
+              "id": "body",
+              "name": "email_body",
+              "type": "string",
+              "value": "={{ `SLA: ${$json.sla_minutes} minutes\\nOwner: ${$json.owner_team}\\nTags: ${$json.intent_tags}\\nPage: ${$json.page_url}\\nPage signals: ${$json.page_signal_tags}\\nBudget: ${$json.budget}\\nTimeline: ${$json.timeline}\\nMessage: ${$json.message}\\nDedupe: ${$json.dedupe_key}` }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "send-hot",
+      "name": "Send Hot Lead Gmail Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        -280
+      ],
+      "parameters": {
+        "sendTo": "sales@example.com",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "review-alert",
+      "name": "Build Review Queue Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1380,
+        -80
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "subject",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ `[REVIEW ${$json.lead_score}] ${$json.company || $json.name || $json.email}` }}"
+            },
+            {
+              "id": "body",
+              "name": "email_body",
+              "type": "string",
+              "value": "={{ `Review today. Tags: ${$json.intent_tags}\\nOwner: ${$json.owner_team}\\nMessage: ${$json.message}\\nDedupe: ${$json.dedupe_key}` }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "send-review",
+      "name": "Send Review Queue Gmail Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        -80
+      ],
+      "parameters": {
+        "sendTo": "ops@example.com",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "normal-alert",
+      "name": "Build Normal Lead Note",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1380,
+        120
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "subject",
+              "name": "email_subject",
+              "type": "string",
+              "value": "={{ `[NORMAL ${$json.lead_score}] ${$json.company || $json.email}` }}"
+            },
+            {
+              "id": "body",
+              "name": "email_body",
+              "type": "string",
+              "value": "={{ `Next business day follow-up. Tags: ${$json.intent_tags}\\nMessage: ${$json.message}` }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "send-normal",
+      "name": "Send Normal Lead Gmail Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        120
+      ],
+      "parameters": {
+        "sendTo": "inbox@example.com",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "exec-check",
+      "name": "Needs Executive Escalation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        -280
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ Boolean($json.needs_exec_escalation) }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "send-exec",
+      "name": "Send Executive Escalation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2100,
+        -380
+      ],
+      "parameters": {
+        "sendTo": "leadership@example.com",
+        "subject": "={{ `[EXEC ESCALATION] ${$json.company || $json.email} - score ${$json.lead_score}` }}",
+        "message": "={{ `Enterprise/high-score lead needs fast review.\\nOwner: ${$json.owner_team}\\nTags: ${$json.intent_tags}\\nBudget: ${$json.budget}\\nTimeline: ${$json.timeline}\\nMessage: ${$json.message}` }}",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_GMAIL_CREDENTIAL",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "success",
+      "name": "Build Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2100,
+        -80
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ true }}"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "id": "score",
+              "name": "score",
+              "type": "number",
+              "value": "={{ $json.lead_score }}"
+            },
+            {
+              "id": "sla",
+              "name": "sla_minutes",
+              "type": "number",
+              "value": "={{ $json.sla_minutes }}"
+            },
+            {
+              "id": "owner",
+              "name": "owner_team",
+              "type": "string",
+              "value": "={{ $json.owner_team }}"
+            },
+            {
+              "id": "dedupe",
+              "name": "dedupe_key",
+              "type": "string",
+              "value": "={{ $json.dedupe_key }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        -80
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: $json.ok, status: $json.status, score: $json.score, sla_minutes: $json.sla_minutes, owner_team: $json.owner_team, dedupe_key: $json.dedupe_key } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Lead Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize, Score, and Assign Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize, Score, and Assign Owner": {
+      "main": [
+        [
+          {
+            "node": "Has Usable Contact?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Usable Contact?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Submitted Page Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Missing Contact Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Missing Contact Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Missing Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Submitted Page Context": {
+      "main": [
+        [
+          {
+            "node": "Extract Page Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Page Signals": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Audit Row": {
+      "main": [
+        [
+          {
+            "node": "Append Lead Audit Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Lead Audit Row": {
+      "main": [
+        [
+          {
+            "node": "Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Priority": {
+      "main": [
+        [
+          {
+            "node": "Build Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Review Queue Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Normal Lead Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Hot Lead Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Hot Lead Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Hot Lead Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Needs Executive Escalation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Executive Escalation?": {
+      "main": [
+        [
+          {
+            "node": "Send Executive Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Executive Escalation": {
+      "main": [
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Review Queue Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Review Queue Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Review Queue Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Normal Lead Note": {
+      "main": [
+        [
+          {
+            "node": "Send Normal Lead Gmail Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Normal Lead Gmail Alert": {
+      "main": [
+        [
+          {
+            "node": "Build Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "tinyops-b2b-demo-lead-rescue-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
