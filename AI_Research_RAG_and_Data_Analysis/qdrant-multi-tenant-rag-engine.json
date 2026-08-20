@@ -3,18 +3,82 @@
   "nodes": [
     {
       "parameters": {
-        "content": "# \ud83d\udee1\ufe0f Qdrant Multi-Tenant RAG Engine SOP\n\n**Author**: Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Architecture**: Shared Qdrant Collection with Strict Payload Pre-Filtering & OpenAI Synthesis\n\n### \ud83d\udd11 Required Credentials & Endpoints\n- `QDRANT_HOST`: URL to Qdrant cluster (e.g. `http://qdrant.internal:6333` or Qdrant Cloud)\n- `QDRANT_API_KEY`: API Key for self-hosted or managed Qdrant instance\n- `QDRANT_COLLECTION`: Target collection name (e.g. `enterprise_rag_vectors`)\n- `OPENAI_API_KEY`: OpenAI Key for `text-embedding-3-small` and `gpt-4o` synthesis\n\n### \u2699\ufe0f Multi-Tenant Payload Security Rule:\n- Mandatory pre-filters: `tenant_id` AND `workspace_id` must match authenticated session.\n- Qdrant payload keyword index on `tenant_id` guarantees sub-10ms query isolation.\n\n### \ud83e\uddea Testing Protocol:\n1. POST query to `/rag-multi-tenant-query` with headers `x-tenant-id: acme_corp`, `x-workspace-id: sales` and body `{\"query\": \"What is the custom enterprise SLA?\"}`.\n2. Confirm OpenAI embedding vector is generated (1536 dimensions).\n3. Trace Qdrant search payload: verify `filter.must` includes exact `tenant_id` and `workspace_id`.\n4. Check Algorithmic Relevance Gate: ensures only chunks with cosine similarity >= 0.70 are passed to LLM.\n5. Verify GPT-4o synthesis answers strictly with citations (`[Doc: X]`).\n\n*Need custom multi-tenant vector infrastructure or self-hosted Qdrant deployment? Visit [whoisalfaz.me/contact](https://whoisalfaz.me/contact)*",
-        "height": 340,
-        "width": 800,
-        "color": 6
+        "content": "## 🧠 Multi-Tenant Qdrant RAG & AI Agent Engine\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** AI / Vector Databases / RAG\n\n### 💡 Overview\nEnterprise RAG pipeline supporting multi-tenant vector searches. Isolates client datasets using payload metadata pre-filters (`tenant_id`, `workspace_id`), validates vector relevance via cosine similarity threshold, and synthesizes answers using GPT-4o with grounded citations.",
+        "height": 280,
+        "width": 480,
+        "color": 5
       },
-      "id": "sticky-rag-sop",
-      "name": "Multi-Tenant RAG SOP",
-      "type": "n8n-nodes-base.sticky",
+      "id": "sticky-qdrant-overview",
+      "name": "Sticky: Overview",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         100,
-        -400
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 🔑 Credentials Setup\n- **OpenAI API Key**: For `text-embedding-3-small` & GPT-4o synthesis\n- **Qdrant URL & API Key**: Endpoint for self-hosted or cloud Qdrant cluster (e.g. `http://qdrant:6333`)",
+        "height": 280,
+        "width": 340,
+        "color": 7
+      },
+      "id": "sticky-qdrant-creds",
+      "name": "Sticky: Credentials",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Inbound Query & Tenant Authentication\nCaptures query payload and extracts `tenant_id` / `workspace_id` from headers or body to enforce strict security boundaries.",
+        "height": 200,
+        "width": 360,
+        "color": 4
+      },
+      "id": "sticky-qdrant-step-1",
+      "name": "Sticky: Tenant Ingest",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Dense Embeddings & Quantized Search\nGenerates 1536-dimensional embeddings and executes vector search in Qdrant with pre-filters on `tenant_id`.",
+        "height": 200,
+        "width": 320,
+        "color": 6
+      },
+      "id": "sticky-qdrant-step-2",
+      "name": "Sticky: Vector Search",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Relevance Gate & GPT-4o Synthesis\n- Cosine Similarity Gate: Filters out documents below threshold (0.68).\n- Grounded RAG Agent: Synthesizes final response with exact source document references.",
+        "height": 200,
+        "width": 480,
+        "color": 1
+      },
+      "id": "sticky-qdrant-step-3",
+      "name": "Sticky: RAG Synthesis",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        840,
+        50
       ]
     },
     {
