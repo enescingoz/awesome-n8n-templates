@@ -1,46 +1,46 @@
 {
-  "name": "ManyChat Async Timeout Handler",
+  "name": "Handle ManyChat WhatsApp leads with OpenAI, Brevo CRM and Slack alerts",
   "nodes": [
     {
       "parameters": {
         "content": "## ⚡ ManyChat Async Webhook Timeout Handler\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** Chatbots / AI SDR / WhatsApp Automation\n\n### 💡 Overview\nManyChat enforces a strict **10-second timeout** on external webhooks. If an automation (LLM synthesis, CRM lookups, DB queries) takes longer than 10s, ManyChat marks the step as failed.\n\n### 🚀 The Solution\nThis workflow immediately returns an **HTTP 200 OK (<150ms)** handshake to satisfy ManyChat, then executes AI lead scoring, Brevo CRM contact sync, and pushes a personalized WhatsApp reply asynchronously via ManyChat's API.",
-        "height": 280,
-        "width": 480,
+        "height": 300,
+        "width": 500,
         "color": 5
       },
-      "id": "sticky-overview",
+      "id": "c1f7a01a-0001-4000-8000-000000000001",
       "name": "Sticky: Overview & Architecture",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         100,
-        -320
+        -340
       ]
     },
     {
       "parameters": {
-        "content": "### 🔑 Credentials Setup\nEnsure these environment variables or credentials are configured:\n- **OpenAI API Key**: For GPT-4o-mini message generation\n- **Brevo API Key**: For CRM contact creation & scoring\n- **ManyChat API Key**: Access token for WhatsApp sendContent API\n- **Slack Webhook URL**: For SDR hot lead alerts",
-        "height": 280,
-        "width": 380,
+        "content": "### 🔑 Credentials Setup\nConfigure these environment variables or credentials:\n- **OpenAI API Key**: For GPT-4o-mini message generation\n- **Brevo API Key**: For CRM contact creation & scoring\n- **ManyChat API Key**: Access token for WhatsApp sendContent API\n- **Slack Webhook URL**: For SDR hot lead alerts",
+        "height": 300,
+        "width": 400,
         "color": 7
       },
-      "id": "sticky-credentials",
+      "id": "c1f7a01a-0001-4000-8000-000000000002",
       "name": "Sticky: Setup & Credentials",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        620,
-        -320
+        640,
+        -340
       ]
     },
     {
       "parameters": {
         "content": "### 1. Ingestion & Fast Handshake (<150ms)\n- **Webhook Ingest**: Receives subscriber data from ManyChat.\n- **Respond to Webhook**: Returns instant HTTP 200 OK to bypass the 10-second timeout ceiling while n8n continues processing in the background.",
-        "height": 220,
-        "width": 420,
+        "height": 240,
+        "width": 460,
         "color": 4
       },
-      "id": "sticky-step-1",
+      "id": "c1f7a01a-0001-4000-8000-000000000003",
       "name": "Sticky: Step 1 Ingestion",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -52,65 +52,49 @@
     {
       "parameters": {
         "content": "### 2. Lead Qualification & Scoring\nExtracts custom fields (budget, timeline, intent), validates phone/email, and assigns an algorithmic lead score (Hot, Warm, Nurture).",
-        "height": 220,
-        "width": 240,
+        "height": 240,
+        "width": 260,
         "color": 2
       },
-      "id": "sticky-step-2",
+      "id": "c1f7a01a-0001-4000-8000-000000000004",
       "name": "Sticky: Step 2 Lead Scoring",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        560,
+        580,
         20
       ]
     },
     {
       "parameters": {
         "content": "### 3. Parallel AI Generation & CRM Sync\n- **AI WhatsApp Copy**: Uses GPT-4o-mini to draft a context-aware reply.\n- **Brevo CRM**: Upserts the lead with tags and lead score in parallel.",
-        "height": 380,
-        "width": 320,
+        "height": 400,
+        "width": 340,
         "color": 6
       },
-      "id": "sticky-step-3",
+      "id": "c1f7a01a-0001-4000-8000-000000000005",
       "name": "Sticky: Step 3 AI & CRM",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        840,
-        -100
+        880,
+        -80
       ]
     },
     {
       "parameters": {
         "content": "### 4. WhatsApp Delivery & Alerts\n- **Format Payload**: Prepares text and contact IDs.\n- **ManyChat Callback**: Pushes WhatsApp message via `sendContent` API.\n- **Slack Alert**: Alerts sales team if lead is scored as HOT.",
-        "height": 380,
-        "width": 580,
+        "height": 400,
+        "width": 800,
         "color": 1
       },
-      "id": "sticky-step-4",
+      "id": "c1f7a01a-0001-4000-8000-000000000006",
       "name": "Sticky: Step 4 WhatsApp Push",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1200,
-        -100
-      ]
-    },
-    {
-      "parameters": {
-        "content": "### ⚠️ Error Catch & Monitoring\nCatches failed API handshakes or network drops and routes diagnostic logs to your designated error channel.",
-        "height": 200,
-        "width": 360,
-        "color": 3
-      },
-      "id": "sticky-step-5",
-      "name": "Sticky: Error Handling",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        1200,
-        320
+        1260,
+        -80
       ]
     },
     {
@@ -120,7 +104,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "manychat-webhook-ingest",
+      "id": "c1f7a01a-0002-4000-8000-000000000001",
       "name": "ManyChat Webhook Ingest",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -138,7 +122,7 @@
           "responseCode": 200
         }
       },
-      "id": "instant-200-handshake",
+      "id": "c1f7a01a-0002-4000-8000-000000000002",
       "name": "Instant 200 OK Handshake (<150ms)",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -151,7 +135,7 @@
       "parameters": {
         "jsCode": "// Extract & Qualify Subscriber Data from ManyChat Payload\nconst rawBody = $('ManyChat Webhook Ingest').item.json.body || {};\nconst customFields = rawBody.custom_fields || {};\n\nconst subscriberId = String(rawBody.subscriber_id || rawBody.id || customFields.subscriber_id || '');\nconst firstName = rawBody.first_name || customFields.first_name || 'there';\nconst lastName = rawBody.last_name || '';\nconst phone = rawBody.phone || customFields.phone || '';\nconst email = (rawBody.email || customFields.email || '').trim().toLowerCase();\nconst userMessage = rawBody.user_message || customFields.last_user_input || rawBody.last_input_text || 'Tell me about your services';\nconst budget = customFields.budget_range || rawBody.budget || '$5k-$15k';\nconst timeline = customFields.timeline || rawBody.timeline || 'This Month';\nconst interest = customFields.interest || rawBody.interest || 'AI Automation';\n\n// Lead Scoring Logic\nlet score = 0;\nif (budget.includes('15k+') || budget.includes('20k+')) score += 40;\nelse if (budget.includes('5k') || budget.includes('10k')) score += 25;\nelse score += 10;\n\nif (timeline.toLowerCase().includes('week') || timeline.toLowerCase().includes('now')) score += 30;\nelse if (timeline.toLowerCase().includes('month')) score += 20;\nelse score += 10;\n\nif (phone) score += 15;\nif (email) score += 15;\n\nconst leadTier = score >= 70 ? 'HOT_LEAD' : (score >= 40 ? 'WARM_LEAD' : 'NURTURE_LEAD');\n\nreturn [{\n  json: {\n    subscriber_id: subscriberId,\n    first_name: firstName,\n    last_name: lastName,\n    phone: phone,\n    email: email,\n    user_message: userMessage,\n    budget: budget,\n    timeline: timeline,\n    interest: interest,\n    lead_score: score,\n    lead_tier: leadTier,\n    isHotLead: leadTier === 'HOT_LEAD',\n    received_at: new Date().toISOString()\n  }\n}];"
       },
-      "id": "parse-qualify-subscriber",
+      "id": "c1f7a01a-0002-4000-8000-000000000003",
       "name": "Parse & Qualify Subscriber",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -188,12 +172,12 @@
           }
         }
       },
-      "id": "openai-whatsapp-agent",
+      "id": "c1f7a01a-0002-4000-8000-000000000004",
       "name": "AI WhatsApp Copy Generator",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
+        920,
         0
       ],
       "onError": "continueErrorOutput"
@@ -226,12 +210,12 @@
           }
         }
       },
-      "id": "brevo-lead-sync-http",
+      "id": "c1f7a01a-0002-4000-8000-000000000005",
       "name": "Brevo CRM Async Upsert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
+        920,
         200
       ],
       "onError": "continueErrorOutput"
@@ -240,12 +224,12 @@
       "parameters": {
         "jsCode": "// Prepare ManyChat WhatsApp Push Payload\nconst subscriber = $('Parse & Qualify Subscriber').item.json;\nconst aiRes = $('AI WhatsApp Copy Generator').item.json;\n\nconst generatedText = aiRes.choices && aiRes.choices[0] && aiRes.choices[0].message\n  ? aiRes.choices[0].message.content\n  : `Hi ${subscriber.first_name}, thanks for reaching out! Our team has received your inquiry regarding ${subscriber.interest} and will reply shortly.`;\n\nreturn [{\n  json: {\n    subscriber_id: subscriber.subscriber_id,\n    message_text: generatedText,\n    lead_score: subscriber.lead_score,\n    lead_tier: subscriber.lead_tier,\n    isHotLead: subscriber.isHotLead,\n    first_name: subscriber.first_name,\n    phone: subscriber.phone\n  }\n}];"
       },
-      "id": "format-manychat-payload-code",
+      "id": "c1f7a01a-0002-4000-8000-000000000006",
       "name": "Format WhatsApp Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1140,
+        1280,
         0
       ]
     },
@@ -283,12 +267,12 @@
           }
         }
       },
-      "id": "manychat-send-content-http",
+      "id": "c1f7a01a-0002-4000-8000-000000000007",
       "name": "ManyChat WhatsApp Callback API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1400,
+        1520,
         0
       ],
       "onError": "continueErrorOutput"
@@ -303,7 +287,7 @@
           },
           "conditions": [
             {
-              "id": "cond-hot",
+              "id": "c1f7a01a-0003-4000-8000-000000000001",
               "leftValue": "={{ $('Format WhatsApp Message').item.json.isHotLead }}",
               "comparison": "equals",
               "rightValue": true
@@ -312,12 +296,12 @@
           "combinator": "and"
         }
       },
-      "id": "is-hot-lead-if",
+      "id": "c1f7a01a-0002-4000-8000-000000000008",
       "name": "Is Hot WhatsApp Lead?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1660,
+        1780,
         0
       ]
     },
@@ -339,16 +323,17 @@
         "jsonBody": "={\n  \"text\": \"🚨 *HOT WhatsApp Lead Escalation!*\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"🔥 Immediate SDR Action Required\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Lead:* \" + $('Format WhatsApp Message').item.json.first_name + \"\\n*Phone:* \" + $('Format WhatsApp Message').item.json.phone\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Lead Score:* `\" + $('Format WhatsApp Message').item.json.lead_score + \"/100`\\n*Tier:* `HOT_LEAD`\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Direct WhatsApp Chat:* <https://wa.me/\" + $('Format WhatsApp Message').item.json.phone.replace(/[^0-9]/g, '') + \"|Open WhatsApp Chat>\"\n        }\n      ]\n    }\n  ]\n}",
         "options": {}
       },
-      "id": "slack-hot-lead-alert-http",
+      "id": "c1f7a01a-0002-4000-8000-000000000009",
       "name": "Slack SDR WhatsApp Alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1920,
+        2040,
         -100
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "ManyChat Webhook Ingest": {
       "main": [
@@ -437,10 +422,10 @@
   "settings": {
     "executionOrder": "v1"
   },
+  "versionId": "c1f7a01a-0004-4000-8000-000000000001",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "author": "Alfaz Mahmud Rizve",
-    "authorUrl": "https://whoisalfaz.me",
-    "package": "n8n Community Workflow Ecosystem"
-  }
+    "instanceId": "whoisalfaz-n8n-production"
+  },
+  "tags": []
 }
