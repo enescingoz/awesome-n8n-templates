@@ -1,0 +1,204 @@
+{
+  "name": "LeadBot 24h — WhatsApp AI Lead Qualification Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "leadbot-24h",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-incoming",
+      "name": "WhatsApp Webhook (WAHA)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "leadbot-24h-webhook",
+      "notes": "Configure WAHA (WhatsApp HTTP API) to POST incoming messages here. See: https://waha.dev"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize incoming WhatsApp payload to standard lead format\nconst msg = $input.first().json;\nconst lead = {\n  phone: msg.data?.from || msg.from || '',\n  message: msg.data?.body || msg.body || msg.text || '',\n  name: msg.data?.fromName || msg.data?.name || '',\n  timestamp: new Date().toISOString(),\n  source: 'whatsapp'};\n\n// Simple keyword-based urgency detection (no paid API required)\nconst urgentKeywords = ['preço', 'price', 'comprar', 'buy', 'contratar', 'urgente', 'orçamento', 'demissão', 'demissao', 'folha', 'payroll', 'admissão', 'admissao', 'férias'];\nconst msgLower = (lead.message || '').toLowerCase();\nlead.intent_score = urgentKeywords.some(k => msgLower.includes(k)) ? 9 : 5;\nlead.urgency = lead.intent_score >= 8 ? 'HOT' : 'WARM';\n\nreturn [{ json: lead }];"
+      },
+      "id": "normalize-lead",
+      "name": "Normalize & Score Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "notes": "Extracts lead fields and assigns intent score. Replace keyword logic with AI node for production (OpenAI/Gemini free tier)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Route hot leads to CRM / Google Sheets\nconst lead = $input.first().json;\nif (lead.urgency === 'HOT') {\n  return [{ json: lead }];\n}\nreturn [];"
+      },
+      "name": "Filter Hot Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        200
+      ],
+      "id": "filter-hot"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "YOUR_GOOGLE_SHEET_ID",
+        "range": "Sheet1!A:E",
+        "columns": {
+          "mappings": [
+            {
+              "toField": "A",
+              "value": "={{$json.phone}}",
+              "type": "string"
+            },
+            {
+              "toField": "B",
+              "value": "={{$json.name}}",
+              "type": "string"
+            },
+            {
+              "toField": "C",
+              "value": "={{$json.message}}",
+              "type": "string"
+            },
+            {
+              "toField": "D",
+              "value": "={{$json.intent_score}}",
+              "type": "number"
+            },
+            {
+              "toField": "E",
+              "value": "={{$json.urgency}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Save Lead to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        860,
+        200
+      ],
+      "id": "save-sheets",
+      "notes": "Requires Google Sheets OAuth credential. Replace YOUR_GOOGLE_SHEET_ID with your sheet ID."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/YOUR_SLACK_WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "🔥 HOT LEAD from WhatsApp\\nPhone: {{$json.phone}}\nName: {{$json.name}}\nMessage: {{$json.message}}\nIntent Score: {{$json.intent_score}}/10\nUrgency: {{$json.urgency}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Notify Sales Team (Slack/Webhook)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        860,
+        400
+      ],
+      "id": "notify-sales"
+    },
+    {
+      "parameters": {
+        "content": "Obrigado pelo contato! 😊\\n\\nRecebemos sua mensagem. Nossa equipe vai retornar em breve.\\n\\nEnquanto isso, conheça nossas soluções: https://planificador7.gumroad.com/l/leadbot-24h",
+        "options": {
+          "waTemplate": {
+            "name": "leadbot_welcome_reply",
+            "namespace": "eae8f7e2_1b2c_4d3e_9f4a_5c6d7e8f9a0b"
+          }
+        }
+      },
+      "name": "Send Auto-Reply (WhatsApp)",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        300
+      ],
+      "id": "auto-reply",
+      "notes": "Requires WhatsApp Business API or WAHA credential. Configure in n8n."
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook (WAHA)": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Score Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Score Lead": {
+      "main": [
+        [
+          {
+            "node": "Filter Hot Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Hot Leads": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Sales Team (Slack/Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": [
+    "whatsapp",
+    "lead-qualification",
+    "ai",
+    "n8n",
+    "sales",
+    "free"
+  ]
+}
