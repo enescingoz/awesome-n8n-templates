@@ -722,7 +722,7 @@ jobs:
           
           **NEEDS CHANGES**
           
-          README entries may only use relative/internal paths or URLs pointing to `github.com/enescingoz/awesome-n8n-templates`. External repositories and other off-repo URLs are not allowed.
+          README entries may only use relative/internal paths or URLs pointing to 'github.com/enescingoz/awesome-n8n-templates'. External repositories and other off-repo URLs are not allowed.
           
           ### Action Items
           
@@ -1396,7 +1396,7 @@ jobs:
             
             **NEEDS CHANGES**
             
-            README entries may only use relative/internal paths or URLs pointing to `github.com/enescingoz/awesome-n8n-templates`. External repositories and other off-repo URLs are not allowed.
+            README entries may only use relative/internal paths or URLs pointing to 'github.com/enescingoz/awesome-n8n-templates'. External repositories and other off-repo URLs are not allowed.
             
             ### Action Items
             
