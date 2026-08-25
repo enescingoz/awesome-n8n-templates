@@ -278,10 +278,11 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 
 ### What n8n templates are available for DevOps and server automation?
 
-This section includes 5 DevOps and reliability templates for n8n. Trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, diagnose failed n8n execution JSON without connecting to a live instance, or get a Telegram alert only when a site's up/down state changes.
+This section includes 6 DevOps and reliability templates for n8n. Audit a public page and build an implementation acceptance pack, trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, diagnose failed n8n execution JSON without connecting to a live instance, or get a Telegram alert only when a site's up/down state changes.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| Audit a Public Page and Build an Automation Acceptance Pack | Validate one public URL, collect bounded integration-readiness evidence, generate launch gates and acceptance tests, and route the result for implementation or review. | Engineering | [Link to Template](devops/Audit%20a%20Public%20Page%20and%20Build%20an%20Automation%20Acceptance%20Pack.json) |
 | Linux System Update via Webhook | Trigger update & upgrade of your Debian-based server via an authenticated POST request and SSH. | SSH Tools | [Link to Template](devops/linux-update-via-webhook.json)
 | Docker Compose Controller via Webhook | Start or stop Docker Compose services on your server via authenticated HTTP POST request with n8n + SSH. | SSH Tools | [Link to Template](devops/docker-compose-controller.json) |
 | Disk Space Watchdog with Tiered Thresholds | Check disk usage over SSH on a schedule, warn at 80% and 90%, and alert only when a mountpoint changes level - no repeated alerts for the same full disk. Telegram with e-mail fallback. | SSH Tools | [Link to Template](devops/disk-space-watchdog.json) |
