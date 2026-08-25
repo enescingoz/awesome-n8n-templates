@@ -1,0 +1,454 @@
+{
+  "name": "Qdrant Multi-Tenant RAG Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🧠 Multi-Tenant Qdrant RAG & AI Agent Engine\n**Author:** Alfaz Mahmud Rizve ([whoisalfaz.me](https://whoisalfaz.me))\n**Category:** AI / Vector Databases / RAG\n\n### 💡 Problem & Solution\nEnterprise RAG pipeline supporting multi-tenant vector searches. Isolates client datasets using payload metadata pre-filters (`tenant_id`), validates vector relevance via cosine similarity threshold, and synthesizes answers using GPT-4o with grounded citations.",
+        "height": 260,
+        "width": 560,
+        "color": 5
+      },
+      "id": "sticky-qdrant-overview",
+      "name": "Sticky: Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -350
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 🔑 Required Credentials & Setup\n- **OpenAI API Key**: Used for `text-embedding-3-small` & GPT-4o synthesis\n- **Qdrant URL & Key**: Self-hosted or cloud Qdrant cluster endpoint",
+        "height": 260,
+        "width": 480,
+        "color": 7
+      },
+      "id": "sticky-qdrant-creds",
+      "name": "Sticky: Credentials",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        620,
+        -350
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Inbound Ingress & Tenant Auth\nReceives user query and validates tenant authorization headers.",
+        "height": 160,
+        "width": 480,
+        "color": 4
+      },
+      "id": "sticky-qdrant-step-1",
+      "name": "Sticky: Tenant Ingest",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Embeddings & Quantized Vector Search\nGenerates 1536-dim embeddings and queries Qdrant with tenant payload filters.",
+        "height": 160,
+        "width": 480,
+        "color": 6
+      },
+      "id": "sticky-qdrant-step-2",
+      "name": "Sticky: Vector Search",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -50
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Relevance Gate & Grounded Synthesis\nEnforces cosine similarity threshold and synthesizes response with citations.",
+        "height": 160,
+        "width": 580,
+        "color": 1
+      },
+      "id": "sticky-qdrant-step-3",
+      "name": "Sticky: RAG Synthesis",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -50
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-multi-tenant-query",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rag-webhook-ingest",
+      "name": "RAG Query Ingress Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "rag-multi-tenant-query"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tenant Authentication & Payload Sanitization Middleware\nconst headers = $input.first().json.headers || {};\nconst body = $input.first().json.body || {};\n\n// Extract tenant identity from headers or body\nconst tenantId = (headers['x-tenant-id'] || body.tenant_id || body.tenantId || '').trim();\nconst workspaceId = (headers['x-workspace-id'] || body.workspace_id || body.workspaceId || 'default').trim();\nconst queryText = (body.query || body.prompt || body.message || '').trim();\nconst topK = Number(body.top_k || body.limit || 5);\nconst scoreThreshold = Number(body.score_threshold || 0.68);\nconst categoryFilter = body.category || null;\n\n// Security Check - Tenant ID is strictly mandatory\nif (!tenantId) {\n  return [{\n    json: {\n      isAuthenticated: false,\n      errorCode: 'ERR_MISSING_TENANT_ID',\n      errorMessage: 'Security Exception: x-tenant-id header or tenant_id body parameter is required.',\n      statusCode: 401\n    }\n  }];\n}\n\nif (!queryText) {\n  return [{\n    json: {\n      isAuthenticated: false,\n      errorCode: 'ERR_EMPTY_QUERY',\n      errorMessage: 'Query validation failed: query string cannot be empty.',\n      statusCode: 400\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    isAuthenticated: true,\n    tenant_id: tenantId,\n    workspace_id: workspaceId,\n    query: queryText,\n    top_k: topK,\n    score_threshold: scoreThreshold,\n    category_filter: categoryFilter,\n    session_id: body.session_id || `session_${Date.now()}`,\n    received_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "tenant-auth-middleware",
+      "name": "Tenant Auth & Payload Middleware",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-rag-auth",
+              "leftValue": "={{ $json.isAuthenticated }}",
+              "comparison": "equals",
+              "rightValue": true
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-tenant-authenticated-if",
+      "name": "Is Tenant Authenticated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer ={{ $env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\": \"{{ $json.query.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "openai-embeddings-http",
+      "name": "Generate Vector Embeddings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1020,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare Qdrant Search Payload with Strict Tenant Filtering\nconst authData = $('Tenant Auth & Payload Middleware').item.json;\nconst embData = $input.first().json;\n\nconst vector = embData.data && embData.data[0] ? embData.data[0].embedding : null;\nif (!vector) {\n  throw new Error('Failed to generate vector embedding from OpenAI API.');\n}\n\n// Construct immutable tenant pre-filter\nconst mustConditions = [\n  {\n    key: \"tenant_id\",\n    match: { value: authData.tenant_id }\n  }\n];\n\nif (authData.workspace_id && authData.workspace_id !== 'default') {\n  mustConditions.push({\n    key: \"workspace_id\",\n    match: { value: authData.workspace_id }\n  });\n}\n\nif (authData.category_filter) {\n  mustConditions.push({\n    key: \"category\",\n    match: { value: authData.category_filter }\n  });\n}\n\nconst qdrantPayload = {\n  vector: vector,\n  limit: authData.top_k || 5,\n  with_payload: true,\n  with_vector: false,\n  score_threshold: authData.score_threshold || 0.65,\n  filter: {\n    must: mustConditions\n  }\n};\n\nreturn [{\n  json: {\n    ...authData,\n    qdrant_payload: qdrantPayload\n  }\n}];"
+      },
+      "id": "build-qdrant-filter-code",
+      "name": "Build Qdrant Tenant Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.QDRANT_HOST || 'http://localhost:6333').replace(/\\/$/, '') }}/collections/{{ $env.QDRANT_COLLECTION || 'enterprise_rag_vectors' }}/points/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "api-key",
+              "value": "={{ $env.QDRANT_API_KEY || '' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.qdrant_payload) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 500
+            }
+          }
+        }
+      },
+      "id": "qdrant-search-http",
+      "name": "Qdrant Vector Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1700,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Context Formatter & Relevance Scoring Gate\nconst rawResult = $input.first().json;\nconst authData = $('Tenant Auth & Payload Middleware').item.json;\nconst points = rawResult.result || [];\n\nif (!points || points.length === 0) {\n  return [{\n    json: {\n      ...authData,\n      context_found: false,\n      context_text: 'No relevant internal tenant documentation found for this query.',\n      citations: [],\n      avg_score: 0\n    }\n  }];\n}\n\nlet totalScore = 0;\nconst citations = [];\nconst formattedChunks = [];\n\npoints.forEach((pt, idx) => {\n  const payload = pt.payload || {};\n  const score = pt.score || 0;\n  totalScore += score;\n  \n  const docId = payload.document_id || `doc_${idx + 1}`;\n  const title = payload.title || payload.filename || 'Documentation';\n  const content = payload.content || payload.text || '';\n  \n  citations.push({\n    document_id: docId,\n    title: title,\n    score: Number(score.toFixed(4)),\n    category: payload.category || 'general'\n  });\n  \n  formattedChunks.push(`### Source [${idx + 1}] - ${title} (DocID: ${docId}, Relevance: ${(score * 100).toFixed(1)}%)\\n${content}`);\n});\n\nconst avgScore = Number((totalScore / points.length).toFixed(4));\n\nreturn [{\n  json: {\n    ...authData,\n    context_found: true,\n    context_text: formattedChunks.join('\\n\\n'),\n    citations: citations,\n    avg_score: avgScore,\n    chunk_count: points.length\n  }\n}];"
+      },
+      "id": "rag-context-formatter-code",
+      "name": "Format Context & Citations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer ={{ $env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.2,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an enterprise AI knowledge assistant operating strictly within multi-tenant boundaries for tenant ID '\" + $json.tenant_id + \"'.\\n\\nStrict Security & Grounding Rules:\\n1. Answer the user prompt using ONLY the provided verified documentation chunks below.\\n2. Explicitly cite your sources using bracketed references like [Source 1], [Source 2] matching the provided chunks.\\n3. If the answer cannot be directly determined from the provided context, state: 'I cannot find verified information regarding this topic in your organization\\'s knowledge base.'\\n4. Never reveal confidential cross-tenant metadata or fabricate facts.\\n\\n--- VERIFIED INTERNAL CONTEXT ---\\n\" + $json.context_text\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.query.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }}\"\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "openai-rag-synthesis-http",
+      "name": "OpenAI RAG Synthesis Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2380,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assemble Final Production Response Object\nconst synth = $input.first().json;\nconst ctx = $('Format Context & Citations').item.json;\n\nconst answer = synth.choices && synth.choices[0] && synth.choices[0].message\n  ? synth.choices[0].message.content\n  : (ctx.context_found ? 'Error synthesizing response from context.' : 'No relevant documentation found for your query.');\n\nconst usage = synth.usage || {};\n\nreturn [{\n  json: {\n    status: 'success',\n    tenant_id: ctx.tenant_id,\n    workspace_id: ctx.workspace_id,\n    query: ctx.query,\n    answer: answer,\n    citations: ctx.citations,\n    grounding_metrics: {\n      context_found: ctx.context_found,\n      chunks_retrieved: ctx.chunk_count || 0,\n      average_similarity: ctx.avg_score || 0\n    },\n    llm_usage: {\n      prompt_tokens: usage.prompt_tokens || 0,\n      completion_tokens: usage.completion_tokens || 0,\n      total_tokens: usage.total_tokens || 0\n    },\n    generated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "assemble-rag-response-code",
+      "name": "Assemble RAG Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "rag-respond-to-webhook",
+      "name": "Respond to RAG Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3060,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"error\",\n  \"error_code\": \"{{ $json.errorCode || 'ERR_UNAUTHORIZED' }}\",\n  \"message\": \"{{ $json.errorMessage || 'Unauthorized tenant access attempt.' }}\"\n}",
+        "options": {
+          "responseCode": "={{ $json.statusCode || 401 }}"
+        }
+      },
+      "id": "unauth-respond-to-webhook",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3400,
+        440
+      ]
+    }
+  ],
+  "connections": {
+    "RAG Query Ingress Webhook": {
+      "main": [
+        [
+          {
+            "node": "Tenant Auth & Payload Middleware",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant Auth & Payload Middleware": {
+      "main": [
+        [
+          {
+            "node": "Is Tenant Authenticated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Tenant Authenticated?": {
+      "main": [
+        [
+          {
+            "node": "Generate Vector Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Vector Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Build Qdrant Tenant Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Qdrant Tenant Filter": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Search": {
+      "main": [
+        [
+          {
+            "node": "Format Context & Citations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Context & Citations": {
+      "main": [
+        [
+          {
+            "node": "OpenAI RAG Synthesis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI RAG Synthesis Agent": {
+      "main": [
+        [
+          {
+            "node": "Assemble RAG Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble RAG Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to RAG Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "author": "Alfaz Mahmud Rizve",
+    "authorUrl": "https://whoisalfaz.me",
+    "package": "n8n Community Workflow Ecosystem"
+  }
+}

@@ -648,3 +648,6 @@ Contributions are welcome. If you have an n8n workflow template to share, please
 ---
 
 *Last updated: August 2026*
+
+
+- [Multi-Tenant Qdrant RAG & Apollo Brevo Enrichment](https://github.com/AlfazMahmudRizve/whoisalfaz-v2/tree/main/ecosystem/n8n-templates) - Enterprise RAG vector search with tenant isolation, Apollo to Brevo B2B waterfall lead enrichment, and ManyChat async timeout handling.
