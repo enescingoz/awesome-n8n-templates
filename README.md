@@ -356,11 +356,24 @@ This is the largest category with 17 AI and LLM templates for n8n. Templates inc
 
 | Title | Description | Department | Link |
 |---|---|---|---|
-| Advanced AI Demo (Presented at AI Developers #14 meetup) | Advanced AI capabilities demo. | AI/Development | [Link to Template](OpenAI_and_LLMs/Advanced%20AI%20Demo%20(Presented%20at%20AI%20Developers%20%2314%20meetup).json) |
-| AI agent chat | Basic AI chat agent. | AI/Customer Service | [Link to Template](OpenAI_and_LLMs/AI%20agent%20chat.json) |
-| AI agent that can scrape webpages | AI agent for web scraping. | AI/Data Extraction | [Link to Template](OpenAI_and_LLMs/AI%20agent%20that%20can%20scrape%20webpages.json) |
-| AI Crew to Automate Fundamental Stock Analysis - Q&A Workflow | Stock analysis automation. | Finance/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI%20Crew%20to%20Automate%20Fundamental%20Stock%20Analysis%20-%20Q&A%20Workflow.json) |
-| AI Customer feedback sentiment analysis | Sentiment analysis on customer feedback. | Customer Service/Marketing/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI%20Customer%20feedback%20sentiment%20analysis.json) |
+| Advanced AI Demo (Presented at AI Developers #14 meetup) | Demonstrates advanced AI agent capabilities, including tool use and multi-step reasoning, as presented at the AI Developers #14 community meetup. | AI/Development | [Link to Template](OpenAI_and_LLMs/Advanced%20AI%20Demo%20(Presented%20at%20AI%20Developers%20%2314%20meetup).json) |
+| AI agent chat | A minimal conversational AI agent template that responds to user messages, ideal as a starting point for building more complex chatbots. | AI/Customer Service | [Link to Template](OpenAI_and_LLMs/AI%20agent%20chat.json) |
+| AI agent that can scrape webpages | An AI agent equipped with a web-scraping tool, allowing it to fetch and analyze live webpage content in response to user questions. | AI/Data Extraction | [Link to Template](OpenAI_and_LLMs/AI%20agent%20that%20can%20scrape%20webpages.json) |
+| AI Crew to Automate Fundamental Stock Analysis - Q&A Workflow | Uses a multi-agent "crew" to perform fundamental stock analysis and answer follow-up questions, combining financial data retrieval with AI-driven insights. | Finance/AI/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI%20Crew%20to%20Automate%20Fundamental%20Stock%20Analysis%20-%20Q&A%20Workflow.json) |
+| AI Customer feedback sentiment analysis | Analyzes incoming customer feedback using AI to classify sentiment (positive, neutral, negative),
+## My Contribution
+
+As part of an AI Automation internship task, I contributed to this repository by improving the documentation quality of several templates in the **OpenAI_and_LLMs** section. The original descriptions for these templates were too brief (e.g., "Basic AI chat agent.") and inconsistent with the detailed, informative descriptions used elsewhere in this README.
+
+**Templates I improved:**
+- **AI agent chat** — expanded to explain it's a minimal conversational template and a good starting point for more complex chatbots.
+- **Advanced AI Demo** — clarified that it demonstrates AI agent tool use and multi-step reasoning from a community meetup.
+- **AI agent that can scrape webpages** — explained it uses a web-scraping tool to fetch and analyze live page content.
+- **AI Crew to Automate Fundamental Stock Analysis** — clarified it uses a multi-agent "crew" for financial analysis and Q&A.
+- **AI Customer feedback sentiment analysis** — explained it classifies feedback sentiment to help support/marketing teams prioritize responses.
+
+This makes the OpenAI & LLMs section easier to browse and more consistent with the rest of the repository.
+ helping support and marketing teams prioritize responses. | Customer Service/Marketing/Data Analysis | [Link to Template](OpenAI_and_LLMs/AI%20Customer%20feedback%20sentiment%20analysis.json) |
 | AI Data Extraction with Dynamic Prompts and Airtable | AI-driven data extraction with Airtable integration. | AI/Data Extraction/Database | [Link to Template](OpenAI_and_LLMs/AI%20Data%20Extraction%20with%20Dynamic%20Prompts%20and%20Airtable.json) |
 | AI Data Extraction with Dynamic Prompts and Baserow | AI-driven data extraction with Baserow integration. | AI/Data Extraction/Database | [Link to Template](OpenAI_and_LLMs/AI%20Data%20Extraction%20with%20Dynamic%20Prompts%20and%20Baserow.json) |
 | AI-Driven Lead Management and Inquiry Automation with ERPNext & n8n | Lead management automation. | Sales/CRM/AI | [Link to Template](OpenAI_and_LLMs/AI-Driven%20Lead%20Management%20and%20Inquiry%20Automation%20with%20ERPNext%20&%20n8n.json) |
