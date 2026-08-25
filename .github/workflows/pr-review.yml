@@ -435,6 +435,56 @@ jobs:
           # diff cap — raise/lower to match the context window of your chosen model
           DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 40000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
+          # Deterministic README external-link gate.
+          # AI output can never override this policy check.
+          DISALLOWED_README_LINKS=$(DIFF_CONTENT="${DIFF}" python3 -c '
+          import os, re
+          from urllib.parse import urlparse
+          
+          diff = os.environ.get("DIFF_CONTENT", "")
+          in_readme = False
+          found = []
+          
+          def is_readme_path(path):
+              name = path.rsplit("/", 1)[-1].lower()
+              return name.startswith("readme") and name.endswith(".md")
+          
+          def allowed(target):
+              t = target.strip().strip("<>")
+              if not t:
+                  return True
+              if t.startswith(("#", "./", "../", "/")) and not t.startswith("//"):
+                  return True
+              if "://" not in t and not re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", t) and not t.startswith("//"):
+                  return True
+              if t.startswith(("http://", "https://")):
+                  u = urlparse(t)
+                  host = (u.hostname or "").lower()
+                  path = u.path.rstrip("/")
+                  prefix = "/enescingoz/awesome-n8n-templates"
+                  return host == "github.com" and (path == prefix or path.startswith(prefix + "/"))
+              return False
+          
+          for line in diff.splitlines():
+              if line.startswith("diff --git "):
+                  m = re.match(r"diff --git a/(.+?) b/(.+)$", line)
+                  in_readme = bool(m and (is_readme_path(m.group(1)) or is_readme_path(m.group(2))))
+                  continue
+              if not in_readme or not line.startswith("+") or line.startswith("+++"):
+                  continue
+              content = line[1:]
+              targets = []
+              targets += re.findall(r"\[[^\]]*\]\(([^)\s]+)", content)
+              targets += re.findall(r"(?:href|src)\s*=\s*[\"\x27]([^\"\x27]+)[\"\x27]", content, flags=re.I)
+              targets += re.findall(r"https?://[^\s)\]<>\"\x27]+", content)
+              for target in targets:
+                  if not allowed(target) and target not in found:
+                      found.append(target)
+          
+          print("\n".join(found))
+          ' 2>/dev/null || true)
+          DISALLOWED_README_LINKS_DISPLAY="${DISALLOWED_README_LINKS:-none}"
+
           # ── build prompt ──────────────────────────────────
           # Note: indented here to satisfy YAML block scalar; sed strips the indent.
           PROMPT="You are a reviewer for an open-source curated list of n8n workflow JSON templates (awesome-n8n-templates). Your job is to check whether a PR correctly adds a new workflow template and flag real problems. Be conservative — only flag things you can clearly see in the diff.
@@ -451,6 +501,7 @@ jobs:
           - New workflow JSON files added: ${ADDED_WORKFLOWS_DISPLAY}
           - Existing workflow JSON files modified: ${MODIFIED_WORKFLOWS_DISPLAY}
           - README touched in this PR: ${README_TOUCHED}
+          - Disallowed external links added to README (deterministic check): ${DISALLOWED_README_LINKS_DISPLAY}
 
           ## Changed Files
           \`\`\`
@@ -466,13 +517,15 @@ jobs:
 
           Use the Pre-computed PR signals above — do NOT re-derive them from the diff.
 
+          If `Disallowed external links added to README (deterministic check)` is not "none", verdict MUST be **NEEDS CHANGES**. This deterministic signal overrides any other safe assessment.
+
           - If \`New workflow JSON files added\` is non-empty (not \"none\"):
               - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
               - If README IS touched, check the README diff for self-promotion (personal sites, blogs, social handles, donations, \"follow me\" sections unrelated to listing the template). Flag any such content as NEEDS CHANGES.
               - Additionally, scan EVERY new link (any URL or path added with a \`+\` line in the README diff) and apply the external-link rule below.
 
           ### External-link rule for README changes
-          This repo is a curated list; it must only link to its own content and the official n8n site. When the README diff is available, inspect every line starting with \`+\` for new links (Markdown syntax \`[text](url)\`, bare URLs, or HTML href/src).
+          This repo is a curated list; README additions must link only to this repository's own content. When the README diff is available, inspect every line starting with \`+\` for new links (Markdown syntax \`[text](url)\`, bare URLs, or HTML href/src).
 
           A link is ALLOWED only if it matches ONE of these:
           - A relative path with no scheme and no host — e.g. \`OpenAI_and_LLMs/Foo.json\`, \`./Slack/bar.json\`, \`#section-anchor\`
@@ -532,7 +585,7 @@ jobs:
 
           **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no external links in README, no real hardcoded secrets, JSON appears valid.
 
-          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, external link(s) added to the README that are not relative paths or approved domains (n8n.io, this repo's own GitHub URL), real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
+          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, any external link added to the README outside this repo's own GitHub URL, real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
 
           **NOT A TEMPLATE PR** — The PR does not add or modify any n8n workflow JSON file (e.g. it is a docs fix, typo correction, README-only change, or meta change). This is INFORMATIONAL — no action items needed.
 
@@ -619,6 +672,28 @@ jobs:
               esac
               ;;
           esac
+
+          # ── deterministic README-link policy override ────────────
+          if [ -n "${DISALLOWED_README_LINKS:-}" ]; then
+            echo "External README link detected; forcing NEEDS CHANGES regardless of model output."
+            LINKS_BULLETS=$(printf '%s\n' "${DISALLOWED_README_LINKS}" | sed '/^$/d; s/^/- `/; s/$/`/')
+            REVIEW_BODY="### Summary
+          
+          - This PR adds or changes repository content and modifies a README.
+          - The README introduces one or more links that point outside this repository.
+          
+          ### Safety Assessment
+          
+          **NEEDS CHANGES**
+          
+          README entries may only use relative/internal paths or URLs pointing to `github.com/enescingoz/awesome-n8n-templates`. External repositories and other off-repo URLs are not allowed.
+          
+          ### Action Items
+          
+          Remove external link(s) added to the README — this repo only links to its own templates:
+          ${LINKS_BULLETS}"
+            USED_MODEL="${USED_MODEL} + deterministic README-link gate"
+          fi
 
           # ── compose and post comment ──────────────────────
           COMMENT="## 🤖 Automated PR Review
@@ -1000,6 +1075,56 @@ jobs:
             # diff cap — raise/lower to match the context window of your chosen model
             DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 40000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
+          # Deterministic README external-link gate.
+          # AI output can never override this policy check.
+          DISALLOWED_README_LINKS=$(DIFF_CONTENT="${DIFF}" python3 -c '
+          import os, re
+          from urllib.parse import urlparse
+          
+          diff = os.environ.get("DIFF_CONTENT", "")
+          in_readme = False
+          found = []
+          
+          def is_readme_path(path):
+              name = path.rsplit("/", 1)[-1].lower()
+              return name.startswith("readme") and name.endswith(".md")
+          
+          def allowed(target):
+              t = target.strip().strip("<>")
+              if not t:
+                  return True
+              if t.startswith(("#", "./", "../", "/")) and not t.startswith("//"):
+                  return True
+              if "://" not in t and not re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", t) and not t.startswith("//"):
+                  return True
+              if t.startswith(("http://", "https://")):
+                  u = urlparse(t)
+                  host = (u.hostname or "").lower()
+                  path = u.path.rstrip("/")
+                  prefix = "/enescingoz/awesome-n8n-templates"
+                  return host == "github.com" and (path == prefix or path.startswith(prefix + "/"))
+              return False
+          
+          for line in diff.splitlines():
+              if line.startswith("diff --git "):
+                  m = re.match(r"diff --git a/(.+?) b/(.+)$", line)
+                  in_readme = bool(m and (is_readme_path(m.group(1)) or is_readme_path(m.group(2))))
+                  continue
+              if not in_readme or not line.startswith("+") or line.startswith("+++"):
+                  continue
+              content = line[1:]
+              targets = []
+              targets += re.findall(r"\[[^\]]*\]\(([^)\s]+)", content)
+              targets += re.findall(r"(?:href|src)\s*=\s*[\"\x27]([^\"\x27]+)[\"\x27]", content, flags=re.I)
+              targets += re.findall(r"https?://[^\s)\]<>\"\x27]+", content)
+              for target in targets:
+                  if not allowed(target) and target not in found:
+                      found.append(target)
+          
+          print("\n".join(found))
+          ' 2>/dev/null || true)
+          DISALLOWED_README_LINKS_DISPLAY="${DISALLOWED_README_LINKS:-none}"
+
             # Note: indented here to satisfy YAML block scalar; sed strips the indent.
             PROMPT="You are a reviewer for an open-source curated list of n8n workflow JSON templates (awesome-n8n-templates). Your job is to check whether a PR correctly adds a new workflow template and flag real problems. Be conservative — only flag things you can clearly see in the diff.
 
@@ -1015,6 +1140,7 @@ jobs:
           - New workflow JSON files added: ${ADDED_WORKFLOWS_DISPLAY}
           - Existing workflow JSON files modified: ${MODIFIED_WORKFLOWS_DISPLAY}
           - README touched in this PR: ${README_TOUCHED}
+          - Disallowed external links added to README (deterministic check): ${DISALLOWED_README_LINKS_DISPLAY}
 
           ## Changed Files
           \`\`\`
@@ -1030,13 +1156,15 @@ jobs:
 
           Use the Pre-computed PR signals above — do NOT re-derive them from the diff.
 
+          If `Disallowed external links added to README (deterministic check)` is not "none", verdict MUST be **NEEDS CHANGES**. This deterministic signal overrides any other safe assessment.
+
           - If \`New workflow JSON files added\` is non-empty (not \"none\"):
               - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
               - If README IS touched, check the README diff for self-promotion (personal sites, blogs, social handles, donations, \"follow me\" sections unrelated to listing the template). Flag any such content as NEEDS CHANGES.
               - Additionally, scan EVERY new link (any URL or path added with a \`+\` line in the README diff) and apply the external-link rule below.
 
           ### External-link rule for README changes
-          This repo is a curated list; it must only link to its own content and the official n8n site. When the README diff is available, inspect every line starting with \`+\` for new links (Markdown syntax \`[text](url)\`, bare URLs, or HTML href/src).
+          This repo is a curated list; README additions must link only to this repository's own content. When the README diff is available, inspect every line starting with \`+\` for new links (Markdown syntax \`[text](url)\`, bare URLs, or HTML href/src).
 
           A link is ALLOWED only if it matches ONE of these:
           - A relative path with no scheme and no host — e.g. \`OpenAI_and_LLMs/Foo.json\`, \`./Slack/bar.json\`, \`#section-anchor\`
@@ -1096,7 +1224,7 @@ jobs:
 
           **SAFE TO MERGE** — Workflow JSON added, README entry present (or this is a modify-only PR), no self-promotion, no external links in README, no real hardcoded secrets, JSON appears valid.
 
-          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, external link(s) added to the README that are not relative paths or approved domains (n8n.io, this repo's own GitHub URL), real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
+          **NEEDS CHANGES** — One or more of: missing README entry for a newly added template, self-promotion/pollution in README, any external link added to the README outside this repo's own GitHub URL, real hardcoded secret found, clearly broken JSON. List only the concrete issues found.
 
           **NOT A TEMPLATE PR** — The PR does not add or modify any n8n workflow JSON file (e.g. it is a docs fix, typo correction, README-only change, or meta change). This is INFORMATIONAL — no action items needed.
 
@@ -1182,6 +1310,28 @@ jobs:
                 esac
                 ;;
             esac
+
+            # ── deterministic README-link policy override ────────────
+            if [ -n "${DISALLOWED_README_LINKS:-}" ]; then
+              echo "External README link detected; forcing NEEDS CHANGES regardless of model output."
+              LINKS_BULLETS=$(printf '%s\n' "${DISALLOWED_README_LINKS}" | sed '/^$/d; s/^/- `/; s/$/`/')
+              REVIEW_BODY="### Summary
+            
+            - This PR adds or changes repository content and modifies a README.
+            - The README introduces one or more links that point outside this repository.
+            
+            ### Safety Assessment
+            
+            **NEEDS CHANGES**
+            
+            README entries may only use relative/internal paths or URLs pointing to `github.com/enescingoz/awesome-n8n-templates`. External repositories and other off-repo URLs are not allowed.
+            
+            ### Action Items
+            
+            Remove external link(s) added to the README — this repo only links to its own templates:
+            ${LINKS_BULLETS}"
+              USED_MODEL="${USED_MODEL} + deterministic README-link gate"
+            fi
 
             COMMENT="## 🤖 Automated PR Review
 
