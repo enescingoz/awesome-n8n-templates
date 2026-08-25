@@ -517,7 +517,7 @@ jobs:
 
           Use the Pre-computed PR signals above — do NOT re-derive them from the diff.
 
-          If `Disallowed external links added to README (deterministic check)` is not "none", verdict MUST be **NEEDS CHANGES**. This deterministic signal overrides any other safe assessment.
+          If \`Disallowed external links added to README (deterministic check)\` is not "none", verdict MUST be **NEEDS CHANGES**. This deterministic signal overrides any other safe assessment.
 
           - If \`New workflow JSON files added\` is non-empty (not \"none\"):
               - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
@@ -1156,7 +1156,7 @@ jobs:
 
           Use the Pre-computed PR signals above — do NOT re-derive them from the diff.
 
-          If `Disallowed external links added to README (deterministic check)` is not "none", verdict MUST be **NEEDS CHANGES**. This deterministic signal overrides any other safe assessment.
+          If \`Disallowed external links added to README (deterministic check)\` is not "none", verdict MUST be **NEEDS CHANGES**. This deterministic signal overrides any other safe assessment.
 
           - If \`New workflow JSON files added\` is non-empty (not \"none\"):
               - The PR MUST also touch at least one README file. If \`README touched in this PR\` is \"no\", this is a NEEDS CHANGES issue (\"missing README entry for new template\").
