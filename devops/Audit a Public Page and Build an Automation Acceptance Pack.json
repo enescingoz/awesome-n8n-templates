@@ -1,0 +1,259 @@
+{
+  "name": "Audit a Public Page and Build an Automation Acceptance Pack",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6c13d54f-98c8-4c0b-a9d3-410c116e8785",
+      "name": "Run Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "097a7a7a-dd23-4f0d-91c4-b64e80898daa",
+              "name": "targetUrl",
+              "value": "https://example.com",
+              "type": "string"
+            },
+            {
+              "id": "b95d6346-2a2a-41a7-ad95-08d6af06d4dc",
+              "name": "objective",
+              "value": "Verify this public page before implementing an automation or integration.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "21dcc9b6-baca-4679-b139-b8a78e82293c",
+      "name": "Set Target and Objective",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -540,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.first().json;\nconst rawTarget = String(config.targetUrl || '').trim();\nconst objective = String(config.objective || '').trim();\n\nif (!rawTarget) throw new Error('targetUrl is required');\nif (!objective) throw new Error('objective is required');\nif (objective.length > 500) throw new Error('objective must be 500 characters or fewer');\n\nlet target;\ntry {\n  target = new URL(rawTarget);\n} catch {\n  throw new Error('targetUrl must be a valid public HTTP or HTTPS URL');\n}\nif (!['http:', 'https:'].includes(target.protocol)) {\n  throw new Error('targetUrl must use HTTP or HTTPS');\n}\nconst hostname = target.hostname.toLowerCase();\nconst privateHost = hostname === 'localhost'\n  || hostname.endsWith('.local')\n  || hostname === '0.0.0.0'\n  || hostname === '127.0.0.1'\n  || hostname === '::1'\n  || /^10\\./.test(hostname)\n  || /^192\\.168\\./.test(hostname)\n  || /^169\\.254\\./.test(hostname)\n  || /^172\\.(1[6-9]|2\\d|3[01])\\./.test(hostname);\nif (privateHost) throw new Error('targetUrl must resolve to a public host');\n\nreturn [{ json: { targetUrl: target.toString(), objective } }];\n"
+      },
+      "id": "98f56bd3-526d-41f8-82c6-d5a96279df3c",
+      "name": "Validate Public Target",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://automation-integration-preflight.p.rapidapi.com/rapidapi/analyze",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "automation-integration-preflight.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json.targetUrl, mode: 'acceptance-pack', objective: $json.objective }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "c781455a-6217-4cb5-b9fb-596f4e75bdba",
+      "name": "Build Acceptance Pack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -40,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $input.first().json;\nconst readiness = report.readiness && typeof report.readiness === 'object' ? report.readiness : {};\nconst pack = report.acceptance_pack && typeof report.acceptance_pack === 'object' ? report.acceptance_pack : {};\nconst gate = pack.launch_gate && typeof pack.launch_gate === 'object' ? pack.launch_gate : {};\nconst score = Number(readiness.score || 0);\nconst riskFlags = Array.isArray(readiness.risk_flags) ? readiness.risk_flags : [];\nconst acceptanceTests = Array.isArray(pack.acceptance_tests) ? pack.acceptance_tests : [];\nconst backlog = Array.isArray(pack.prioritized_backlog) ? pack.prioritized_backlog : [];\nconst requiresAttention = gate.decision !== 'ready' || score < 80 || riskFlags.length > 0;\n\nreturn [{ json: {\n  targetUrl: report.target?.final_url || report.target?.requested_url || null,\n  objective: pack.objective || null,\n  readinessScore: score,\n  readinessGrade: readiness.grade || null,\n  launchDecision: gate.decision || 'unknown',\n  riskFlags,\n  acceptanceTestCount: acceptanceTests.length,\n  backlogCount: backlog.length,\n  requiresAttention,\n  acceptancePack: pack,\n  evidence: {\n    target: report.target || null,\n    page: report.page || null,\n    security: report.security_headers || null,\n    readiness\n  }\n} }];\n"
+      },
+      "id": "829a62ae-3f93-4c9f-9077-28025bfd2af0",
+      "name": "Summarize Evidence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b6040ef2-29f5-4f69-8c37-200211e7bd9f",
+              "leftValue": "={{ $json.requiresAttention }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6fe1783d-f3fd-4518-a5ac-3dbfb84b0fdd",
+      "name": "Needs Attention?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item) => ({ json: { ...item.json, workflowDecision: 'NEEDS_REVIEW', nextStep: 'Work through the P0 and P1 backlog items, then rerun the preflight.' } }));\n"
+      },
+      "id": "4dcb04c4-aa72-4ac1-82a0-6bf558da6c1e",
+      "name": "Mark Needs Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item) => ({ json: { ...item.json, workflowDecision: 'READY_TO_IMPLEMENT', nextStep: 'Use the acceptance tests as the implementation and launch checklist.' } }));\n"
+      },
+      "id": "67095850-d391-4ae0-830d-26b89f5f2f8f",
+      "name": "Mark Ready to Implement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Public-page automation preflight\n\n1. Subscribe to Automation Integration Preflight on RapidAPI. The BASIC plan includes a small free request allowance.\n2. In n8n, create a Header Auth credential with header name `x-rapidapi-key` and your RapidAPI application key.\n3. Select that credential on **Build Acceptance Pack**.\n4. Edit **Set Target and Objective**, then run the workflow.\n\nThe workflow reads public server-rendered HTML only. It does not log in, submit forms, execute page JavaScript, or bypass access controls. The output keeps the evidence, launch gate, acceptance tests, and prioritized backlog together for implementation review.\n\nAPI: https://rapidapi.com/tinyopsstudio/api/automation-integration-preflight",
+        "height": 430,
+        "width": 540
+      },
+      "id": "0613676a-a709-4e1a-be34-230709072041",
+      "name": "Setup and Safety Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        -320
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Workflow": {
+      "main": [
+        [
+          {
+            "node": "Set Target and Objective",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Target and Objective": {
+      "main": [
+        [
+          {
+            "node": "Validate Public Target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Public Target": {
+      "main": [
+        [
+          {
+            "node": "Build Acceptance Pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Acceptance Pack": {
+      "main": [
+        [
+          {
+            "node": "Summarize Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Evidence": {
+      "main": [
+        [
+          {
+            "node": "Needs Attention?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Attention?": {
+      "main": [
+        [
+          {
+            "node": "Mark Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Ready to Implement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "c572a3e2-eead-4fb6-bc82-15caef15d3b1",
+  "versionId": "db28af55-d4a4-48df-886d-6f1c4194e38a"
+}
