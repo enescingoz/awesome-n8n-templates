@@ -1,6 +1,6 @@
 {
   "name": "Monitor X Search with Xquik",
-  "description": "Searches X through Xquik, normalizes results, and builds an email-ready social listening digest.",
+  "description": "Runs X/Twitter search through Xquik, normalizes results, and builds an email-ready social listening digest.",
   "nodes": [
     {
       "parameters": {},
@@ -41,7 +41,7 @@
         "color": 3,
         "width": 300,
         "height": 120,
-        "content": "Set XQUIK_API_KEY in n8n before running. This workflow reads it from $env and does not store the key."
+        "content": "Create an n8n Header Auth credential named Xquik API key. Set Header Name to x-api-key and Value to your Xquik API key. Then select it in Search X with Xquik."
       },
       "id": "api-key-note",
       "name": "API Key Note",
@@ -52,8 +52,9 @@
     {
       "parameters": {
         "url": "https://xquik.com/api/v1/x/tweets/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendQuery": true,
-        "sendHeaders": true,
         "queryParameters": {
           "parameters": [
             {
@@ -66,16 +67,14 @@
             }
           ]
         },
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-API-Key",
-              "value": "={{ $env.XQUIK_API_KEY }}"
-            }
-          ]
-        },
         "options": {
           "timeout": 120000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_XQUIK_CREDENTIAL",
+          "name": "Xquik API key"
         }
       },
       "id": "search-x-with-xquik",
@@ -86,7 +85,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json;\nconst tweets = Array.isArray(body.tweets) ? body.tweets : [];\nconst normalized = tweets.map((tweet) => {\n  const id = tweet.id ?? tweet.tweet_id ?? tweet.rest_id ?? '';\n  const author = tweet.author ?? tweet.user ?? {};\n  return {\n    id,\n    url: tweet.url ?? (id ? `https://x.com/i/web/status/${id}` : ''),\n    text: tweet.text ?? tweet.full_text ?? tweet.content ?? '',\n    author: author.username ?? author.screen_name ?? author.name ?? '',\n    created_at: tweet.created_at ?? tweet.created ?? tweet.timestamp ?? '',\n    metrics: tweet.metrics ?? {}\n  };\n});\nconst digestLines = normalized.length === 0\n  ? ['No matching X posts found for this query.']\n  : normalized.map((tweet, index) => {\n      const author = tweet.author ? ` by ${tweet.author}` : '';\n      const link = tweet.url ? `\\n${tweet.url}` : '';\n      return `${index + 1}. ${tweet.text}${author}${link}`;\n    });\nreturn [{\n  json: {\n    query: $('Search Settings').first().json.query,\n    results_count: normalized.length,\n    has_more: Boolean(body.has_more),\n    next_cursor: body.next_cursor ?? '',\n    tweets: normalized,\n    digest: digestLines.join('\\n\\n')\n  }\n}];"
+        "jsCode": "const body = $input.first().json;\nconst tweets = Array.isArray(body.tweets) ? body.tweets : [];\nconst normalized = tweets.map((tweet) => {\n  const id = tweet.id ?? '';\n  const author = tweet.author ?? {};\n  return {\n    id,\n    url: tweet.url ?? (id ? `https://x.com/i/web/status/${id}` : ''),\n    text: tweet.text ?? '',\n    author: author.username ?? author.name ?? '',\n    created_at: tweet.createdAt ?? null,\n    metrics: {\n      like_count: tweet.likeCount ?? null,\n      reply_count: tweet.replyCount ?? null,\n      retweet_count: tweet.retweetCount ?? null,\n      quote_count: tweet.quoteCount ?? null,\n      view_count: tweet.viewCount ?? null,\n      bookmark_count: tweet.bookmarkCount ?? null\n    }\n  };\n});\nconst digestLines = normalized.length === 0\n  ? ['No matching X posts found for this query.']\n  : normalized.map((tweet, index) => {\n      const author = tweet.author ? ` by ${tweet.author}` : '';\n      const link = tweet.url ? `\\n${tweet.url}` : '';\n      return `${index + 1}. ${tweet.text}${author}${link}`;\n    });\nreturn [{\n  json: {\n    query: $('Search Settings').first().json.query,\n    results_count: normalized.length,\n    has_next_page: body.has_next_page === true,\n    next_cursor: typeof body.next_cursor === 'string' ? body.next_cursor : '',\n    tweets: normalized,\n    digest: digestLines.join('\\n\\n')\n  }\n}];"
       },
       "id": "build-digest",
       "name": "Build Digest",
@@ -139,6 +138,9 @@
     },
     {
       "name": "X"
+    },
+    {
+      "name": "Twitter Search"
     },
     {
       "name": "Social Listening"
