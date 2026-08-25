@@ -410,6 +410,7 @@ jobs:
 
           # ── fetch PR metadata (no checkout of PR code) ───
           PR_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}")
+          BASE_SHA=$(echo "${PR_JSON}" | jq -r '.base.sha')
           PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title' | head -c 300)
           PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"' | head -c 2000)
           PR_AUTHOR=$(echo "${PR_JSON}" | jq -r '.user.login')
@@ -436,28 +437,58 @@ jobs:
           DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 40000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
           # Deterministic README external-link gate.
-          # AI output can never override this policy check.
-          DISALLOWED_README_LINKS=$(DIFF_CONTENT="${DIFF}" python3 -c '
-          import os, re
+          # Do NOT inspect the capped DIFF here. Large JSON files can push README changes
+          # outside the 40k AI window. Fetch each changed README at base/head instead.
+          DISALLOWED_README_LINKS=""
+          README_PATHS=$(printf '%s' "${FILES_JSON}" | jq -r '
+            .[] | select(.filename | test("(?i)(^|/)readme[^/]*\\.md$")) | .filename')
+
+          if [ -n "${README_PATHS}" ]; then
+            while IFS= read -r README_PATH; do
+              [ -n "${README_PATH}" ] || continue
+
+              ENCODED_README_PATH=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "${README_PATH}")
+              BASE_META=$(mktemp)
+              HEAD_META=$(mktemp)
+              BASE_README=$(mktemp)
+              HEAD_README=$(mktemp)
+
+              if gh api "repos/${REPO}/contents/${ENCODED_README_PATH}?ref=${BASE_SHA}" >"${BASE_META}" 2>/dev/null; then
+                jq -r '.content // empty' "${BASE_META}" | tr -d '\n' | base64 --decode >"${BASE_README}" 2>/dev/null || : >"${BASE_README}"
+              else
+                : >"${BASE_README}"
+              fi
+
+              if gh api "repos/${REPO}/contents/${ENCODED_README_PATH}?ref=${HEAD_SHA}" >"${HEAD_META}" 2>/dev/null; then
+                jq -r '.content // empty' "${HEAD_META}" | tr -d '\n' | base64 --decode >"${HEAD_README}" 2>/dev/null || : >"${HEAD_README}"
+              else
+                : >"${HEAD_README}"
+              fi
+
+              FOUND_LINKS=$(python3 - "${BASE_README}" "${HEAD_README}" <<'PY_LINK_CHECK'
+          import re
+          import sys
+          from collections import Counter
           from urllib.parse import urlparse
           
-          diff = os.environ.get("DIFF_CONTENT", "")
-          in_readme = False
-          found = []
+          base_path, head_path = sys.argv[1], sys.argv[2]
+          base = open(base_path, encoding="utf-8", errors="ignore").read()
+          head = open(head_path, encoding="utf-8", errors="ignore").read()
           
-          def is_readme_path(path):
-              name = path.rsplit("/", 1)[-1].lower()
-              return name.startswith("readme") and name.endswith(".md")
+          def targets(text):
+              out = []
+              out += re.findall(r"https?://[^\s)\]<>\"']+", text, flags=re.I)
+              for target in re.findall(r"\[[^\]]*\]\(([^)\s]+)", text):
+                  if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not target.lower().startswith(("http://", "https://")):
+                      out.append(target)
+              for target in re.findall(r"(?:href|src)\s*=\s*[\"']([^\"']+)[\"']", text, flags=re.I):
+                  if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not target.lower().startswith(("http://", "https://")):
+                      out.append(target)
+              return out
           
           def allowed(target):
               t = target.strip().strip("<>")
-              if not t:
-                  return True
-              if t.startswith(("#", "./", "../", "/")) and not t.startswith("//"):
-                  return True
-              if "://" not in t and not re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", t) and not t.startswith("//"):
-                  return True
-              if t.startswith(("http://", "https://")):
+              if t.lower().startswith(("http://", "https://")):
                   u = urlparse(t)
                   host = (u.hostname or "").lower()
                   path = u.path.rstrip("/")
@@ -465,24 +496,30 @@ jobs:
                   return host == "github.com" and (path == prefix or path.startswith(prefix + "/"))
               return False
           
-          for line in diff.splitlines():
-              if line.startswith("diff --git "):
-                  m = re.match(r"diff --git a/(.+?) b/(.+)$", line)
-                  in_readme = bool(m and (is_readme_path(m.group(1)) or is_readme_path(m.group(2))))
-                  continue
-              if not in_readme or not line.startswith("+") or line.startswith("+++"):
-                  continue
-              content = line[1:]
-              targets = []
-              targets += re.findall(r"\[[^\]]*\]\(([^)\s]+)", content)
-              targets += re.findall(r"(?:href|src)\s*=\s*[\"\x27]([^\"\x27]+)[\"\x27]", content, flags=re.I)
-              targets += re.findall(r"https?://[^\s)\]<>\"\x27]+", content)
-              for target in targets:
-                  if not allowed(target) and target not in found:
-                      found.append(target)
+          base_counts = Counter(targets(base))
+          head_counts = Counter(targets(head))
+          new_counts = head_counts - base_counts
           
-          print("\n".join(found))
-          ' 2>/dev/null || true)
+          seen = set()
+          for target in new_counts:
+              if not allowed(target) and target not in seen:
+                  print(target)
+                  seen.add(target)
+          PY_LINK_CHECK
+              )
+
+              if [ -n "${FOUND_LINKS}" ]; then
+                if [ -n "${DISALLOWED_README_LINKS}" ]; then
+                  DISALLOWED_README_LINKS+=$'\n'
+                fi
+                DISALLOWED_README_LINKS+="${FOUND_LINKS}"
+              fi
+
+              rm -f "${BASE_META}" "${HEAD_META}" "${BASE_README}" "${HEAD_README}"
+            done <<< "${README_PATHS}"
+          fi
+
+          DISALLOWED_README_LINKS=$(printf '%s\n' "${DISALLOWED_README_LINKS}" | sed '/^$/d' | sort -u)
           DISALLOWED_README_LINKS_DISPLAY="${DISALLOWED_README_LINKS:-none}"
 
           # ── build prompt ──────────────────────────────────
@@ -530,7 +567,6 @@ jobs:
           A link is ALLOWED only if it matches ONE of these:
           - A relative path with no scheme and no host — e.g. \`OpenAI_and_LLMs/Foo.json\`, \`./Slack/bar.json\`, \`#section-anchor\`
           - The repo's own GitHub URL: host is \`github.com\` AND path starts with \`/enescingoz/awesome-n8n-templates\`
-          - The official n8n site: host is \`n8n.io\` or any subdomain of \`n8n.io\` (e.g. \`docs.n8n.io\`, \`community.n8n.io\`)
 
           ANY other URL must be flagged as self-promotion → NEEDS CHANGES. This includes, but is not limited to:
           - External GitHub repos or forks: \`github.com/<anyone-else>/...\` or \`github.com/enescingoz/<other-repo>\`
@@ -1051,6 +1087,7 @@ jobs:
             # fetch metadata (no checkout)
             PR_JSON=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}")
             HEAD_SHA=$(echo "${PR_JSON}" | jq -r '.head.sha')
+            BASE_SHA=$(echo "${PR_JSON}" | jq -r '.base.sha')
             PR_TITLE=$(echo "${PR_JSON}" | jq -r '.title' | head -c 300)
             PR_BODY=$(echo "${PR_JSON}"  | jq -r '.body // "(no description)"' | head -c 2000)
             PR_AUTHOR=$(echo "${PR_JSON}" | jq -r '.user.login')
@@ -1076,28 +1113,58 @@ jobs:
             DIFF=$(gh pr diff "${PR_NUMBER}" --repo "${REPO}" 2>/dev/null | head -c 40000 | iconv -c -f UTF-8 -t UTF-8 || echo "(diff unavailable)")
 
           # Deterministic README external-link gate.
-          # AI output can never override this policy check.
-          DISALLOWED_README_LINKS=$(DIFF_CONTENT="${DIFF}" python3 -c '
-          import os, re
+          # Do NOT inspect the capped DIFF here. Large JSON files can push README changes
+          # outside the 40k AI window. Fetch each changed README at base/head instead.
+          DISALLOWED_README_LINKS=""
+          README_PATHS=$(printf '%s' "${FILES_JSON}" | jq -r '
+            .[] | select(.filename | test("(?i)(^|/)readme[^/]*\\.md$")) | .filename')
+
+          if [ -n "${README_PATHS}" ]; then
+            while IFS= read -r README_PATH; do
+              [ -n "${README_PATH}" ] || continue
+
+              ENCODED_README_PATH=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "${README_PATH}")
+              BASE_META=$(mktemp)
+              HEAD_META=$(mktemp)
+              BASE_README=$(mktemp)
+              HEAD_README=$(mktemp)
+
+              if gh api "repos/${REPO}/contents/${ENCODED_README_PATH}?ref=${BASE_SHA}" >"${BASE_META}" 2>/dev/null; then
+                jq -r '.content // empty' "${BASE_META}" | tr -d '\n' | base64 --decode >"${BASE_README}" 2>/dev/null || : >"${BASE_README}"
+              else
+                : >"${BASE_README}"
+              fi
+
+              if gh api "repos/${REPO}/contents/${ENCODED_README_PATH}?ref=${HEAD_SHA}" >"${HEAD_META}" 2>/dev/null; then
+                jq -r '.content // empty' "${HEAD_META}" | tr -d '\n' | base64 --decode >"${HEAD_README}" 2>/dev/null || : >"${HEAD_README}"
+              else
+                : >"${HEAD_README}"
+              fi
+
+              FOUND_LINKS=$(python3 - "${BASE_README}" "${HEAD_README}" <<'PY_LINK_CHECK'
+          import re
+          import sys
+          from collections import Counter
           from urllib.parse import urlparse
           
-          diff = os.environ.get("DIFF_CONTENT", "")
-          in_readme = False
-          found = []
+          base_path, head_path = sys.argv[1], sys.argv[2]
+          base = open(base_path, encoding="utf-8", errors="ignore").read()
+          head = open(head_path, encoding="utf-8", errors="ignore").read()
           
-          def is_readme_path(path):
-              name = path.rsplit("/", 1)[-1].lower()
-              return name.startswith("readme") and name.endswith(".md")
+          def targets(text):
+              out = []
+              out += re.findall(r"https?://[^\s)\]<>\"']+", text, flags=re.I)
+              for target in re.findall(r"\[[^\]]*\]\(([^)\s]+)", text):
+                  if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not target.lower().startswith(("http://", "https://")):
+                      out.append(target)
+              for target in re.findall(r"(?:href|src)\s*=\s*[\"']([^\"']+)[\"']", text, flags=re.I):
+                  if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not target.lower().startswith(("http://", "https://")):
+                      out.append(target)
+              return out
           
           def allowed(target):
               t = target.strip().strip("<>")
-              if not t:
-                  return True
-              if t.startswith(("#", "./", "../", "/")) and not t.startswith("//"):
-                  return True
-              if "://" not in t and not re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", t) and not t.startswith("//"):
-                  return True
-              if t.startswith(("http://", "https://")):
+              if t.lower().startswith(("http://", "https://")):
                   u = urlparse(t)
                   host = (u.hostname or "").lower()
                   path = u.path.rstrip("/")
@@ -1105,24 +1172,30 @@ jobs:
                   return host == "github.com" and (path == prefix or path.startswith(prefix + "/"))
               return False
           
-          for line in diff.splitlines():
-              if line.startswith("diff --git "):
-                  m = re.match(r"diff --git a/(.+?) b/(.+)$", line)
-                  in_readme = bool(m and (is_readme_path(m.group(1)) or is_readme_path(m.group(2))))
-                  continue
-              if not in_readme or not line.startswith("+") or line.startswith("+++"):
-                  continue
-              content = line[1:]
-              targets = []
-              targets += re.findall(r"\[[^\]]*\]\(([^)\s]+)", content)
-              targets += re.findall(r"(?:href|src)\s*=\s*[\"\x27]([^\"\x27]+)[\"\x27]", content, flags=re.I)
-              targets += re.findall(r"https?://[^\s)\]<>\"\x27]+", content)
-              for target in targets:
-                  if not allowed(target) and target not in found:
-                      found.append(target)
+          base_counts = Counter(targets(base))
+          head_counts = Counter(targets(head))
+          new_counts = head_counts - base_counts
           
-          print("\n".join(found))
-          ' 2>/dev/null || true)
+          seen = set()
+          for target in new_counts:
+              if not allowed(target) and target not in seen:
+                  print(target)
+                  seen.add(target)
+          PY_LINK_CHECK
+              )
+
+              if [ -n "${FOUND_LINKS}" ]; then
+                if [ -n "${DISALLOWED_README_LINKS}" ]; then
+                  DISALLOWED_README_LINKS+=$'\n'
+                fi
+                DISALLOWED_README_LINKS+="${FOUND_LINKS}"
+              fi
+
+              rm -f "${BASE_META}" "${HEAD_META}" "${BASE_README}" "${HEAD_README}"
+            done <<< "${README_PATHS}"
+          fi
+
+          DISALLOWED_README_LINKS=$(printf '%s\n' "${DISALLOWED_README_LINKS}" | sed '/^$/d' | sort -u)
           DISALLOWED_README_LINKS_DISPLAY="${DISALLOWED_README_LINKS:-none}"
 
             # Note: indented here to satisfy YAML block scalar; sed strips the indent.
@@ -1169,7 +1242,6 @@ jobs:
           A link is ALLOWED only if it matches ONE of these:
           - A relative path with no scheme and no host — e.g. \`OpenAI_and_LLMs/Foo.json\`, \`./Slack/bar.json\`, \`#section-anchor\`
           - The repo's own GitHub URL: host is \`github.com\` AND path starts with \`/enescingoz/awesome-n8n-templates\`
-          - The official n8n site: host is \`n8n.io\` or any subdomain of \`n8n.io\` (e.g. \`docs.n8n.io\`, \`community.n8n.io\`)
 
           ANY other URL must be flagged as self-promotion → NEEDS CHANGES. This includes, but is not limited to:
           - External GitHub repos or forks: \`github.com/<anyone-else>/...\` or \`github.com/enescingoz/<other-repo>\`
