@@ -1,0 +1,255 @@
+{
+  "name": "Watch competitor hiring across four ATS job boards",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "a3000000-0000-4000-8000-000000000001",
+      "name": "Every morning at eight",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "g1",
+              "name": "companies",
+              "value": "={{ [\"https://boards.greenhouse.io/stripe\", \"lever:leverdemo\", \"ramp\"] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a3000000-0000-4000-8000-000000000002",
+      "name": "Companies to watch",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "apifyApi",
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": "gubidonius~company-jobs-scraper",
+        "customBody": "={{ JSON.stringify({ companies: $json.companies, includeDescription: false, onlyRemote: false, maxJobsPerCompany: 1000 }) }}",
+        "timeout": 900,
+        "memory": 1024,
+        "build": ""
+      },
+      "id": "a3000000-0000-4000-8000-000000000003",
+      "name": "Read every board",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "logic": "removeItemsWithAlreadySeenKeyValues",
+        "dedupeValue": "={{ $json.platform }}:{{ $json.companySlug }}:{{ $json.jobId }}",
+        "options": {
+          "scope": "node",
+          "historySize": 20000
+        }
+      },
+      "id": "a3000000-0000-4000-8000-000000000004",
+      "name": "Only the ones I have not seen",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "h1",
+              "name": "company",
+              "value": "={{ $json.company || $json.companySlug }}",
+              "type": "string"
+            },
+            {
+              "id": "h2",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "h3",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "h4",
+              "name": "department",
+              "value": "={{ $json.department }}",
+              "type": "string"
+            },
+            {
+              "id": "h5",
+              "name": "remote",
+              "value": "={{ $json.isRemote }}",
+              "type": "boolean"
+            },
+            {
+              "id": "h6",
+              "name": "postedAt",
+              "value": "={{ $json.postedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "h7",
+              "name": "applyUrl",
+              "value": "={{ $json.applyUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "h8",
+              "name": "board",
+              "value": "={{ $json.platform }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a3000000-0000-4000-8000-000000000005",
+      "name": "Keep what is worth reading",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "hiring-watch",
+          "mode": "name"
+        },
+        "text": "={{ $json.company }} is hiring: {{ $json.title }} ({{ $json.location }}) {{ $json.applyUrl }}",
+        "otherOptions": {}
+      },
+      "id": "a3000000-0000-4000-8000-000000000006",
+      "name": "Tell the channel",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        940,
+        0
+      ],
+      "webhookId": "b3000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "content": "## What this does\n\nEvery morning it reads the career boards of the companies you list and tells you only the\nadverts that are new since yesterday. Nothing else is repeated, so the message is short\nenough to actually read.\n\nGreenhouse, Lever, Ashby and SmartRecruiters are covered. Give a board URL, a\n\"platform:slug\" like lever:leverdemo, or just the company slug and all four are tried.\n\nNew job adverts are the earliest public sign of what a company is building, which team is\ngrowing, and which office is being staffed. Sales teams watch them for a reason to call.\n\n## Setup\n\n1. Install the Apify node. It is verified by n8n, so it works on Cloud and on self-hosted.\n2. Add your Apify API key in the node credentials. A free Apify account is enough to start.\n3. Put your companies in the \"Companies to watch\" node.\n4. Point the Slack node at a channel, or delete it and connect whatever you use instead.\n\nThe Actor is gubidonius/company-jobs-scraper. These are the boards' own public JSON\nendpoints, so there is no login and no proxy to configure.",
+        "height": 560,
+        "width": 440,
+        "color": 4
+      },
+      "id": "a3000000-0000-4000-8000-000000000007",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -160
+      ]
+    }
+  ],
+  "connections": {
+    "Every morning at eight": {
+      "main": [
+        [
+          {
+            "node": "Companies to watch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Companies to watch": {
+      "main": [
+        [
+          {
+            "node": "Read every board",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read every board": {
+      "main": [
+        [
+          {
+            "node": "Only the ones I have not seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only the ones I have not seen": {
+      "main": [
+        [
+          {
+            "node": "Keep what is worth reading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep what is worth reading": {
+      "main": [
+        [
+          {
+            "node": "Tell the channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

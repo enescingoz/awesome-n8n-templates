@@ -1,0 +1,247 @@
+{
+  "name": "Enrich a Google Sheet of companies with EU business register data",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a2000000-0000-4000-8000-000000000001",
+      "name": "Run it",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Companies"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "options": {}
+      },
+      "id": "a2000000-0000-4000-8000-000000000002",
+      "name": "Read the sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        20,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "apifyApi",
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": "gubidonius~company-registry-lookup",
+        "customBody": "={{ JSON.stringify({ queries: [$json.company], countries: ['cz','ee','fi','fr','no','pl','sk'], maxResultsPerQuery: 1, onlyActive: true }) }}",
+        "timeout": 600,
+        "memory": 1024,
+        "build": ""
+      },
+      "id": "a2000000-0000-4000-8000-000000000003",
+      "name": "Look up the official register",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "company",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "f2",
+              "name": "registrationNumber",
+              "value": "={{ $json.registrationNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "f3",
+              "name": "vatNumber",
+              "value": "={{ $json.vatNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "f4",
+              "name": "country",
+              "value": "={{ $json.countryName }}",
+              "type": "string"
+            },
+            {
+              "id": "f5",
+              "name": "registry",
+              "value": "={{ $json.registry }}",
+              "type": "string"
+            },
+            {
+              "id": "f6",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "f7",
+              "name": "incorporatedAt",
+              "value": "={{ $json.incorporatedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "f8",
+              "name": "address",
+              "value": "={{ $json.address }}",
+              "type": "string"
+            },
+            {
+              "id": "f9",
+              "name": "city",
+              "value": "={{ $json.city }}",
+              "type": "string"
+            },
+            {
+              "id": "f10",
+              "name": "website",
+              "value": "={{ $json.website }}",
+              "type": "string"
+            },
+            {
+              "id": "f11",
+              "name": "registryUrl",
+              "value": "={{ $json.registryUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a2000000-0000-4000-8000-000000000004",
+      "name": "Keep the columns worth writing back",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Companies"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [
+            "company"
+          ],
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "a2000000-0000-4000-8000-000000000005",
+      "name": "Write it back to the sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        740,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## What this does\n\nYou have a sheet with a column called company, holding names or registration numbers. This fills in the official register data next to each one and writes it back.\n\nEvery country returns the same field names, so one set of columns works for all seven. No mapping per country.\n\nCzechia (ARES), Estonia (Ariregister), Finland (PRH), France (Annuaire des Entreprises), Norway (Bronnoysund), Poland (MF VAT list), Slovakia (RPO).\n\n## Setup\n\n1. Install the Apify node. It is verified by n8n, so it works on Cloud and on self-hosted.\n2. Add your Apify API key in the node credentials. A free Apify account is enough to start.\n3. Point the two Google Sheets nodes at your sheet. Column A holds the company names.\n\nThe Actor is gubidonius/company-registry-lookup. One row comes back per company with the\nsame 28 field names whichever of the seven registers answered.\n",
+        "height": 520,
+        "width": 420,
+        "color": 4
+      },
+      "id": "a2000000-0000-4000-8000-000000000006",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -160
+      ]
+    }
+  ],
+  "connections": {
+    "Run it": {
+      "main": [
+        [
+          {
+            "node": "Read the sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the sheet": {
+      "main": [
+        [
+          {
+            "node": "Look up the official register",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up the official register": {
+      "main": [
+        [
+          {
+            "node": "Keep the columns worth writing back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep the columns worth writing back": {
+      "main": [
+        [
+          {
+            "node": "Write it back to the sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
