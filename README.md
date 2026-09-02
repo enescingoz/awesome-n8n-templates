@@ -436,7 +436,7 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 45 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 48 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -485,6 +485,9 @@ This section includes 45 additional n8n integration templates covering a wide ra
 | Generate Seedance videos with Vancine API and bounded polling | Submits a Seedance video generation task, polls its asynchronous status, and handles completion, failure, and bounded timeout paths. | Engineering | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20Seedance%20videos%20with%20Vancine%20API%20and%20bounded%20polling.json) |
 | Issue a Verifiable Certificate (Attestify API) | POST recipient and course data to a free API and receive a permanent, tamper-evident public verify page (Ed25519-signed — change one character and verification fails). Core HTTP node; no API key, no signup. | Education/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Issue%20a%20verifiable%20certificate%20(Attestify).json) |
 | Transport Request Intake Lite | Free n8n workflow for normalizing a simple transport request and validating required fields. | Ops/Sales | [Link to Template](Other_Integrations_and_Use_Cases/Transport_Request_Intake_Lite.json) |
+| Shopify new order to Telegram alert | Sends a Telegram message the moment a new Shopify order is placed, with the order number, customer, and total. | E-commerce/Sales | [Link to Template](Other_Integrations_and_Use_Cases/Shopify%20new%20order%20to%20Telegram%20alert.json) |
+| Shopify new order to Google Sheets | Appends every new Shopify order as a row in a Google Sheet (order, customer, email, total, date) for an always-current order log. | E-commerce/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Shopify%20new%20order%20to%20Google%20Sheets.json) |
+| Shopify new customer welcome email | Emails a welcome message from your own Gmail whenever a customer creates an account in your Shopify store. | E-commerce/Marketing | [Link to Template](Other_Integrations_and_Use_Cases/Shopify%20new%20customer%20welcome%20email.json) |
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
 <small>* Referral link — this project receives a commission on eligible purchases.</small>

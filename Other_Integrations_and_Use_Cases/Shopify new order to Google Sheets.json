@@ -1,0 +1,158 @@
+{
+  "name": "Shopify New Order to Google Sheets (Free Starter)",
+  "nodes": [
+    {
+      "id": "aa000002-2222-4a22-9b22-000000000022",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ],
+      "parameters": {
+        "content": "## Shopify → Google Sheets order log\n\nAppends every new Shopify order as a row: Order, Customer, Email, Total, Date.\n\n**Setup**\n1. Create a sheet with headers: Order, Customer, Email, Total, Date.\n2. Add your Shopify Admin API and Google Sheets credentials.\n3. Point the Sheets node at your document, then save and activate.\n\nGuide: https://www.easyworkflows.net/shopify-new-orders-to-google-sheets-n8n/",
+        "height": 240,
+        "width": 760,
+        "color": 4
+      }
+    },
+    {
+      "id": "f2b20001-0001-4b01-8c01-2d01e01f0001",
+      "name": "New Shopify order",
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "topic": "orders/create",
+        "authentication": "accessToken"
+      },
+      "credentials": {
+        "shopifyAccessTokenApi": {
+          "id": "YOUR_SHOPIFY_CREDENTIAL_ID",
+          "name": "Your Shopify account"
+        }
+      }
+    },
+    {
+      "id": "f2b20002-0002-4b02-8c02-2d02e02f0002",
+      "name": "Map order fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o",
+              "name": "Order",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "c",
+              "name": "Customer",
+              "value": "={{ $json.customer ? $json.customer.first_name + ' ' + $json.customer.last_name : 'Guest checkout' }}",
+              "type": "string"
+            },
+            {
+              "id": "e",
+              "name": "Email",
+              "value": "={{ $json.email || ($json.customer ? $json.customer.email : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "t",
+              "name": "Total",
+              "value": "={{ $json.total_price }}",
+              "type": "number"
+            },
+            {
+              "id": "d",
+              "name": "Date",
+              "value": "={{ $json.created_at }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f2b20003-0003-4b03-8c03-2d03e03f0003",
+      "name": "Append to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Your Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "New Shopify order": {
+      "main": [
+        [
+          {
+            "node": "Map order fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map order fields": {
+      "main": [
+        [
+          {
+            "node": "Append to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

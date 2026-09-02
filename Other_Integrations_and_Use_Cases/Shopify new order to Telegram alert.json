@@ -1,0 +1,118 @@
+{
+  "name": "Shopify New Order Telegram Alert (Free Starter)",
+  "nodes": [
+    {
+      "id": "aa000001-1111-4a11-9b11-000000000011",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ],
+      "parameters": {
+        "content": "## Shopify → Telegram order alert\n\nPosts a Telegram message for every new Shopify order (number, customer, total).\n\n**Setup**\n1. Add your Shopify Admin API credential (2026 access-token method).\n2. Add your Telegram bot credential and set the chat ID.\n3. Save and activate — the webhook registers automatically.\n\nGuide: https://www.easyworkflows.net/shopify-alerts-on-telegram-n8n/",
+        "height": 240,
+        "width": 760,
+        "color": 4
+      }
+    },
+    {
+      "id": "f1a10001-0001-4a01-9b01-1c01d01e0001",
+      "name": "New Shopify order",
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "topic": "orders/create",
+        "authentication": "accessToken"
+      },
+      "credentials": {
+        "shopifyAccessTokenApi": {
+          "id": "YOUR_SHOPIFY_CREDENTIAL_ID",
+          "name": "Your Shopify account"
+        }
+      }
+    },
+    {
+      "id": "f1a10002-0002-4a02-9b02-1c02d02e0002",
+      "name": "Build message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg",
+              "name": "message",
+              "value": "=🛒 New order {{ $json.name }}\nCustomer: {{ $json.customer ? $json.customer.first_name + ' ' + $json.customer.last_name : 'Guest checkout' }}\nTotal: {{ $json.total_price }} {{ $json.currency }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f1a10003-0003-4a03-9b03-1c03d03e0003",
+      "name": "Send Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Your Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "New Shopify order": {
+      "main": [
+        [
+          {
+            "node": "Build message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build message": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
