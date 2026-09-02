@@ -1,0 +1,126 @@
+{
+  "name": "Shopify New Customer Welcome Email (Free Starter)",
+  "nodes": [
+    {
+      "id": "aa000003-3333-4a33-9b33-000000000033",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ],
+      "parameters": {
+        "content": "## Shopify → Gmail welcome email\n\nEmails a welcome to each new Shopify customer, sent from your own Gmail.\n\n**Setup**\n1. Add your Shopify Admin API and Gmail credentials.\n2. Edit the subject and message to match your brand.\n3. Save and activate.\n\nGuide: https://www.easyworkflows.net/shopify-new-customer-welcome-gmail-n8n/",
+        "height": 240,
+        "width": 760,
+        "color": 4
+      }
+    },
+    {
+      "id": "f3c30001-0001-4c01-9d01-3e01f01a0001",
+      "name": "New Shopify customer",
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "topic": "customers/create",
+        "authentication": "accessToken"
+      },
+      "credentials": {
+        "shopifyAccessTokenApi": {
+          "id": "YOUR_SHOPIFY_CREDENTIAL_ID",
+          "name": "Your Shopify account"
+        }
+      }
+    },
+    {
+      "id": "f3c30002-0002-4c02-9d02-3e02f02a0002",
+      "name": "Prepare welcome",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e",
+              "name": "email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "f",
+              "name": "firstName",
+              "value": "={{ $json.first_name || 'there' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f3c30003-0003-4c03-9d03-3e03f03a0003",
+      "name": "Send welcome email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Welcome to our store!",
+        "emailType": "text",
+        "message": "=Hi {{ $json.firstName }},\n\nThanks for creating an account with us. We are glad to have you.\n\nReply to this email any time if you need a hand finding something.\n\nSee you soon.",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Your Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "New Shopify customer": {
+      "main": [
+        [
+          {
+            "node": "Prepare welcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare welcome": {
+      "main": [
+        [
+          {
+            "node": "Send welcome email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
