@@ -1,0 +1,519 @@
+{
+  "name": "Inbox Rail Audit",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking ‘Execute workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "w1",
+              "name": "WINDOW_AFTER",
+              "value": "2025/08/01",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-window",
+      "name": "Set window",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (from:paypal.com OR from:paypal.nl OR from:service@paypal.nl) (betaling OR receipt OR ontvangstbewijs OR \"automatische betaling\" OR payment)' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-paypal",
+      "name": "Gmail PayPal",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        -720
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (from:apple.com OR from:email.apple.com) (invoice OR factuur OR receipt OR Apple Pay)' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-apple",
+      "name": "Gmail Apple",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        -480
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (from:googleplay OR from:google.com OR subject:\"Google Play\") (subscription OR abonnement OR \"Google LLC\" OR receipt)' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-play",
+      "name": "Gmail Google Play",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        -240
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (\"Google Pay\" OR GPay OR \"kaart toegevoegd\" OR \"card added\")' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-gpay",
+      "name": "Gmail Google Pay",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (from:stripe.com OR from:paddle.com OR from:lemonsqueezy.com) (receipt OR invoice OR payment)' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-stripe",
+      "name": "Gmail Stripe/Paddle",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        240
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (incasso OR \"automatische incasso\" OR sepa OR machtiging OR \"direct debit\")' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-sepa",
+      "name": "Gmail SEPA",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        480
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "simple": true,
+        "filters": {
+          "q": "={{ 'after:' + $('Set window').first().json.WINDOW_AFTER + ' (from:klarna OR from:afterpay) -unsubscribe -nieuwsbrief' }}"
+        },
+        "options": {
+          "downloadAttachments": false,
+          "maxResults": 200
+        }
+      },
+      "id": "gmail-klarna",
+      "name": "Gmail Klarna",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        720
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE",
+          "name": "Gmail"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "numberInputs": 7
+      },
+      "id": "merge-rails",
+      "name": "Wait for all rails",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function last4(text) {\n  const s = String(text || '');\n  const m = s.match(/(?:ending in|eindigend op|card ending|xxxx|••••)\\s*(\\d{4})/i);\n  if (m) return m[1];\n  return '';\n}\nfunction amountOf(text) {\n  const s = String(text || '');\n  const m = s.match(/\\u20ac\\s*[\\d.,]+|\\$\\s*[\\d.,]+|[\\d.,]+\\s*EUR|[\\d.,]+\\s*USD/i);\n  return m ? m[0] : '';\n}\nfunction currencyOf(amount) {\n  const a = String(amount || '');\n  if (a.indexOf('\\u20ac') !== -1 || /EUR/i.test(a)) return 'EUR';\n  if (a.indexOf('$') !== -1 || /USD/i.test(a)) return 'USD';\n  return '';\n}\nfunction isCardAdded(text) {\n  return /card added|kaart toegevoegd/i.test(String(text || ''));\n}\nfunction isEmptyMsg(j) {\n  if (!j) return true;\n  return !(j.snippet || j.text || j.textPlain || j.subject || j.from);\n}\nfunction row(j, rail) {\n  const snippet = j.snippet || j.text || j.textPlain || '';\n  const subject = j.subject || '';\n  const blob = (subject + ' ' + snippet);\n  const date = j.date || j.internalDate || '';\n  const from = j.from || '';\n  const amt = amountOf(blob);\n  const added = isCardAdded(blob);\n  let evidence = amt ? 'VERIFIED' : 'UNCERTAIN';\n  let note = '';\n  if (added && !amt) {\n    evidence = 'UNCERTAIN';\n    note = 'Card added / kaart toegevoegd is not a charge';\n  }\n  if (rail === 'Stripe/Paddle' && /onboard|connect your|payout/i.test(blob) && !amt) {\n    note = 'Possible seller onboarding, not spend';\n  }\n  return {\n    rail: rail,\n    merchant: String(subject).slice(0, 120),\n    amount: amt,\n    currency: currencyOf(amt),\n    cadence: '',\n    last_charge: date,\n    last4: last4(blob),\n    evidence: evidence,\n    note: note,\n    from: from,\n    subject: subject,\n    snippet: String(snippet).slice(0, 240)\n  };\n}\nconst rails = [\n  ['Gmail PayPal', 'PayPal'],\n  ['Gmail Apple', 'Apple'],\n  ['Gmail Google Play', 'Google Play'],\n  ['Gmail Google Pay', 'Google Pay'],\n  ['Gmail Stripe/Paddle', 'Stripe/Paddle'],\n  ['Gmail SEPA', 'SEPA'],\n  ['Gmail Klarna', 'Klarna']\n];\nconst out = [];\nfor (let r = 0; r < rails.length; r++) {\n  const name = rails[r][0];\n  const rail = rails[r][1];\n  try {\n    const items = $(name).all();\n    for (let i = 0; i < items.length; i++) {\n      if (isEmptyMsg(items[i].json)) continue;\n      out.push(row(items[i].json, rail));\n    }\n  } catch (e) {}\n}\nreturn out.map(function (json) { return { json: json }; });\n"
+      },
+      "id": "classify",
+      "name": "Classify rails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rails"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "sheet",
+      "name": "Append sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Inbox Rail Audit (free Hub workflow)\n\n**Who it is for:** solopreneurs with PayPal + Apple + Play + Stripe (and NL SEPA/Klarna) on one Gmail.\n\n**What it does:** one pass over ~13 months of Gmail *receipt metadata*. Groups by **payment rail**, not merchant dump. Writes a Google Sheet. Does not cancel anything, does not download PDFs, does not send mail, does not write labels.\n\n**How it works**\n1. Set `WINDOW_AFTER` (default `2025/08/01`).\n2. Seven Gmail searches run in parallel (cap 200 each). `downloadAttachments` is false.\n3. Merge waits for every rail, including empty inboxes.\n4. Code classifies rail / amount / last4 / VERIFIED vs UNCERTAIN. \"Card added\" is not a charge. Stripe seller onboarding is flagged.\n5. Rows append to sheet tab `rails`.\n\n**Setup**\n- Attach your Gmail OAuth and Google Sheets OAuth (placeholders are REPLACE).\n- Create a Sheet, tab name `rails`.\n- Paste the Sheet ID into **Append sheet**.\n- Execute once. Read `evidence` before you cancel.\n\n**Limits:** household SEPA (rent, health, telco) is often UNAVAILABLE in Gmail — that is a blind spot, not \"you have no rent\". Do not convert EUR/USD without a rate in the mail.\n",
+        "height": 620,
+        "width": 460,
+        "color": 1
+      },
+      "id": "note-main",
+      "name": "Sticky Note — main",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        -680
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Rail searches (Gmail, read-only)\n\nCap 200 threads each. No `has:attachment`. Metadata + snippet only.\n\n1. PayPal\n2. Apple / Apple Pay\n3. Google Play\n4. Google Pay (card-added is not spend)\n5. Stripe / Paddle / Lemon\n6. SEPA / incasso\n7. Klarna / Afterpay\n",
+        "height": 1680,
+        "width": 300,
+        "color": 5
+      },
+      "id": "note-rails",
+      "name": "Sticky Note — rails",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -800
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Before you run\n\n1. Credentials: Gmail + Google Sheets. IDs stay REPLACE until you attach your own.\n2. `WINDOW_AFTER` = `YYYY/MM/DD` (13-month window).\n3. Sheet tab = `rails`. Document ID = your Sheet.\n4. Keep **downloadAttachments = false**.\n5. Human still cancels. This map is not a mandate list.\n\nEmpty rails still continue (always output data).\n",
+        "height": 320,
+        "width": 360,
+        "color": 4
+      },
+      "id": "note-setup",
+      "name": "Sticky Note — setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        540,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Classify + sheet\n\nOutput columns: rail, merchant (subject), amount, currency, last_charge, last4, evidence, note, from, snippet.\n\nEvidence: VERIFIED (amount in snippet) or UNCERTAIN.\n\nCadence / grouping by merchant is a second human pass. Do not treat every food order as recurring.\n",
+        "height": 280,
+        "width": 320,
+        "color": 6
+      },
+      "id": "note-classify",
+      "name": "Sticky Note — classify",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        -320
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set window": {
+      "main": [
+        [
+          {
+            "node": "Gmail PayPal",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Apple",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Google Play",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Google Pay",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Stripe/Paddle",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail SEPA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Klarna",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail PayPal": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Apple": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Gmail Google Play": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Gmail Google Pay": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Gmail Stripe/Paddle": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Gmail SEPA": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Gmail Klarna": {
+      "main": [
+        [
+          {
+            "node": "Wait for all rails",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "Wait for all rails": {
+      "main": [
+        [
+          {
+            "node": "Classify rails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify rails": {
+      "main": [
+        [
+          {
+            "node": "Append sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
