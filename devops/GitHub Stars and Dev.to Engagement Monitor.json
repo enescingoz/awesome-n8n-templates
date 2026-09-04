@@ -1,0 +1,66 @@
+{
+  "name": "Engagement Monitor Template",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 12 }] }
+      },
+      "id": "trigger1",
+      "name": "Every 12 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/YOUR_GITHUB_USERNAME/YOUR_REPO_1",
+        "options": {}
+      },
+      "id": "gh1",
+      "name": "GitHub Repo 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/YOUR_GITHUB_USERNAME/YOUR_REPO_2",
+        "options": {}
+      },
+      "id": "gh2",
+      "name": "GitHub Repo 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://dev.to/api/articles/YOUR_DEVTO_USERNAME/YOUR_ARTICLE_SLUG",
+        "options": {}
+      },
+      "id": "dt1",
+      "name": "dev.to Article 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// Add or remove blocks below to match the HTTP Request nodes you have.\n// Every $('Node Name') reference must match a node name in this workflow exactly.\nconst repo1 = $('GitHub Repo 1').item.json;\nconst repo2 = $('GitHub Repo 2').item.json;\nconst article1 = $('dev.to Article 1').item.json;\n\nreturn [{\n  json: {\n    checked_at: new Date().toISOString(),\n    repo1: { stars: repo1.stargazers_count, forks: repo1.forks_count, open_issues: repo1.open_issues_count },\n    repo2: { stars: repo2.stargazers_count, forks: repo2.forks_count, open_issues: repo2.open_issues_count },\n    article1: { reactions: article1.positive_reactions_count, comments: article1.comments_count }\n  }\n}];"
+      },
+      "id": "compile1",
+      "name": "Compile Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    }
+  ],
+  "connections": {
+    "Every 12 Hours": { "main": [[{ "node": "GitHub Repo 1", "type": "main", "index": 0 }]] },
+    "GitHub Repo 1": { "main": [[{ "node": "GitHub Repo 2", "type": "main", "index": 0 }]] },
+    "GitHub Repo 2": { "main": [[{ "node": "dev.to Article 1", "type": "main", "index": 0 }]] },
+    "dev.to Article 1": { "main": [[{ "node": "Compile Summary", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
