@@ -1,0 +1,431 @@
+{
+  "name": "Fill PDF with JustFill",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### Fill an existing PDF from reviewed JSON data\n\nSetup and synthetic example:\nhttps://justfill.app/integrations/n8n-fill-pdf-forms?utm_source=github&utm_medium=referral&utm_campaign=b2b_pdf_automation_2026q3&utm_content=awesome_n8n_template\n\nThe workflow download is free. Running it calls JustFill's hosted API and consumes the account's PDF-processing allowance; this is not unlimited free processing.\n\nReview and save the exact recurring PDF's field names once. Then submit that PDF and a JSON object keyed by those names. The repeated mapping uses no AI model and rejects unknown or ambiguous names before filling.\n\nCreate a JustFill API key in Account and replace the placeholder in Config for a private test. Config stores it in plain text: use an n8n credential for production and never share an export containing a real key. Keep this form private or configure access control before activation.",
+        "height": 720,
+        "width": 480,
+        "color": 5
+      },
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "name": "How to use",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -120
+      ],
+      "notes": "Original workflow: https://github.com/mrmaciej1/justfill-mcp/tree/main/examples/n8n\nAdaptation: setup/allowance/security notes, inactive import defaults, attribution. Executable nodes are unchanged from the reviewed September 5, 2026 deterministic workflow.\n\nMIT License\n\nCopyright (c) 2026 Maciej Śnieżyński\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+    },
+    {
+      "parameters": {
+        "content": "### 1. Collect the document and values\n\nThe form accepts the recurring PDF plus a JSON object. Each JSON key should match a reviewed template field name, for example `company_name` or `invoice_number`.",
+        "height": 460,
+        "width": 400,
+        "color": 7
+      },
+      "id": "a1000000-0000-0000-0000-00000000000c",
+      "name": "Collect input guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Upload the PDF safely\n\nJustFill creates a one-time upload URL, and n8n sends the file as binary multipart data. The workflow never embeds the PDF as base64 inside a JSON-RPC request.",
+        "height": 460,
+        "width": 600,
+        "color": 7
+      },
+      "id": "a1000000-0000-0000-0000-00000000000d",
+      "name": "Upload PDF guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Reuse reviewed field names\n\nThe Code node uses exact normalized field names, preserves Unicode, and stops before filling on unknown keys, ambiguous names, nested values or duplicate targets. Null becomes a blank value. It does not guess from substrings.",
+        "height": 460,
+        "width": 400,
+        "color": 7
+      },
+      "id": "a1000000-0000-0000-0000-00000000000e",
+      "name": "Match fields guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4. Review the result before delivery\n\nJustFill returns a temporary download URL (about 24 hours), output_mode and warnings. The form redirects to that PDF. Check whether the result is clean or watermarked and review the output before sending it to anyone else. For production, replace the redirect with your own review and delivery step.",
+        "height": 460,
+        "width": 600,
+        "color": 7
+      },
+      "id": "a1000000-0000-0000-0000-00000000000f",
+      "name": "Return result guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Fill a PDF with JustFill",
+        "formDescription": "Upload a PDF that has a saved JustFill template and provide the values as JSON.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "PDF",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Data JSON",
+              "fieldType": "textarea",
+              "placeholder": "{\"age_score\": \"1\", \"total_score\": \"5\"}",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        140
+      ],
+      "webhookId": "76a1b6a1-90d2-4f1e-9d55-1c6f0a8b1a01"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1000000-0000-0000-0000-000000000001",
+              "name": "apiKey",
+              "value": "jf_live_YOUR_API_KEY_HERE",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000003",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').item.json.apiKey }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"request_file_upload\", \"arguments\": {}}}",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000004",
+      "name": "Mint upload slot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error('MCP transport error: ' + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError) throw new Error('MCP tool error: ' + ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || 'unknown'));\n// The slot JSON arrives as text inside the MCP tool result.\nconst slot = JSON.parse(rpc.result.content[0].text);\nif (slot.error) throw new Error('request_file_upload: ' + slot.error);\nconst trigger = $('On form submission').first();\nconst binKey = Object.keys(trigger.binary || {})[0];\nif (!binKey) throw new Error('No file arrived from the form.');\n// Ready-made JSON-RPC body for the Open PDF node (building it here avoids\n// n8n's expression parser tripping on `}}` inside inline object literals).\nslot.openBody = {\n  jsonrpc: '2.0', id: 2, method: 'tools/call',\n  params: { name: 'open_pdf', arguments: { upload_token: slot.upload_token } },\n};\nreturn [{ json: slot, binary: { file: trigger.binary[binKey] } }];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000005",
+      "name": "Prepare upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Parses the MCP upload-slot response and preserves the submitted PDF as binary for the one-time upload.",
+      "position": [
+        840,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.post_url }}",
+        "contentType": "multipart-form-data",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000006",
+      "name": "Upload PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').item.json.apiKey }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Prepare upload').item.json.openBody) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000007",
+      "name": "Open PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error('MCP transport error: ' + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError) throw new Error('MCP tool error: ' + ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || 'unknown'));\nconst ws = JSON.parse(rpc.result.content[0].text);\nif (ws.error) throw new Error('open_pdf: ' + ws.error);\nif (!Array.isArray(ws.fields) || !ws.summary?.workspace_id) throw new Error('open_pdf returned no usable field list or workspace.');\n\nconst raw = $('On form submission').first().json['Data JSON'];\nlet data;\ntry { data = JSON.parse(raw); }\ncatch { throw new Error('Data JSON must be a JSON object keyed by reviewed PDF field names.'); }\nif (!data || Array.isArray(data) || typeof data !== 'object' || !Object.keys(data).length) {\n  throw new Error('Data JSON must be a non-empty object, not a list, null or a scalar.');\n}\n\n// Exact normalized names only. Keep Unicode; never guess using substrings.\nconst norm = s => String(s ?? '').normalize('NFC').toLowerCase().replace(/[^\\p{L}\\p{M}\\p{N}]+/gu, '');\nconst values = Object.create(null), unmatched = [], usedIds = new Set();\nfor (const [k, v] of Object.entries(data)) {\n  const nk = norm(k);\n  if (!nk) throw new Error('Every JSON key must contain a letter or number.');\n  if (v !== null && (typeof v === 'object' || (typeof v === 'number' && !Number.isFinite(v)))) {\n    throw new Error('Field values must be text, finite numbers, booleans or null; nested values are not supported.');\n  }\n  const matches = ws.fields.filter(f => norm(f.name) === nk);\n  if (!matches.length) { unmatched.push(k); continue; }\n  if (matches.length !== 1) throw new Error('Ambiguous PDF field name: ' + k + '. Give each field a unique reviewed name.');\n  const f = matches[0];\n  if (typeof f.id !== 'string' || !f.id) throw new Error('A matched PDF field has no valid ID.');\n  if (usedIds.has(f.id)) throw new Error('Two JSON keys map to the same PDF field. Use one key per field.');\n  usedIds.add(f.id);\n  values[f.id] = v === null ? '' : String(v);\n}\nif (unmatched.length) {\n  throw new Error('Unmatched JSON keys: ' + unmatched.join(', ') + '. Rename the keys or review and save the PDF field names; no PDF was filled.');\n}\nif (!Object.keys(values).length) throw new Error('No data keys matched the template fields.');\n\nreturn [{ json: {\n  workspace_id: ws.summary.workspace_id,\n  source: ws.summary.source,\n  matched: Object.keys(values).length,\n  unmatched,\n  values,\n  fillBody: {\n    jsonrpc: '2.0', id: 3, method: 'tools/call',\n    params: { name: 'fill_pdf', arguments: { workspace_id: ws.summary.workspace_id, values } },\n  },\n} }];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000008",
+      "name": "Map values to fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Maps submitted JSON keys to the stable field IDs from the previously reviewed JustFill template.",
+      "position": [
+        1440,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://justfill.app/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Config').item.json.apiKey }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json, text/event-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.fillBody) }}",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-000000000009",
+      "name": "Fill PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1640,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rpc = $input.first().json;\nif (rpc.error) throw new Error('MCP transport error: ' + JSON.stringify(rpc.error));\nif (rpc.result && rpc.result.isError) throw new Error('MCP tool error: ' + ((rpc.result.content && rpc.result.content[0] && rpc.result.content[0].text) || 'unknown'));\nconst out = JSON.parse(rpc.result.content[0].text);\nif (out.error) throw new Error('fill_pdf: ' + out.error);\n// download_url: plain GET, no auth, valid until the workspace expires (~24h).\nreturn [{ json: {\n  download_url: out.download_url,\n  output_mode: out.output_mode,\n  filled_fields: out.filled_fields,\n  link_expires_at: out.link_expires_at,\n  warnings: out.warnings || null,\n} }];"
+      },
+      "id": "a1000000-0000-0000-0000-00000000000a",
+      "name": "Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Shapes the JustFill response into the temporary download contract used by the final redirect node.",
+      "position": [
+        1840,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "redirect",
+        "redirectUrl": "={{ $json.download_url }}",
+        "options": {}
+      },
+      "id": "a1000000-0000-0000-0000-00000000000b",
+      "name": "Redirect to filled PDF",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        2040,
+        140
+      ],
+      "webhookId": "76a1b6a1-90d2-4f1e-9d55-1c6f0a8b1a02"
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Mint upload slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mint upload slot": {
+      "main": [
+        [
+          {
+            "node": "Prepare upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare upload": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF": {
+      "main": [
+        [
+          {
+            "node": "Open PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open PDF": {
+      "main": [
+        [
+          {
+            "node": "Map values to fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map values to fields": {
+      "main": [
+        [
+          {
+            "node": "Fill PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill PDF": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result": {
+      "main": [
+        [
+          {
+            "node": "Redirect to filled PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "active": false
+}
