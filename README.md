@@ -179,7 +179,7 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 
 ### What are the best n8n templates for Google Drive and Google Sheets?
 
-Browse 17 Google Drive and Google Sheets automation templates for n8n. Includes RAG chatbots for company documents, OpenAI model fine-tuning pipelines, automated background removal, lead qualification and routing, applicant screening for HR, and document summarization workflows. Perfect for operations, sales, marketing, and engineering teams.
+Browse 18 Google Drive and Google Sheets automation templates for n8n. Includes RAG chatbots for company documents, OpenAI model fine-tuning pipelines, automated background removal, lead qualification and routing, applicant screening for HR, and document summarization workflows. Perfect for operations, sales, marketing, and engineering teams.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -200,6 +200,7 @@ Browse 17 Google Drive and Google Sheets automation templates for n8n. Includes 
 | Screen Applicants With AI, notify HR and save them in a Google Sheet | Automates the screening of job applicants using AI, notifies HR of qualified candidates, and saves applicant data into a Google Sheet. | HR | [Link to Template](Google_Drive_and_Google_Sheets/Screen%20Applicants%20With%20AI,%20notify%20HR%20and%20save%20them%20in%20a%20Google%20Sheet.json) |
 | Summarize Google Sheets form feedback via OpenAI's GPT-4 | Summarizes feedback collected through Google Forms and stored in Google Sheets using OpenAI's GPT-4, providing quick insights from survey responses. | Marketing | [Link to Template](Google_Drive_and_Google_Sheets/Summarize%20Google%20Sheets%20form%20feedback%20via%20OpenAI_s%20GPT-4.json) |
 | Airtable to Google Sheets Auto-Sync | Automates bidirectional sync between Airtable and Google Sheets using n8n. Searches Airtable for recently updated records and upserts them into Google Sheets. | Ops | [Link to Template](Google_Drive_and_Google_Sheets/Airtable%20to%20Google%20Sheets%20Auto-Sync.json) |
+| Enrich a Google Sheet of companies with EU business register data | Takes a column of company names from a Google Sheet, looks each one up in the official register of seven European countries, and writes the registration number, VAT number, status and address back to the sheet. | Sales/Ops | [Link to Template](Google_Drive_and_Google_Sheets/Enrich%20a%20Google%20Sheet%20of%20companies%20with%20EU%20business%20register%20data.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
@@ -436,7 +437,7 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 45 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 46 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -485,13 +486,14 @@ This section includes 45 additional n8n integration templates covering a wide ra
 | Generate Seedance videos with Vancine API and bounded polling | Submits a Seedance video generation task, polls its asynchronous status, and handles completion, failure, and bounded timeout paths. | Engineering | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20Seedance%20videos%20with%20Vancine%20API%20and%20bounded%20polling.json) |
 | Issue a Verifiable Certificate (Attestify API) | POST recipient and course data to a free API and receive a permanent, tamper-evident public verify page (Ed25519-signed — change one character and verification fails). Core HTTP node; no API key, no signup. | Education/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Issue%20a%20verifiable%20certificate%20(Attestify).json) |
 | Transport Request Intake Lite | Free n8n workflow for normalizing a simple transport request and validating required fields. | Ops/Sales | [Link to Template](Other_Integrations_and_Use_Cases/Transport_Request_Intake_Lite.json) |
+| Watch competitor hiring across four ATS job boards | Reads the Greenhouse, Lever, Ashby and SmartRecruiters boards of the companies you list every morning and reports only the adverts that are new since the previous run. Uses the verified Apify node, so it works on n8n Cloud. | Sales/HR | [Link to Template](Other_Integrations_and_Use_Cases/Watch%20competitor%20hiring%20across%20four%20ATS%20job%20boards.json) |
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
 <small>* Referral link — this project receives a commission on eligible purchases.</small>
 
 ### How do I automate forms and surveys with n8n?
 
-This section contains 4 form and survey automation templates for n8n. Conduct AI-powered conversational interviews via n8n Forms, manage email subscriptions with Airtable integration, or qualify appointment requests using AI. These templates streamline data collection and lead processing workflows.
+This section contains 5 form and survey automation templates for n8n. Conduct AI-powered conversational interviews via n8n Forms, manage email subscriptions with Airtable integration, or qualify appointment requests using AI. These templates streamline data collection and lead processing workflows.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -499,6 +501,7 @@ This section contains 4 form and survey automation templates for n8n. Conduct AI
 | Email Subscription Service with n8n Forms, Airtable and AI | Manages email subscriptions with n8n Forms, stores data in Airtable, and uses AI for processing. | Marketing/Communication | [Link to Template](Forms_and_Surveys/Email%20Subscription%20Service%20with%20n8n%20Forms,%20Airtable%20and%20AI.json) |
 | Generate a Song from a Form (Tunova) | A hosted n8n Form collects a text prompt, then Tunova generates an original Suno AI song (v5.5) and returns the audio URL. Core HTTP node — runs on any n8n. Free API key at tunova.ai. | Marketing/Creative | [Link to Template](Forms_and_Surveys/Tunova%20-%20Generate%20a%20song%20from%20a%20form.json) |
 | Qualifying Appointment Requests with AI & n8n Forms | Uses AI to qualify and process appointment requests submitted through n8n Forms. | Sales/Support | [Link to Template](Forms_and_Surveys/Qualifying%20Appointment%20Requests%20with%20AI%20&%20n8n%20Forms.json) |
+| Check a company in seven EU business registers from a form | Somebody submits a company name or registration number through an n8n Form and the workflow reads the official business register of Czechia, Estonia, Finland, France, Norway, Poland or Slovakia, then branches on whether the company is still active. | Finance/Ops | [Link to Template](Forms_and_Surveys/Check%20a%20company%20in%20seven%20EU%20business%20registers%20from%20a%20form.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />

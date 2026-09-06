@@ -1,0 +1,301 @@
+{
+  "name": "Check a company in seven EU business registers from a form",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Company check",
+        "formDescription": "Enter a company name or a registration number. The official register of the country is read directly.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Company name or registration number",
+              "placeholder": "Bolt, or cz:27074358",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Country",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "cz"
+                  },
+                  {
+                    "option": "ee"
+                  },
+                  {
+                    "option": "fi"
+                  },
+                  {
+                    "option": "fr"
+                  },
+                  {
+                    "option": "no"
+                  },
+                  {
+                    "option": "pl"
+                  },
+                  {
+                    "option": "sk"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Someone submits the form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        0
+      ],
+      "webhookId": "b1000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "authentication": "apifyApi",
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": "gubidonius~company-registry-lookup",
+        "customBody": "={{ JSON.stringify({ queries: [$json['Company name or registration number']], countries: [$json['Country']], maxResultsPerQuery: 5, onlyActive: false }) }}",
+        "timeout": 600,
+        "memory": 1024,
+        "build": ""
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Look up the official register",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        20,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1000000-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "active",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Is the company still active",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "verdict",
+              "value": "ok",
+              "type": "string"
+            },
+            {
+              "id": "d2",
+              "name": "company",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d3",
+              "name": "registrationNumber",
+              "value": "={{ $json.registrationNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "d4",
+              "name": "country",
+              "value": "={{ $json.countryName }}",
+              "type": "string"
+            },
+            {
+              "id": "d5",
+              "name": "legalForm",
+              "value": "={{ $json.legalFormCode }}",
+              "type": "string"
+            },
+            {
+              "id": "d6",
+              "name": "address",
+              "value": "={{ $json.address }}",
+              "type": "string"
+            },
+            {
+              "id": "d7",
+              "name": "vatNumber",
+              "value": "={{ $json.vatNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "d8",
+              "name": "registryUrl",
+              "value": "={{ $json.registryUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "d9",
+              "name": "registryUpdatedAt",
+              "value": "={{ $json.registryUpdatedAt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Passed, keep the register fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        520,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "verdict",
+              "value": "check by hand",
+              "type": "string"
+            },
+            {
+              "id": "e2",
+              "name": "company",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e3",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "e4",
+              "name": "statusRaw",
+              "value": "={{ $json.statusRaw }}",
+              "type": "string"
+            },
+            {
+              "id": "e5",
+              "name": "dissolvedAt",
+              "value": "={{ $json.dissolvedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "e6",
+              "name": "registryUrl",
+              "value": "={{ $json.registryUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Not active, send it to a human",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        520,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## What this does\n\nSomebody types a company name or a registration number into a form. The workflow reads that company straight out of the country's official business register and answers one question, which is whether the company is still active.\n\nSeven registers are covered and all of them return the same field names, so nothing downstream has to know which country it got.\n\nCzechia (ARES), Estonia (Ariregister), Finland (PRH), France (Annuaire des Entreprises), Norway (Bronnoysund), Poland (MF VAT list), Slovakia (RPO).\n\n## Setup\n\n1. Install the Apify node. It is verified by n8n, so it works on Cloud and on self-hosted.\n2. Add your Apify API key in the node credentials. A free Apify account is enough to start.\n3. Open the form URL on the trigger node.\n\nThe Actor is gubidonius/company-registry-lookup. It reads the government API of each\ncountry directly, so there is no login to any register and no personal data is returned.\n",
+        "height": 460,
+        "width": 420,
+        "color": 4
+      },
+      "id": "a1000000-0000-4000-8000-000000000006",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -140
+      ]
+    }
+  ],
+  "connections": {
+    "Someone submits the form": {
+      "main": [
+        [
+          {
+            "node": "Look up the official register",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up the official register": {
+      "main": [
+        [
+          {
+            "node": "Is the company still active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is the company still active": {
+      "main": [
+        [
+          {
+            "node": "Passed, keep the register fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not active, send it to a human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
