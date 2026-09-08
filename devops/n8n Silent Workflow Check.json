@@ -1,0 +1,164 @@
+{
+  "name": "n8n Silent Workflow Check",
+  "id": "duskwatchSilentCheck",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Silent workflow check\n\nFinds workflows that are **active but have not run** — the failure mode that produces no failed execution and therefore no error workflow alert.\n\n### Setup (2 minutes)\n1. In n8n: **Settings → n8n API → Create an API key**.\n2. On **Get workflows**, create a *Header Auth* credential:\n   - Name: `X-N8N-API-KEY`\n   - Value: your API key\n   Reuse the same credential on **Get executions**.\n3. In **Configuration**, set `baseUrl` to your n8n address (no trailing slash) and `staleHours` to how long silence is still normal.\n4. Attach your own alert node after **Find silent workflows**.\n\n### The catch\nThis workflow lives inside the instance it watches. If that instance is down, restarting, or its\nschedule triggers did not re-register, this check does not run either — and its silence looks\nexactly like everything being fine.\n\nThat is the one failure it cannot cover. Watching from outside is the only thing that does:\nhttps://duskwatch.me/checklist?ref=template",
+        "height": 620,
+        "width": 460
+      },
+      "id": "8f1c0a10-0000-4000-8000-000000000001",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "8f1c0a10-0000-4000-8000-000000000002",
+      "name": "Every morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        40,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "baseUrl",
+              "value": "https://n8n.example.com",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "staleHours",
+              "value": 26,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f1c0a10-0000-4000-8000-000000000003",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.baseUrl }}/api/v1/workflows?limit=250",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "8f1c0a10-0000-4000-8000-000000000004",
+      "name": "Get workflows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuration').first().json.baseUrl }}/api/v1/executions?limit=250",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "8f1c0a10-0000-4000-8000-000000000005",
+      "name": "Get executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Configuration').first().json;\nconst stunden = Number(cfg.staleHours) || 24;\n\nconst workflows = ($('Get workflows').first().json.data || []).filter((w) => w.active && !w.isArchived);\nconst executions = $('Get executions').first().json.data || [];\n\n// Letzter Lauf je Workflow. Das Fenster reicht nur so weit zurueck wie limit=250 —\n// bei sehr vielen Ausfuehrungen kann ein stiller Workflow dadurch uebersehen werden.\nconst zuletzt = new Map();\nfor (const e of executions) {\n  const id = String(e.workflowId);\n  const t = new Date(e.startedAt || e.createdAt).getTime();\n  if (!Number.isFinite(t)) continue;\n  if (!zuletzt.has(id) || t > zuletzt.get(id)) zuletzt.set(id, t);\n}\n\nconst jetzt = Date.now();\nconst grenze = jetzt - stunden * 3600 * 1000;\nconst still = [];\n\nfor (const w of workflows) {\n  const t = zuletzt.get(String(w.id));\n  if (t === undefined) {\n    still.push({ workflow: w.name, workflowId: w.id, lastRun: null, hoursSilent: null, note: 'no execution in the window' });\n  } else if (t < grenze) {\n    still.push({ workflow: w.name, workflowId: w.id, lastRun: new Date(t).toISOString(), hoursSilent: Math.round((jetzt - t) / 3600000), note: 'active but stalled' });\n  }\n}\n\nif (still.length === 0) return [{ json: { silent: 0, activeChecked: workflows.length } }];\nreturn still.map((json) => ({ json }));"
+      },
+      "id": "8f1c0a10-0000-4000-8000-000000000006",
+      "name": "Find silent workflows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Every morning": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get workflows": {
+      "main": [
+        [
+          {
+            "node": "Get executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get executions": {
+      "main": [
+        [
+          {
+            "node": "Find silent workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
