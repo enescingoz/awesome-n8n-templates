@@ -1,0 +1,177 @@
+{
+  "name": "Generate a product image with Magic Hour",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "2",
+      "name": "Magic Hour",
+      "type": "@gladiator1st/n8n-nodes-magichour.magicHour",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "resource": "image",
+        "operation": "generate",
+        "imagePrompt": "A cobalt blue ceramic coffee mug on a plain cream studio background, clean ecommerce product photograph, no text.",
+        "imageModel": "flux-2-klein",
+        "imageResolution": "640px",
+        "imageCount": 1,
+        "imageAspectRatio": "1:1",
+        "waitForCompletion": true,
+        "additionalOptions": {
+          "pollingInterval": 10,
+          "maxWaitTime": 600
+        }
+      },
+      "credentials": {
+        "magicHourApi": {
+          "id": "MAGIC_HOUR_CREDENTIAL_ID",
+          "name": "Magic Hour API"
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "Require complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "status-complete",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "complete",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "4",
+      "name": "Download result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $json.downloads[0].url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Stop incomplete job",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        750,
+        500
+      ],
+      "parameters": {
+        "errorMessage": "={{ \"Generation is \" + $json.status + \". Keep project ID \" + $json.id + \" and resume with Get Details. Do not create another generation to retrieve it.\" }}"
+      }
+    },
+    {
+      "id": "6",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -60
+      ],
+      "parameters": {
+        "content": "## Setup\n1. Install @gladiator1st/n8n-nodes-magichour.\n2. Select your Magic Hour API credential.\n3. Replace the sample prompt. Run manually.\n4. Download result returns binary `data`; connect it to Google Drive Upload or another storage node.\nGeneration uses Magic Hour credits. Do not enable automatic generation retries.\n\nUse a self-hosted n8n instance that allows community nodes. Cloud eligibility is unverified. Tested with n8n 2.37.10 and @gladiator1st/n8n-nodes-magichour 1.0.3. Magic Hour AI source: MIT; see docs/Magic Hour workflow license.txt.",
+        "height": 330,
+        "width": 550
+      }
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Magic Hour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Magic Hour": {
+      "main": [
+        [
+          {
+            "node": "Require complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require complete": {
+      "main": [
+        [
+          {
+            "node": "Download result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop incomplete job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "description": "Generate one product image, require completion and download the result as binary data."
+}
