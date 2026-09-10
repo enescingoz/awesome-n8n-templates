@@ -1,0 +1,526 @@
+{
+  "name": "Generate content with AI agents through a QA gate and human approval before publishing",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Generate content with AI agents through a QA gate and human approval before publishing\n\n**Who it is for.** Marketing teams that want drafts produced on a schedule but never published without a human and a quality gate.\n\n**What it does**\n- Webhook or weekly schedule with a list of topics.\n- Per topic: research (search API), outline, draft, then a QA gate in code: minimum length, required sections, a sources section with two or more links, banned marketing claims.\n- Passing drafts go to human approval and are published as drafts to Google Docs or the CMS; failing drafts go back with the reasons, never published.\n- Token usage and cost are accounted per run.\n\n**Setup**\n1. Set base in Config or swap the HTTP Request nodes for your search API, Slack and Google Docs or CMS nodes.\n2. Set the AI credential on the research, outline and draft steps. Edit the banned phrases and minimum length in the QA gate Code node.\n3. Activate.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/content-pipeline-qa-gate\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1000,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-run",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook / weekly schedule: topics",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "auto_approve_in_test",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "c3",
+              "name": "min_words",
+              "value": 120,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst topics = Array.isArray(body.topics) ? body.topics : String(body.topics || '').split(',').map(s => s.trim()).filter(Boolean);\nif (!topics.length) throw new Error('No topics supplied');\nconst cfg = $('Config').first().json;\nreturn topics.map(t => ({ json: { topic: t, run_id: body.run_id || ('run-' + Date.now()), base: cfg.base, auto_approve: cfg.auto_approve_in_test, min_words: cfg.min_words } }));"
+      },
+      "name": "One item per topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Loop topics",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.topic, recency_days: 90 }) }}",
+        "options": {}
+      },
+      "name": "Agent 1 · Research (search API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Loop topics').item.json.base }}/llm/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ task: 'outline', input: { topic: $('Loop topics').item.json.topic, sources: $json.results } }) }}",
+        "options": {}
+      },
+      "name": "Agent 2 · Outline (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Loop topics').item.json.base }}/llm/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ task: 'draft', input: { topic: $('Loop topics').item.json.topic, title: $json.output.title, sections: $json.output.sections, sources: $('Agent 1 · Research (search API)').item.json.results } }) }}",
+        "options": {}
+      },
+      "name": "Agent 3 · Draft (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deterministic QA gate, the model writes, code checks. Never publish on the model's say-so alone.\nconst d = $input.first().json.output;\nconst cfg = $('Loop topics').item.json;\nconst body = d.body || '';\nconst issues = [];\nconst words = body.split(/\\s+/).filter(Boolean).length;\nif (words < cfg.min_words) issues.push(`too short (${words} < ${cfg.min_words})`);\nif (!/Sources:/.test(body)) issues.push('no sources section');\nfor (const bad of ['guaranteed', 'risk-free', '100%', 'best in the world']) if (body.toLowerCase().includes(bad)) issues.push('banned claim: ' + bad);\nconst required = ['Why it matters now', 'What to do this quarter'];\nfor (const r of required) if (!body.includes('## ' + r)) issues.push('missing section: ' + r);\nconst srcCount = (body.match(/https?:\\/\\//g) || []).length;\nif (srcCount < 2) issues.push('fewer than 2 source links');\nconst usage = [$('Agent 2 · Outline (LLM)').item.json.usage, $input.first().json.usage].reduce((a,u)=>({input_tokens:a.input_tokens+(u?.input_tokens||0), output_tokens:a.output_tokens+(u?.output_tokens||0)}), {input_tokens:0, output_tokens:0});\nreturn [{ json: { topic: cfg.topic, run_id: cfg.run_id, title: d.title, body, words, qa_pass: issues.length === 0, issues, usage, est_cost_usd: +((usage.input_tokens*3 + usage.output_tokens*15)/1e6).toFixed(4), base: cfg.base, auto_approve: cfg.auto_approve } }];"
+      },
+      "name": "Agent 4 · QA gate (deterministic checks)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.qa_pass }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "QA passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#content-approvals', text: 'APPROVE? ' + $json.title + ' (' + $json.words + ' words, est. $' + $json.est_cost_usd + ')', approval: $json.auto_approve ? 'auto-approved' : 'awaiting human' }) }}",
+        "options": {}
+      },
+      "name": "Human approval (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        100
+      ],
+      "notes": "Live mode: Slack 'send and wait' with a 3-day timeout. Sample mode auto approves so the run completes unattended; switch to Slack send and wait for production."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Agent 4 · QA gate (deterministic checks)').item.json.base }}/publish/doc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $('Agent 4 · QA gate (deterministic checks)').item.json.title, body: $('Agent 4 · QA gate (deterministic checks)').item.json.body, status: 'draft' }) }}",
+        "options": {}
+      },
+      "name": "Publish as draft (Google Docs / CMS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#content-qa-failed', text: 'QA FAILED: ' + $json.title + ', ' + $json.issues.join('; ') }) }}",
+        "options": {}
+      },
+      "name": "Send back with reasons (no publish)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const q = $('Agent 4 · QA gate (deterministic checks)').item.json;\nconst pub = $input.first().json;\nreturn [{ json: { topic: q.topic, title: q.title, words: q.words, qa_pass: q.qa_pass, issues: q.issues, published_url: pub.url || null, est_cost_usd: q.est_cost_usd, tokens: q.usage } }];"
+      },
+      "name": "Run log row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nreturn [{ json: { run_id: rows[0]?.run_id, topics: rows.length, published: rows.filter(r => r.published_url).length, failed_qa: rows.filter(r => !r.qa_pass).map(r => ({ title: r.title, issues: r.issues })), est_cost_usd: +rows.reduce((a,r)=>a+(r.est_cost_usd||0),0).toFixed(4), results: rows } }];"
+      },
+      "name": "Run summary (respond)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-alerts', text: 'Content pipeline failed: ' + ($json.execution?.error?.message || 'unknown') }) }}",
+        "options": {}
+      },
+      "name": "Alert ops",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        130,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base` and the publishing endpoint, or swap the HTTP Request node for your CMS node.\n2. Point the agent steps at your model endpoint (`base`/llm/complete) or swap them for the OpenAI or Anthropic node.\n3. Activate and send a brief to the Webhook URL. Nothing publishes until a human approves.\n\nRun one brief end to end and read the QA report before trusting it.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        1080
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook / weekly schedule: topics": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "One item per topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per topic": {
+      "main": [
+        [
+          {
+            "node": "Loop topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop topics": {
+      "main": [
+        [
+          {
+            "node": "Run summary (respond)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent 1 · Research (search API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 1 · Research (search API)": {
+      "main": [
+        [
+          {
+            "node": "Agent 2 · Outline (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 2 · Outline (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Agent 3 · Draft (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 3 · Draft (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Agent 4 · QA gate (deterministic checks)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 4 · QA gate (deterministic checks)": {
+      "main": [
+        [
+          {
+            "node": "QA passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA passed?": {
+      "main": [
+        [
+          {
+            "node": "Human approval (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send back with reasons (no publish)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human approval (Slack)": {
+      "main": [
+        [
+          {
+            "node": "Publish as draft (Google Docs / CMS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish as draft (Google Docs / CMS)": {
+      "main": [
+        [
+          {
+            "node": "Run log row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send back with reasons (no publish)": {
+      "main": [
+        [
+          {
+            "node": "Run log row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run log row": {
+      "main": [
+        [
+          {
+            "node": "Loop topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
