@@ -1,0 +1,308 @@
+{
+  "id": "keptickOutputGuard",
+  "name": "Detect Empty Workflow Outputs with an Optional Keptick Receipt",
+  "description": "Check distinct completed-record IDs, including empty and malformed output. Run a fictional local demo without an account; optionally send a count-only receipt to Keptick.",
+  "active": false,
+  "nodes": [
+    {
+      "id": "intro-note",
+      "name": "Read first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -340
+      ],
+      "parameters": {
+        "content": "## Check the output, including zero\nRun the demo without an account or network request. In Configure check, change demoCase from healthy to empty, invalid, or duplicates. Inspect the last node.\n\nThe sample records are fictional. This checks distinct nonempty IDs in one field, not whether the real business work was correct.",
+        "width": 570,
+        "height": 245
+      }
+    },
+    {
+      "id": "trigger",
+      "name": "Run the demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        40
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "config",
+      "name": "Configure check",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        40
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "case",
+              "name": "demoCase",
+              "value": "healthy",
+              "type": "string"
+            },
+            {
+              "id": "minimum",
+              "name": "minimumItems",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "id-field",
+              "name": "recordIdField",
+              "value": "recordId",
+              "type": "string"
+            },
+            {
+              "id": "send",
+              "name": "sendReceipt",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "test",
+              "name": "testReceipt",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "url",
+              "name": "receiptUrl",
+              "value": "https://keptick.aifirm.app/api/v1/ingest/REPLACE_WITH_YOUR_PRIVATE_TOKEN",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "samples",
+      "name": "Fictional completed outputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -70,
+        40
+      ],
+      "parameters": {
+        "jsCode": "const demo = $('Configure check').first().json.demoCase;\nif (demo === 'empty') return [];\nif (demo === 'invalid') return [{json:{unexpectedField:'fictional'}}];\nif (demo === 'duplicates') return [\n  {json:{recordId:'DEMO-001'}}, {json:{recordId:'DEMO-001'}}, {json:{recordId:'DEMO-002'}}\n];\nif (demo !== 'healthy') throw new Error('Use healthy, empty, invalid, or duplicates for demoCase.');\nreturn [1,2,3].map(i => ({json:{recordId:`DEMO-00${i}`}}));"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "guard",
+      "name": "Check completed outputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        40
+      ],
+      "parameters": {
+        "jsCode": "const config = $('Configure check').first().json;\nconst minimum = Number(config.minimumItems);\nif (!Number.isSafeInteger(minimum) || minimum < 0 || minimum > 1000000000)\n  throw new Error('minimumItems must be a non-negative integer, at most 1000000000.');\nconst field = String(config.recordIdField || '').trim();\nif (!field) throw new Error('Set recordIdField to the field identifying a completed output.');\nconst rows = $input.all().filter(item => Object.keys(item.json || {}).length > 0);\nconst keys = new Set();\nlet invalidItems = 0;\nfor (const item of rows) {\n  const value = item.json[field];\n  const valid = (typeof value === 'string' && value.trim().length > 0)\n    || (typeof value === 'number' && Number.isFinite(value));\n  if (!valid) { invalidItems++; continue; }\n  keys.add(String(value).trim());\n}\nconst items = keys.size;\nconst duplicateItems = rows.length - invalidItems - items;\nconst checkPassed = items >= minimum && invalidItems === 0;\nconst checkStatus = invalidItems ? 'invalid_output' : items < minimum ? 'below_minimum' : 'healthy';\nreturn [{json:{\n  checkPassed, checkStatus, minimumItems:minimum, items, invalidItems, duplicateItems,\n  receipt:{eventId:`n8n:${$workflow.id}:${$execution.id}:${$runIndex}`, success:checkPassed,\n    items, test:config.testReceipt === true,\n    message:`Output check: ${items} distinct IDs; minimum ${minimum}; ${invalidItems} invalid; ${duplicateItems} duplicates.`}\n}}];"
+      }
+    },
+    {
+      "id": "send-check",
+      "name": "Send receipt enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        430,
+        40
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "send-condition",
+              "leftValue": "={{ $('Configure check').first().json.sendReceipt }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "preview",
+      "name": "Inspect local result",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        720,
+        180
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "post",
+      "name": "Send count-only receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        -70
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configure check').first().json.receiptUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.receipt) }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "accepted",
+      "name": "Verify receipt accepted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        970,
+        -70
+      ],
+      "parameters": {
+        "jsCode": "if ($json.received !== true) throw new Error('The receiver did not confirm this receipt.');\nreturn [{json:{...$('Check completed outputs').first().json,\n  receiptAccepted:true, duplicateReceipt:$json.duplicate === true,\n  monitorStatus:$json.status || null}}];"
+      }
+    },
+    {
+      "id": "adopt-note",
+      "name": "Use with a real workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        300
+      ],
+      "parameters": {
+        "content": "## Connect your real output\n1. Keep Configure check before your processing steps.\n2. Replace Fictional completed outputs with the node that emits completed records. Enable Always Output Data on that node, so Check completed outputs runs when there are none.\n3. Set recordIdField and minimumItems for that output.\n4. Test healthy, empty, invalid and duplicate results.\n\nErrors before this branch and workflows that never start require a separate error workflow or missing-run monitor. A run that never reaches the check sends no receipt.",
+        "width": 760,
+        "height": 315
+      }
+    },
+    {
+      "id": "monitor-note",
+      "name": "Optional Keptick monitor",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        350,
+        -380
+      ],
+      "parameters": {
+        "content": "## Optional receipt\nCreate a monitor in [Keptick](https://keptick.aifirm.app/guide?utm_source=github&utm_medium=template&utm_campaign=e08_n8n_output_guard), paste its private receipt URL in Configure check, then set sendReceipt to true. Keep testReceipt true during setup; set false for real work.\n\nOnly counts/status and an execution identifier leave n8n. The private URL is a credential: do not share workflow exports or execution data after adding it. HTTP errors stop the receipt branch; no automatic retries. The local check works without Keptick.\n\nMade by Keptick, with AI assistance. No affiliation with n8n.",
+        "width": 800,
+        "height": 285
+      }
+    }
+  ],
+  "connections": {
+    "Run the demo": {
+      "main": [
+        [
+          {
+            "node": "Configure check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure check": {
+      "main": [
+        [
+          {
+            "node": "Fictional completed outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fictional completed outputs": {
+      "main": [
+        [
+          {
+            "node": "Check completed outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check completed outputs": {
+      "main": [
+        [
+          {
+            "node": "Send receipt enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send receipt enabled?": {
+      "main": [
+        [
+          {
+            "node": "Send count-only receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Inspect local result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send count-only receipt": {
+      "main": [
+        [
+          {
+            "node": "Verify receipt accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
