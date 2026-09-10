@@ -1,0 +1,613 @@
+{
+ "name": "Convert Markdown into a branded PDF with a table of contents using PDFMint",
+ "nodes": [
+  {
+   "id": "Sticky Note",
+   "name": "Sticky Note",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -820,
+    -420
+   ],
+   "parameters": {
+    "color": 1,
+    "width": 620,
+    "height": 1240,
+    "content": "## Convert Markdown into a branded PDF with a table of contents\n\n**Who it is for**\nAnyone holding Markdown — an AI agent's answer, release notes, a knowledge-base page, a report written in an editor — who needs a finished, branded PDF back in the same request. No headless browser to run, no template editor to log into.\n\n**How it works**\n1. **Receive the Markdown document** takes a POST with `markdown`, `title` and an optional `author`.\n2. **Set your document branding** is the one node you edit: brand name, accent colour, page format, whether a table of contents is added, and an optional watermark such as `DRAFT`.\n3. **Check the request is usable** turns an empty payload into a readable 422 before anything is rendered.\n4. **Check remaining quota** asks PDFMint how many credits are left. The `usage` operation costs nothing.\n5. **Build the cover, contents and body** does all the work in one place: it numbers every `##` and `###` heading, builds a contents list from exactly those numbers so the two cannot drift apart, skips headings inside fenced code blocks, counts the words, estimates the reading time, and assembles a cover block. It also derives the running header and the CSS from your accent colour.\n6. **Render the Markdown as PDF** sends the assembled Markdown to PDFMint with your header, page numbers and styling.\n7. **Did the render succeed?** decides which answer the caller gets, because the render node is set to continue on failure.\n8. **Return the PDF** answers the POST with the file itself; **Return the error as JSON** answers with a status and a reason, so a caller never hangs.\n\n**How to set it up**\n- Install the verified community node `n8n-nodes-pdfmint`. It is available on n8n Cloud and self-hosted n8n; Cloud owners and admins can add it from **More from the community** in the nodes panel.\n- Create a PDFMint credential with your API key.\n- Open **Set your document branding** and put your own brand name, accent colour and page format in it. Nothing else needs editing.\n\n**How to customise it**\n- Swap **Return the PDF** for Gmail, Google Drive or S3 if you would rather deliver the file than answer with it.\n- Set `draftWatermark` to `DRAFT` while a document is unfinished; leave it empty for the final version.\n- Replace the webhook with a Schedule Trigger to turn a nightly report into a PDF.\n\n*Disclosure: I build PDFMint, and I wrote this template.*"
+   }
+  },
+  {
+   "id": "Sticky Note1",
+   "name": "Sticky Note1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -100,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 300,
+    "height": 220,
+    "content": "### 1. The request comes in\nPOST the document as JSON. Required: `markdown` and `title`. Optional: `author`. Any tool that can send an HTTP request can use this — including an AI agent that has just written the Markdown."
+   }
+  },
+  {
+   "id": "Sticky Note2",
+   "name": "Sticky Note2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    240,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 300,
+    "height": 220,
+    "content": "### 2. Edit this node, not the others\nBrand name, accent colour, page format, whether a contents list is added, and an optional watermark. Every other node reads its settings from here."
+   }
+  },
+  {
+   "id": "Sticky Note3",
+   "name": "Sticky Note3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    580,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 300,
+    "height": 220,
+    "content": "### 3. Refuse an empty request early\nNo Markdown or no title means no document is worth rendering. The caller gets a readable reason instead of a one-line PDF."
+   }
+  },
+  {
+   "id": "Sticky Note4",
+   "name": "Sticky Note4",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    920,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 300,
+    "height": 220,
+    "content": "### 4. Look before you spend\nPDFMint's `usage` operation costs no credits and reports how many are left. Running out is answered with an explanation rather than a failed render."
+   }
+  },
+  {
+   "id": "Sticky Note5",
+   "name": "Sticky Note5",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1260,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 340,
+    "height": 260,
+    "content": "### 5. Everything is computed here\nHeadings are numbered, the contents list is built from those same numbers, headings inside fenced code blocks are left alone, words and reading time are counted, and the header and CSS are derived from your accent colour."
+   }
+  },
+  {
+   "id": "Sticky Note6",
+   "name": "Sticky Note6",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1660,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 300,
+    "height": 220,
+    "content": "### 6. Markdown in, PDF out\nOne node. The header, page numbers, watermark and stylesheet all come from the config node, so the same workflow renders every document in your house style."
+   }
+  },
+  {
+   "id": "Sticky Note7",
+   "name": "Sticky Note7",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2000,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 320,
+    "height": 240,
+    "content": "### 7. Did a PDF actually come back?\nThe render node continues on failure, so an unreachable API arrives here as data instead of stopping the workflow. This node decides which of the two answers the caller gets."
+   }
+  },
+  {
+   "id": "Sticky Note8",
+   "name": "Sticky Note8",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2340,
+    -520
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 320,
+    "height": 240,
+    "content": "### 8. The caller always gets an answer\nOn success the POST is answered with the PDF; on failure with a status (422 for a bad request, 500 when the render itself fails) and the reason. The request never hangs."
+   }
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "markdown-to-pdf",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "n1",
+   "name": "Receive the Markdown document",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -40,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "b1",
+       "name": "brandName",
+       "value": "Meridian Field Systems B.V.",
+       "type": "string"
+      },
+      {
+       "id": "b2",
+       "name": "accentColour",
+       "value": "#123a5f",
+       "type": "string"
+      },
+      {
+       "id": "b3",
+       "name": "pageFormat",
+       "value": "A4",
+       "type": "string"
+      },
+      {
+       "id": "b4",
+       "name": "addTableOfContents",
+       "value": true,
+       "type": "boolean"
+      },
+      {
+       "id": "b5",
+       "name": "draftWatermark",
+       "value": "",
+       "type": "string"
+      },
+      {
+       "id": "b6",
+       "name": "request",
+       "value": "={{ $json.body }}",
+       "type": "object"
+      }
+     ]
+    },
+    "includeOtherFields": false,
+    "options": {}
+   },
+   "id": "n2",
+   "name": "Set your document branding",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    300,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.request.markdown }}",
+       "rightValue": ""
+      },
+      {
+       "id": "c2",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.request.title }}",
+       "rightValue": ""
+      }
+     ],
+     "combinator": "and"
+    },
+    "looseTypeValidation": true,
+    "options": {}
+   },
+   "id": "n3",
+   "name": "Check the request is usable",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    640,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "usage"
+   },
+   "id": "n4",
+   "name": "Check remaining quota",
+   "type": "n8n-nodes-pdfmint.pdfMint",
+   "typeVersion": 1,
+   "position": [
+    980,
+    -80
+   ],
+   "credentials": {
+    "pdfMintApi": {
+     "id": "PDFMINT_CRED",
+     "name": "PDFMint account"
+    }
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "q1",
+       "operator": {
+        "type": "number",
+        "operation": "gt"
+       },
+       "leftValue": "={{ $json.credits_remaining }}",
+       "rightValue": 0
+      }
+     ],
+     "combinator": "and"
+    },
+    "looseTypeValidation": true,
+    "options": {}
+   },
+   "id": "n5",
+   "name": "Is there quota left?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1320,
+    -80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Everything the document needs is computed here, so the render node stays a layout.\nconst cfg = $('Set your document branding').first().json;\nconst req = cfg.request || {};\n\nconst md = String(req.markdown || '');\nconst title = String(req.title || 'Untitled document').trim();\nconst author = String(req.author || cfg.brandName || '').trim();\n\n// 1. Walk the Markdown once: number the headings and collect them for the contents.\n//    Fenced code blocks are skipped so a \"# comment\" inside one is not mistaken\n//    for a heading.\nconst out = [];\nconst headings = [];\nlet inFence = false;\nlet h2 = 0;\nlet h3 = 0;\n\nfor (const line of md.split(/\\r?\\n/)) {\n  if (/^\\s*(```|~~~)/.test(line)) {\n    inFence = !inFence;\n    out.push(line);\n    continue;\n  }\n  const m = inFence ? null : /^(#{2,3})\\s+(.+?)\\s*#*\\s*$/.exec(line);\n  if (!m) {\n    out.push(line);\n    continue;\n  }\n  const text = m[2].trim();\n  let number;\n  if (m[1].length === 2) {\n    h2 += 1;\n    h3 = 0;\n    number = `${h2}.`;\n  } else {\n    if (h2 === 0) h2 = 1;\n    h3 += 1;\n    number = `${h2}.${h3}`;\n  }\n  headings.push({ level: m[1].length, number, text });\n  out.push(`${m[1]} ${number} ${text}`);\n}\n\nconst body = out.join('\\n');\nconst words = body.split(/\\s+/).filter(Boolean).length;\nconst minutes = Math.max(1, Math.round(words / 200));\n\n// 2. The contents page, built from the headings that were just numbered, so the\n//    two can never drift apart. Skipped for a document with nothing to list.\nconst wantsToc = cfg.addTableOfContents === true || cfg.addTableOfContents === 'true';\nconst toc = wantsToc && headings.length > 1\n  ? ['## Contents', '']\n      .concat(headings.map((h) => `${h.level === 2 ? '' : '   '}- ${h.number} ${h.text}`))\n      .concat(['', '---', ''])\n      .join('\\n')\n  : '';\n\n// 3. A cover block with the facts a reader wants before reading.\nconst today = new Date().toISOString().slice(0, 10);\nconst sections = `${headings.length} section${headings.length === 1 ? '' : 's'}`;\nconst cover = [\n  `# ${title}`,\n  '',\n  [author, today].filter(Boolean).join(' · '),\n  '',\n  `${words} words · about ${minutes} minute${minutes === 1 ? '' : 's'} to read · ${sections}`,\n  '',\n  '---',\n  '',\n].join('\\n');\n\n// 4. Header, page footer and accent colour, all derived from the one config node.\nconst escapeHtml = (s) => String(s).replace(/[&<>\"]/g, (c) => (\n  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]\n));\nconst accent = /^#[0-9a-fA-F]{3,8}$/.test(String(cfg.accentColour || ''))\n  ? String(cfg.accentColour)\n  : '#123a5f';\n\nconst headerHtml = `<div style=\"width:100%;display:flex;justify-content:space-between;color:#8a94a6;\">`\n  + `<span>${escapeHtml(cfg.brandName || '')}</span><span>${escapeHtml(title)}</span></div>`;\n\nconst css = `\n  body { color: #1c2430; }\n  h1 { color: ${accent}; border-bottom: 2px solid ${accent}; padding-bottom: 6px; }\n  h2 { color: ${accent}; margin-top: 22px; }\n  h3 { color: #35415a; }\n  table { border-collapse: collapse; width: 100%; }\n  th, td { border: 1px solid #d4dae5; padding: 6px 9px; }\n  th { background: ${accent}; color: #ffffff; text-align: left; }\n  tr { break-inside: avoid; }\n  blockquote { border-left: 3px solid ${accent}; color: #4a5568; margin-left: 0; padding-left: 12px; }\n  code { background: #f2f5fa; padding: 1px 4px; border-radius: 3px; }\n`;\n\nconst slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);\n\nreturn [{\n  json: {\n    markdown: cover + toc + body,\n    fileName: `${slug || 'document'}.pdf`,\n    documentTitle: title,\n    author,\n    headerHtml,\n    css,\n    words,\n    minutes,\n    headings: headings.length,\n  },\n}];"
+   },
+   "id": "n6",
+   "name": "Build the cover, contents and body",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1660,
+    -180
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "pdf",
+    "source": "markdown",
+    "markdown": "={{ $json.markdown }}",
+    "output": "binary",
+    "fileName": "={{ $json.fileName }}",
+    "options": {
+     "format": "={{ $('Set your document branding').first().json.pageFormat }}",
+     "margin": "20mm",
+     "pageNumbers": true,
+     "pageNumberFormat": "Page {page} of {total}",
+     "headerHtml": "={{ $json.headerHtml }}",
+     "css": "={{ $json.css }}",
+     "title": "={{ $json.documentTitle }}",
+     "author": "={{ $json.author }}",
+     "watermarkText": "={{ $('Set your document branding').first().json.draftWatermark }}"
+    }
+   },
+   "id": "n7",
+   "name": "Render the Markdown as PDF",
+   "type": "n8n-nodes-pdfmint.pdfMint",
+   "typeVersion": 1,
+   "position": [
+    2020,
+    -180
+   ],
+   "credentials": {
+    "pdfMintApi": {
+     "id": "PDFMINT_CRED",
+     "name": "PDFMint account"
+    }
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "r1",
+       "operator": {
+        "type": "object",
+        "operation": "notExists",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.error }}",
+       "rightValue": ""
+      }
+     ],
+     "combinator": "and"
+    },
+    "looseTypeValidation": true,
+    "options": {}
+   },
+   "id": "n8",
+   "name": "Did the render succeed?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2360,
+    -180
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "binary",
+    "options": {}
+   },
+   "id": "n9",
+   "name": "Return the PDF",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    2700,
+    -280
+   ]
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "e1",
+       "name": "error",
+       "value": "pdf_not_generated",
+       "type": "string"
+      },
+      {
+       "id": "e2",
+       "name": "message",
+       "value": "={{ $json.error ? 'The document could not be rendered: ' + ($json.error.message || $json.error) : ($json.credits_remaining === 0 ? 'The PDFMint account has no credits left, so nothing was rendered.' : 'Send a non-empty markdown field and a title.') }}",
+       "type": "string"
+      },
+      {
+       "id": "e3",
+       "name": "status_code",
+       "value": "={{ $json.error ? 500 : 422 }}",
+       "type": "number"
+      }
+     ]
+    },
+    "includeOtherFields": false,
+    "options": {}
+   },
+   "id": "n10",
+   "name": "Explain what went wrong",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2360,
+    180
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify($json) }}",
+    "options": {
+     "responseCode": "={{ $json.status_code }}"
+    }
+   },
+   "id": "n11",
+   "name": "Return the error as JSON",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    2700,
+    180
+   ]
+  }
+ ],
+ "connections": {
+  "Receive the Markdown document": {
+   "main": [
+    [
+     {
+      "node": "Set your document branding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set your document branding": {
+   "main": [
+    [
+     {
+      "node": "Check the request is usable",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check the request is usable": {
+   "main": [
+    [
+     {
+      "node": "Check remaining quota",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Explain what went wrong",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check remaining quota": {
+   "main": [
+    [
+     {
+      "node": "Is there quota left?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is there quota left?": {
+   "main": [
+    [
+     {
+      "node": "Build the cover, contents and body",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Explain what went wrong",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build the cover, contents and body": {
+   "main": [
+    [
+     {
+      "node": "Render the Markdown as PDF",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Render the Markdown as PDF": {
+   "main": [
+    [
+     {
+      "node": "Did the render succeed?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Did the render succeed?": {
+   "main": [
+    [
+     {
+      "node": "Return the PDF",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Explain what went wrong",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Explain what went wrong": {
+   "main": [
+    [
+     {
+      "node": "Return the error as JSON",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {
+  "Receive the Markdown document": [
+   {
+    "json": {
+     "headers": {
+      "content-type": "application/json"
+     },
+     "params": {},
+     "query": {},
+     "body": {
+      "title": "Field gateway firmware release runbook",
+      "author": "Platform Operations",
+      "markdown": "Every deployment to the field gateway fleet follows the same three stages. This\ndocument is the reference the on-call engineer reads before starting one.\n\n## Preparing a release\n\nA release is prepared on the build host, never on a gateway. The build host is the\nonly machine with the signing key, and the key never leaves it.\n\n### Version numbering\n\nFirmware versions are `MAJOR.MINOR.PATCH`. A patch release may only change\nbehaviour that is already covered by a regression test.\n\n### Signing the image\n\nThe signing step is scripted so the key is never typed by hand:\n\n```bash\n# build the image and sign it in one step\n./tools/build.sh --target gateway-v3 --sign\n```\n\nThe `#` above is a shell comment, not a heading, and a document that turns it into\none has already gone wrong.\n\n## Rolling out\n\nRollouts are staged. Each stage must sit for the full soak time before the next one\nbegins, whatever the dashboard says.\n\n### The stages\n\n| Stage | Gateways | Soak time |\n| --- | ---: | ---: |\n| Canary | 3 | 24 hours |\n| Region | 40 | 72 hours |\n| Fleet | 612 | — |\n\n### Aborting\n\n> Any engineer may abort a rollout without asking. Explaining afterwards is\n> cheaper than a fleet-wide regression.\n\n## Rolling back\n\nA rollback restores the previous image from the gateway's B partition. It does not\nneed the build host and does not need network access to the fleet controller.\n\n### What a rollback cannot fix\n\nConfiguration written by the new firmware stays written. If a release changes the\nconfiguration schema, the rollback plan has to name the migration that reverses it.\n"
+     },
+     "webhookUrl": "http://localhost:5678/webhook/markdown-to-pdf",
+     "executionMode": "test"
+    }
+   }
+  ]
+ }
+}
