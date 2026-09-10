@@ -1,0 +1,927 @@
+{
+  "name": "Route spend requests to approvers by threshold with deputies, reminders and escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Route spend requests to approvers by threshold with deputies, reminders and escalation\n\n**Who it is for.** Any company where purchase and expense approvals live in chat threads and nobody can say who approved what.\n\n**What it does**\n- A request arrives from a form, the ERP or Slack. The policy picks the tier by type and amount: under the threshold approved automatically, then manager, director, CEO.\n- Checks who is out of office and routes to the named deputy. A requester can never approve their own request; it escalates instead.\n- Sends the request to the approver and tells the requester where it went and why.\n- A decision callback is validated: only the current approver can decide, and only once. Anyone else gets a 409.\n- An hourly sweep escalates anything past the SLA and logs it.\n\n**Setup**\n1. Edit the policy table (tiers, thresholds, deputies, SLA) in Config.\n2. Set base or replace the HTTP Request nodes with your HR (out of office), Slack or email and ERP nodes.\n3. Point your request form at approval-in and your approve or reject buttons at approval-decision. Activate; the hourly schedule runs the sweep.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/approval-workflow\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1000,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approval-in",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: approval request (form, ERP or Slack)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "policy",
+              "value": "{\"purchase\": [{\"max\": 5000, \"approver\": \"auto\"}, {\"max\": 25000, \"approver\": \"finance.manager@example.com\"}, {\"max\": 100000, \"approver\": \"finance.director@example.com\"}, {\"max\": null, \"approver\": \"ceo@example.com\"}], \"expense\": [{\"max\": 1000, \"approver\": \"auto\"}, {\"max\": 10000, \"approver\": \"line.manager@example.com\"}, {\"max\": null, \"approver\": \"finance.director@example.com\"}], \"sla_hours\": 24, \"escalate_to\": \"ceo@example.com\"}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "channel",
+              "value": "slack",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.base }}/hr/out_of_office",
+        "options": {}
+      },
+      "name": "HR: who is out of office",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// The rule is written down here, in one place, and the workflow applies it the same way every time.\nconst cfg = $('Config').first().json; const policy = JSON.parse(cfg.policy);\nconst req = $('Webhook: approval request (form, ERP or Slack)').first().json.body;\nconst ooo = $json.rows || [];\nconst today = new Date().toISOString().slice(0, 10);\nconst tiers = policy[req.type] || policy.purchase;\nconst tier = tiers.find(t => t.max === null || Number(req.amount) <= t.max);\nlet approver = tier.approver, deputy = null, reason = `${req.type} up to AED ${tier.max ?? 'no limit'} goes to ${tier.approver}`;\nif (approver !== 'auto') {\n  const away = ooo.find(o => o.person === approver && o.from <= today && today <= o.to);\n  if (away) { deputy = away.deputy; reason += `; ${approver} is out of office until ${away.to}, routed to deputy ${deputy}`; }\n}\nif (req.requester === approver || req.requester === deputy) { approver = policy.escalate_to; deputy = null; reason += '; requester cannot approve own request, escalated'; }\nconst sd = $getWorkflowStaticData('global'); sd.log = sd.log || [];\nconst decision = approver === 'auto' ? 'APPROVED' : 'PENDING';\nconst rec = { request_id: req.request_id || ('REQ-' + Date.now().toString(36).toUpperCase()), type: req.type, amount: Number(req.amount), requester: req.requester, vendor: req.vendor, description: req.description,\n  approver: deputy || approver, original_approver: approver, deputy, decision, reason, sla_hours: policy.sla_hours, escalate_to: policy.escalate_to, created_at: new Date().toISOString() };\nsd.log.push({ request_id: rec.request_id, decision, approver: rec.approver, at: rec.created_at });\nreturn [{ json: rec }];\n"
+      },
+      "name": "Apply policy: threshold, approver, deputy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "APPROVED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Auto approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/approvals/log",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ approval_id: $json.request_id, decision: 'APPROVED', by: 'policy', reason: $json.reason, amount: $json.amount, requester: $json.requester }) }}"
+      },
+      "name": "Approvals: log decision (auto)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        -120
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/approvals/request",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ request_id: $json.request_id, approver: $json.approver, deputy: $json.deputy, amount: $json.amount, type: $json.type, vendor: $json.vendor, description: $json.description, requester: $json.requester, channel: $('Config').first().json.channel, sla_hours: $json.sla_hours }) }}"
+      },
+      "name": "Send approval request (Slack, email)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        120
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/messages/send",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"email\", to: $(\"Apply policy: threshold, approver, deputy\").first().json.requester, body: \"Request \" + $(\"Apply policy: threshold, approver, deputy\").first().json.request_id + \": \" + ($json.approval_id ? \"sent to \" + $json.sent_to + \" for approval (\" + $(\"Apply policy: threshold, approver, deputy\").first().json.reason + \")\" : \"approved automatically under policy\") }) }}"
+      },
+      "name": "Notify requester",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst p = $('Apply policy: threshold, approver, deputy').first().json;\nreturn [{ json: { request_id: p.request_id, type: p.type, amount: p.amount, decision: p.decision, approver: p.approver, deputy: p.deputy, reason: p.reason } }];\n"
+      },
+      "name": "Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (request routed)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approval-decision",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: decision received (Slack button)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (decisions)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst b = $('Webhook: decision received (Slack button)').first().json.body;\nconst sd = $getWorkflowStaticData('global'); sd.log = sd.log || [];\nconst prior = sd.log.find(x => x.request_id === b.request_id);\nif (!prior) return [{ json: { request_id: b.request_id, ok: false, error: 'unknown request' } }];\nif (prior.decision !== 'PENDING') return [{ json: { request_id: b.request_id, ok: false, error: 'already decided: ' + prior.decision } }];\nif (b.decided_by !== prior.approver) return [{ json: { request_id: b.request_id, ok: false, error: `decision from ${b.decided_by} but request is with ${prior.approver}` } }];\nprior.decision = b.decision; prior.decided_by = b.decided_by; prior.decided_at = new Date().toISOString();\nreturn [{ json: { request_id: b.request_id, ok: true, decision: b.decision, decided_by: b.decided_by, comment: b.comment || '' } }];\n"
+      },
+      "name": "Validate decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.ok }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Decision valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        780,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (decisions)').first().json.base }}/approvals/log",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ approval_id: $json.request_id, decision: $json.decision, by: $json.decided_by, comment: $json.comment }) }}"
+      },
+      "name": "Approvals: log decision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        400
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($('Validate decision').first().json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (decision recorded)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1300,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "name": "Respond 409 (invalid decision)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "Schedule: every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approval-sweep",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: run escalation sweep now",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        980
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "sla_hours",
+              "value": "24",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "force",
+              "value": "={{ $json.body && $json.body.force ? 'true' : 'false' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (sweep)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config (sweep)').first().json.base }}/approvals/pending",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "older_than_sec",
+              "value": "={{ $json.force === 'true' ? 0 : Number($json.sla_hours) * 3600 }}"
+            }
+          ]
+        }
+      },
+      "name": "Approvals: pending past SLA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        900
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst rows = $json.rows || [];\nconst out = rows.map(a => ({ json: { approval_id: a.id, approver: a.request.approver, escalate_to: a.request.deputy || 'ceo@example.com', amount: a.request.amount, requester: a.request.requester, waited_hours: Math.round((Date.now() / 1000 - a.created) / 36) / 100 } }));\nreturn out.length ? out : [{ json: { none: true } }];\n"
+      },
+      "name": "Pick overdue requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.none === true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Anything overdue?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (sweep)').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"#approvals\", text: \"Escalation: \" + $json.approval_id + \" (AED \" + $json.amount + \" from \" + $json.requester + \") waited \" + $json.waited_hours + \" h with \" + $json.approver + \", now with \" + $json.escalate_to }) }}"
+      },
+      "name": "Escalate to deputy or CEO (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        820
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (sweep)').first().json.base }}/approvals/log",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ approval_id: $('Pick overdue requests').item.json.approval_id, decision: 'pending', escalated_to: $('Pick overdue requests').item.json.escalate_to, by: 'sla-sweep' }) }}"
+      },
+      "name": "Approvals: log escalation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        820
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all().map(i => i.json);\nreturn [{ json: { escalated: items.filter(i => i.approval_id).length, ids: items.map(i => i.approval_id).filter(Boolean) } }];\n"
+      },
+      "name": "Sweep summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (sweep done)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        1220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"#ops-alerts\", text: \"Approvals workflow failed: \" + ($json.execution?.error?.message || \"unknown\") }) }}"
+      },
+      "name": "Alert ops (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        1220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base`, the approval thresholds and the approver and deputy list.\n2. Connect the request source (form, ERP or chat) to the Webhook URL.\n3. Activate. The schedule branch sends reminders and escalates overdue approvals.\n\nTest with one request under the threshold and one above it.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        860
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: approval request (form, ERP or Slack)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "HR: who is out of office",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR: who is out of office": {
+      "main": [
+        [
+          {
+            "node": "Apply policy: threshold, approver, deputy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply policy: threshold, approver, deputy": {
+      "main": [
+        [
+          {
+            "node": "Auto approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto approved?": {
+      "main": [
+        [
+          {
+            "node": "Approvals: log decision (auto)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send approval request (Slack, email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approvals: log decision (auto)": {
+      "main": [
+        [
+          {
+            "node": "Notify requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send approval request (Slack, email)": {
+      "main": [
+        [
+          {
+            "node": "Notify requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify requester": {
+      "main": [
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outcome": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (request routed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: decision received (Slack button)": {
+      "main": [
+        [
+          {
+            "node": "Config (decisions)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (decisions)": {
+      "main": [
+        [
+          {
+            "node": "Validate decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate decision": {
+      "main": [
+        [
+          {
+            "node": "Decision valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision valid?": {
+      "main": [
+        [
+          {
+            "node": "Approvals: log decision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 409 (invalid decision)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approvals: log decision": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (decision recorded)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: every hour": {
+      "main": [
+        [
+          {
+            "node": "Config (sweep)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: run escalation sweep now": {
+      "main": [
+        [
+          {
+            "node": "Config (sweep)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (sweep)": {
+      "main": [
+        [
+          {
+            "node": "Approvals: pending past SLA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approvals: pending past SLA": {
+      "main": [
+        [
+          {
+            "node": "Pick overdue requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick overdue requests": {
+      "main": [
+        [
+          {
+            "node": "Anything overdue?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything overdue?": {
+      "main": [
+        [
+          {
+            "node": "Escalate to deputy or CEO (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sweep summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate to deputy or CEO (Slack)": {
+      "main": [
+        [
+          {
+            "node": "Approvals: log escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approvals: log escalation": {
+      "main": [
+        [
+          {
+            "node": "Sweep summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sweep summary": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (sweep done)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
