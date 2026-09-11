@@ -500,7 +500,7 @@ Bu koleksiyondaki en büyük kategori olan 39 adet yapay zeka araştırma, RAG v
 
 ### Diğer
 
-- `ALL_unique_nodes.txt` -- Bu şablonlarda kullanılan tüm benzersiz n8n düğümlerini listeleyen tam düğüm referansı.
+- [`ALL_unique_nodes.json`](Other/ALL_unique_nodes.json) -- Bu şablonlarda kullanılan tüm benzersiz n8n düğümlerini listeleyen tam düğüm referansı.
 
 ---
 
