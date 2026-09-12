@@ -457,7 +457,7 @@ Bu koleksiyondaki en büyük kategori olan 39 adet yapay zeka araştırma, RAG v
 | Analyze tradingview.com charts with Chrome extension, N8N and OpenAI | Chrome eklentisi, n8n ve OpenAI ile TradingView grafiklerini analiz eder. | Veri Analizi | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Analyze%20tradingview.com%20charts%20with%20Chrome%20extension,%20N8N%20and%20OpenAI.json) |
 | Automated Hugging Face Paper Summary Fetching & Categorization Workflow | Hugging Face'ten araştırma makalelerini otomatik alır, özetler ve kategorize eder. | YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Automated%20Hugging%20Face%20Paper%20Summary%20Fetching%20%26%20Categorization%20Workflow.json) |
 | Autonomous AI crawler | Veri toplama ve analiz için otonom yapay zeka destekli web tarayıcısı. | YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Autonomous%20AI%20crawler.json) |
-| Build Your Own Image Search Using AI Object Detection, CDN and ElasticSearch | Yapay zeka nesne tespiti, CDN ve Elasticsearch ile görsel arama motoru oluşturur. | YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Build%20Your%20Own%20Image%20Search%20Using%20AI%20Object%20Detection,%20CDN%20and%20ElasticSearchBuild%20Your%20Own%20Image%20Search%20Using%20AI%20Object%20Detection,%20CDN%20and%20ElasticSearch.json) |
+| Build Your Own Image Search Using AI Object Detection, CDN and ElasticSearch | Yapay zeka nesne tespiti, CDN ve Elasticsearch ile görsel arama motoru oluşturur. | YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Build%20Your%20Own%20Image%20Search%20Using%20AI%20Object%20Detection,%20CDN%20and%20ElasticSearch.json) |
 | Build a Financial Documents Assistant using Qdrant and Mistral.ai | Qdrant ve Mistral.ai ile finansal belge analizi yapay zeka asistanı oluşturur. | Finans, YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Build%20a%20Financial%20Documents%20Assistant%20using%20Qdrant%20and%20Mistral.ai.json) |
 | Build a Tax Code Assistant with Qdrant, Mistral.ai and OpenAI | Qdrant, Mistral.ai ve OpenAI ile vergi mevzuatı asistanı geliştirir. | Finans, YZ Araştırma | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Build%20a%20Tax%20Code%20Assistant%20with%20Qdrant,%20Mistral.ai%20and%20OpenAI.json) |
 | Building RAG Chatbot for Movie Recommendations with Qdrant and Open AI | Qdrant ve OpenAI ile film önerileri için RAG tabanlı sohbet botu oluşturur. | YZ Araştırma, Eğlence | [Link to Template](./AI_Research_RAG_and_Data_Analysis/Building%20RAG%20Chatbot%20for%20Movie%20Recommendations%20with%20Qdrant%20and%20Open%20AI.json) |
@@ -500,7 +500,7 @@ Bu koleksiyondaki en büyük kategori olan 39 adet yapay zeka araştırma, RAG v
 
 ### Diğer
 
-- `ALL_unique_nodes.txt` -- Bu şablonlarda kullanılan tüm benzersiz n8n düğümlerini listeleyen tam düğüm referansı.
+- [`ALL_unique_nodes.json`](Other/ALL_unique_nodes.json) -- Bu şablonlarda kullanılan tüm benzersiz n8n düğümlerini listeleyen tam düğüm referansı.
 
 ---
 
