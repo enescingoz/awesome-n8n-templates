@@ -1,0 +1,130 @@
+{
+  "name": "AI Video Render QC Gate",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-video-qc",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "QC Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        0
+      ],
+      "webhookId": "a1000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize the incoming QC request. Expected body:\n// { video_path: '/renders/client_v3.mp4', client: 'acme', model: 'kling-3.0', min_duration: 4 }\nconst body = $input.first().json.body ?? $input.first().json;\n\nconst videoPath = String(body.video_path ?? '').trim();\nif (!videoPath) {\n  throw new Error('video_path is required (absolute path or URL to the rendered file)');\n}\n\nreturn [{\n  json: {\n    video_path: videoPath,\n    client: body.client ?? 'unspecified',\n    model: body.model ?? 'unspecified',\n    min_duration_sec: Number(body.min_duration ?? 4),\n    min_width: Number(body.min_width ?? 1280),\n    min_fps: Number(body.min_fps ?? 24),\n    checked_at: new Date().toISOString(),\n  },\n}];"
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=ffprobe -v error -print_format json -show_format -show_streams \"{{ $json.video_path }}\"",
+        "executeOnce": false
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Probe Render",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        60,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Score the ffprobe output against the QC contract.\n// ffprobe failures (missing file, unreadable container) reach this node with empty stdout:\n// the Probe node runs with onError=continueRegularOutput, so its failure lands here as data.\nconst execOut = $input.first().json;\nconst stdout = execOut.stdout ?? '';\nif (!stdout.trim()) {\n  const errObj = execOut.error;\n  const errText = typeof errObj === 'string' ? errObj : (errObj && errObj.message ? errObj.message : (execOut.message ?? ''));\n  const stderrText = execOut.stderr ? String(execOut.stderr).trim().split('\\n')[0] : '';\n  const exitText = execOut.exitCode ? 'ffprobe exited with code ' + execOut.exitCode : '';\n  const detail = [exitText, errText, stderrText].filter(Boolean).join(': ');\n  return [{ json: { verdict: 'fail', reasons: ['could not probe the render - ' + (detail || 'file missing or unreadable')] } }];\n}\nlet probe;\ntry {\n  probe = JSON.parse(stdout);\n} catch (e) {\n  return [{ json: { verdict: 'fail', reasons: ['ffprobe output could not be parsed: ' + e.message] } }];\n}\n\nconst norm = $('Normalize Request').first().json;\nconst fmt = probe.format ?? {};\nconst videoStream = (probe.streams ?? []).find((s) => s.codec_type === 'video') ?? {};\nconst audioStream = (probe.streams ?? []).find((s) => s.codec_type === 'audio');\n\nconst reasons = [];\n\nconst duration = Number(fmt.duration ?? videoStream.duration ?? 0);\nif (duration <= 0) reasons.push('unreadable duration (' + duration + 's) - file may be truncated or not a video');\nelse if (duration < norm.min_duration_sec) reasons.push(`duration ${duration.toFixed(2)}s < required ${norm.min_duration_sec}s`);\n\nconst width = Number(videoStream.width ?? 0);\nconst height = Number(videoStream.height ?? 0);\nif (!width || !height) reasons.push('no video stream found');\nelse if (width < norm.min_width) reasons.push(`width ${width}px < required ${norm.min_width}px`);\n\nconst fpsRaw = videoStream.avg_frame_rate ?? '0/1';\nconst [num, den] = fpsRaw.split('/').map(Number);\nconst fps = den ? num / den : 0;\nif (fps <= 0) reasons.push('unreadable frame rate');\nelse if (fps < norm.min_fps) reasons.push(`frame rate ${fps.toFixed(2)}fps < required ${norm.min_fps}fps`);\n\nconst verdict = reasons.length === 0 ? 'pass' : 'fail';\n\nreturn [{\n  json: {\n    verdict,\n    reasons,\n    file: norm.video_path,\n    client: norm.client,\n    model: norm.model,\n    checked_at: norm.checked_at,\n    probe_summary: {\n      duration_sec: Number(duration.toFixed(2)),\n      resolution: width && height ? `${width}x${height}` : 'n/a',\n      fps: Number(fps.toFixed(2)),\n      video_codec: videoStream.codec_name ?? 'n/a',\n      pixel_format: videoStream.pix_fmt ?? 'n/a',\n      audio: audioStream ? audioStream.codec_name : 'none (typical for silent AI-generated renders)',\n    },\n  },\n}];"
+      },
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Score Against Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ verdict: $json.verdict, reasons: $json.reasons, probe_summary: $json.probe_summary, file: $json.file, client: $json.client, model: $json.model, checked_at: $json.checked_at }) }}",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Return Verdict",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        500,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "QC Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Probe Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Render": {
+      "main": [
+        [
+          {
+            "node": "Score Against Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Against Contract": {
+      "main": [
+        [
+          {
+            "node": "Return Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
