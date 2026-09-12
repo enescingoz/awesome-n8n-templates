@@ -1,0 +1,722 @@
+{
+  "name": "Process store orders from webhook to supplier, shipping, CRM and ERP with stock checks",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Process store orders from webhook to supplier, shipping, CRM and ERP with stock checks\n\n**Who it is for.** Online stores and trading companies that still update supplier, shipping, CRM and ERP by hand after every order.\n\n**What it does**\n- Verifies the store webhook signature on the raw body, normalises the order and de-duplicates by order id.\n- Checks stock with the supplier. In stock: purchase order, shipping label with tracking, customer email, CRM upsert, ERP inventory update.\n- Out of stock: BACKORDER tag, customer email with the lead time, alert to operations.\n- A scheduled branch syncs ERP inventory to the CRM every six hours and posts a low stock digest.\n- Retries on every API call; bad signatures dropped and alerted; duplicates acknowledged and not re-run.\n\n**Setup**\n1. Set base and the store signing secret in Config, or swap each HTTP Request node for your store, supplier, carrier, CRM and ERP nodes.\n2. Register the Webhook URL as the store's order created webhook.\n3. Activate; the six hourly schedule runs the inventory sync.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/order-to-fulfilment\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1000,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify-order",
+        "responseMode": "lastNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "name": "Webhook: store order paid (Shopify / WooCommerce / Salla)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "webhook_secret",
+              "value": "CHANGE-ME-webhook-secret",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "sku_map",
+              "value": "{\"Walnut floating shelf 120x25cm\":\"SHELF-WAL-120\",\"White Oak floating shelf 150x30cm\":\"SHELF-OAK-150\",\"Maple floating shelf 90x25cm\":\"SHELF-MAP-90\"}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Verify the store's HMAC signature on the raw body before trusting anything.\nconst crypto = require('crypto');\nconst cfg = $('Config').first().json;\nconst item = $('Webhook: store order paid (Shopify / WooCommerce / Salla)').first();\nconst headers = item.json.headers || {};\nconst raw = item.binary?.data ? Buffer.from(item.binary.data.data, 'base64').toString() : JSON.stringify(item.json.body || {});\nconst expected = crypto.createHmac('sha256', cfg.webhook_secret).update(raw).digest('base64');\nconst given = headers['x-shopify-hmac-sha256'] || headers['x-sample-hmac'] || '';\nif (given !== expected) throw new Error('Webhook signature mismatch, request dropped');\nconst o = item.json.body || JSON.parse(raw);\n// 2) Normalise\nconst map = JSON.parse(cfg.sku_map);\nconst li = (o.line_items || [])[0] || {};\nconst order = {\n  order_id: 'SH-' + (o.order_number || o.id), channel: o.channel || 'Shopify',\n  customer: [o.customer?.first_name, o.customer?.last_name].filter(Boolean).join(' ') || o.customer?.name || 'Unknown',\n  email: (o.email || o.customer?.email || '').toLowerCase(), phone: o.phone || o.customer?.phone || '',\n  product: li.title, sku: li.sku || map[li.title] || 'UNMAPPED', qty: Number(li.quantity || 1), amount: Number(o.total_price || 0),\n  ship_to: o.shipping_address || {}, base: cfg.base, received_at: new Date().toISOString()\n};\nif (!order.email) throw new Error('Order without customer email');\n// 3) Idempotency: same order id twice = second delivery ignored\nconst seen = $getWorkflowStaticData('global'); seen.orders = seen.orders || {};\norder.duplicate = !!seen.orders[order.order_id]; seen.orders[order.order_id] = Date.now();\nreturn [{ json: order }];"
+      },
+      "name": "Verify HMAC, normalise, idempotency",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.duplicate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "First delivery?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/supplier/stock",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sku: $json.sku, qty: $json.qty }) }}",
+        "options": {}
+      },
+      "name": "Supplier API: stock check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "In stock?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/supplier/orders",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ order_id: $('Verify HMAC, normalise, idempotency').first().json.order_id, sku: $('Verify HMAC, normalise, idempotency').first().json.sku, qty: $('Verify HMAC, normalise, idempotency').first().json.qty, ship_to: $('Verify HMAC, normalise, idempotency').first().json.ship_to }) }}",
+        "options": {}
+      },
+      "name": "Supplier API: place PO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/shipping/label",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ order_id: $('Verify HMAC, normalise, idempotency').first().json.order_id, po_number: $json.po_number }) }}",
+        "options": {}
+      },
+      "name": "Shipping API: create label + tracking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/messages/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'email', to: $('Verify HMAC, normalise, idempotency').first().json.email, body: 'Hi ' + $('Verify HMAC, normalise, idempotency').first().json.customer.split(' ')[0] + ', your ' + $('Verify HMAC, normalise, idempotency').first().json.product + ' is on its way. ' + $json.carrier + ' tracking: ' + $json.tracking }) }}",
+        "options": {}
+      },
+      "name": "Customer: shipping email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/crm/contacts/upsert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $('Verify HMAC, normalise, idempotency').first().json.email, name: $('Verify HMAC, normalise, idempotency').first().json.customer, last_order: $('Verify HMAC, normalise, idempotency').first().json.order_id, ltv_add: $('Verify HMAC, normalise, idempotency').first().json.amount, status: 'shipped', tracking: $('Shipping API: create label + tracking').first().json.tracking }) }}",
+        "options": {}
+      },
+      "name": "CRM: upsert customer + order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/erp/inventory/upsert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sku: $('Verify HMAC, normalise, idempotency').first().json.sku, qty: $('Supplier API: stock check').first().json.available - $('Verify HMAC, normalise, idempotency').first().json.qty }) }}",
+        "options": {}
+      },
+      "name": "ERP: inventory sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/crm/contacts/upsert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $('Verify HMAC, normalise, idempotency').first().json.email, name: $('Verify HMAC, normalise, idempotency').first().json.customer, last_order: $('Verify HMAC, normalise, idempotency').first().json.order_id, status: 'backorder', eta_days: $json.lead_days }) }}",
+        "options": {}
+      },
+      "name": "CRM: tag BACKORDER",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/messages/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'email', to: $('Verify HMAC, normalise, idempotency').first().json.email, body: 'Hi ' + $('Verify HMAC, normalise, idempotency').first().json.customer.split(' ')[0] + ', your ' + $('Verify HMAC, normalise, idempotency').first().json.product + ' is on backorder; current lead time ' + $('Supplier API: stock check').first().json.lead_days + ' days. Reply if you would like to change or cancel.' }) }}",
+        "options": {}
+      },
+      "name": "Customer: backorder email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify HMAC, normalise, idempotency').first().json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-backorders', text: 'BACKORDER ' + $('Verify HMAC, normalise, idempotency').first().json.order_id + ' ' + $('Verify HMAC, normalise, idempotency').first().json.sku + ' x' + $('Verify HMAC, normalise, idempotency').first().json.qty + ', supplier lead ' + $('Supplier API: stock check').first().json.lead_days + 'd' }) }}",
+        "options": {}
+      },
+      "name": "Ops alert (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const o = $('Verify HMAC, normalise, idempotency').first().json;\nconst stock = $('Supplier API: stock check').first().json;\nlet tracking = null; try { tracking = $('Shipping API: create label + tracking').first().json.tracking; } catch (e) {}\nreturn [{ json: { ok: true, order_id: o.order_id, sku: o.sku, route: stock.ok ? 'fulfilled' : 'backorder', tracking, lead_days: stock.lead_days } }];"
+      },
+      "name": "Respond to webhook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true, skipped: 'duplicate webhook delivery', order_id: $json.order_id } }];"
+      },
+      "name": "Skip duplicate delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "name": "Every 6 h: ERP to CRM inventory sync",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config (schedule)').first().json.base }}/erp/inventory",
+        "options": {}
+      },
+      "name": "ERP: read inventory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.items || [];\nconst low = items.filter(i => i.qty <= 5);\nreturn [{ json: { checked: items.length, low_stock: low, text: low.length ? 'Low stock: ' + low.map(i => i.sku + '=' + i.qty).join(', ') : 'All SKUs above threshold' } }];"
+      },
+      "name": "Low-stock rule (≤5)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (schedule)').first().json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-inventory', text: $json.text }) }}",
+        "options": {}
+      },
+      "name": "Post inventory digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        760
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-alerts', text: 'Order integration failed: ' + ($json.execution?.error?.message || 'unknown') }) }}",
+        "options": {}
+      },
+      "name": "Alert ops",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (schedule)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        130,
+        760
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        130,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base` (your API root) and `webhook_secret`, or replace each HTTP Request node with the native node for your store, supplier, carrier, CRM and ERP.\n2. Copy the Webhook URL into your store's *order created* webhook.\n3. Activate. The schedule branch syncs inventory every six hours.\n\nTest first with one order that is in stock and one that is not.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        1080
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: store order paid (Shopify / WooCommerce / Salla)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Verify HMAC, normalise, idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify HMAC, normalise, idempotency": {
+      "main": [
+        [
+          {
+            "node": "First delivery?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First delivery?": {
+      "main": [
+        [
+          {
+            "node": "Supplier API: stock check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip duplicate delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier API: stock check": {
+      "main": [
+        [
+          {
+            "node": "In stock?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In stock?": {
+      "main": [
+        [
+          {
+            "node": "Supplier API: place PO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CRM: tag BACKORDER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supplier API: place PO": {
+      "main": [
+        [
+          {
+            "node": "Shipping API: create label + tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shipping API: create label + tracking": {
+      "main": [
+        [
+          {
+            "node": "Customer: shipping email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer: shipping email": {
+      "main": [
+        [
+          {
+            "node": "CRM: upsert customer + order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: upsert customer + order": {
+      "main": [
+        [
+          {
+            "node": "ERP: inventory sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERP: inventory sync": {
+      "main": [
+        [
+          {
+            "node": "Respond to webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: tag BACKORDER": {
+      "main": [
+        [
+          {
+            "node": "Customer: backorder email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer: backorder email": {
+      "main": [
+        [
+          {
+            "node": "Ops alert (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ops alert (Slack)": {
+      "main": [
+        [
+          {
+            "node": "Respond to webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 6 h: ERP to CRM inventory sync": {
+      "main": [
+        [
+          {
+            "node": "Config (schedule)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERP: read inventory": {
+      "main": [
+        [
+          {
+            "node": "Low-stock rule (≤5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low-stock rule (≤5)": {
+      "main": [
+        [
+          {
+            "node": "Post inventory digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (schedule)": {
+      "main": [
+        [
+          {
+            "node": "ERP: read inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

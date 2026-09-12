@@ -1,0 +1,1696 @@
+{
+  "name": "Qualify WhatsApp leads with an AI agent on the Meta Cloud API with handoff and follow-ups",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Qualify WhatsApp leads with an AI agent on the Meta Cloud API with handoff and follow-ups\n\n**Who it is for.** Service businesses that take most of their leads on WhatsApp: clinics, real estate, home services, trading companies.\n\n**What it does**\n- Verifies the X-Hub-Signature-256 on the raw request and answers a forged request with 401.\n- Ignores duplicate deliveries by message id and keeps each conversation in workflow static data so the second message is read in context.\n- An AI step returns intent, language, lead score and a reply. Pricing and greetings get an instant answer in the customer's language.\n- A booking request gets three calendar slots and a CRM task with a 15 minute deadline.\n- A complaint pauses the AI for that chat, alerts the team and creates a callback task. STOP tags the contact as opted out.\n- An hourly branch nudges quiet conversations: free text inside 24 hours, an approved template outside it.\n\n**Setup**\n1. Open the Config node and set base (your API gateway or replace the HTTP Request nodes with your CRM, calendar and Slack nodes), app_secret and verify_token from your Meta app, and the WhatsApp phone number id.\n2. Register the Webhook URL in the Meta app as the WhatsApp callback and complete the verify handshake.\n3. Point the AI step at your model credential. Adjust the business profile JSON (services, areas, hours) in Config.\n4. Activate. The hourly schedule handles follow ups; nothing runs outside the 24 hour window without an approved template.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/whatsapp-lead-agent\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1150,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "whatsapp-in",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: Meta verification (GET)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.query['hub.verify_token'] }}",
+              "rightValue": "CHANGE-ME-verify-token",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Verify token matches?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond hub.challenge (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'verify_token mismatch' }) }}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "name": "Respond 403 Forbidden",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-in",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "name": "Webhook: WhatsApp inbound (Meta Cloud API)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "app_secret",
+              "value": "CHANGE-ME-app-secret",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "verify_token",
+              "value": "CHANGE-ME-verify-token",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "wa_token",
+              "value": "CHANGE-ME-whatsapp-access-token",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "phone_number_id",
+              "value": "100000000000001",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "business_profile",
+              "value": "{\"name\": \"Your Business Name\", \"areas\": [\"Dubai Marina\", \"JLT\", \"Business Bay\", \"Lahore DHA\"], \"services\": {\"AC servicing\": {\"keywords\": [\"ac\", \"split\", \"cooling\"], \"from\": 150}, \"Deep cleaning\": {\"keywords\": [\"clean\"], \"from\": 300}, \"Plumbing\": {\"keywords\": [\"plumb\", \"leak\", \"pipe\"], \"from\": 120}}}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "followup_template",
+              "value": "lead_followup_v1",
+              "type": "string"
+            },
+            {
+              "id": "a7",
+              "name": "nudge_after_min",
+              "value": "120",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "sales_channel",
+              "value": "#sales-whatsapp",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Verify Meta's X-Hub-Signature-256 on the RAW body before trusting anything.\nconst crypto = require('crypto');\nconst cfg = $('Config').first().json;\nconst item = $('Webhook: WhatsApp inbound (Meta Cloud API)').first();\nconst headers = item.json.headers || {};\nconst raw = item.binary?.data ? Buffer.from(item.binary.data.data, 'base64').toString() : JSON.stringify(item.json.body || {});\nconst expected = 'sha256=' + crypto.createHmac('sha256', cfg.app_secret).update(raw).digest('hex');\nconst given = String(headers['x-hub-signature-256'] || '');\nconst ok = given.length === expected.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));\nif (!ok) return [{ json: { kind: 'forged', reason: 'X-Hub-Signature-256 mismatch', source_ip: headers['x-forwarded-for'] || headers['x-real-ip'] || 'unknown', base: cfg.base, bytes: raw.length } }];\nconst body = item.json.body || JSON.parse(raw);\n\n// 2) Conversation memory + idempotency live in workflow static data (swap for Redis/Postgres at scale).\nconst sd = $getWorkflowStaticData('global');\nsd.seen = sd.seen || {}; sd.conv = sd.conv || {};\nconst now = Date.now();\nfor (const [k, t] of Object.entries(sd.seen)) if (now - t > 7 * 864e5) delete sd.seen[k];\n\n// 3) Parse every change in the payload: delivery statuses are acknowledged, messages become events.\nconst out = [];\nfor (const e of body.entry || []) for (const ch of e.changes || []) {\n  const v = ch.value || {};\n  if (v.statuses?.length) { out.push({ kind: 'status', statuses: v.statuses.map(s => s.status) }); continue; }\n  const nameOf = {}; for (const c of v.contacts || []) nameOf[c.wa_id] = c.profile?.name;\n  for (const m of v.messages || []) {\n    if (sd.seen[m.id]) { out.push({ kind: 'duplicate', wamid: m.id, wa_id: m.from }); continue; }   // Meta retries deliveries\n    sd.seen[m.id] = now;\n    const text = m.type === 'text' ? (m.text?.body || '')\n      : m.type === 'button' ? (m.button?.text || '')\n      : m.type === 'interactive' ? (m.interactive?.button_reply?.title || m.interactive?.list_reply?.title || '')\n      : `[${m.type} message]`;\n    const wa = m.from;\n    const conv = sd.conv[wa] || (sd.conv[wa] = { wa_id: wa, name: '', turns: [], stage: 'new', handoff: false, opted_out: false, created_at: now });\n    conv.name = nameOf[wa] || conv.name;\n    conv.last_inbound_ts = (Number(m.timestamp) * 1000) || now;\n    conv.turns.push({ role: 'user', text, ts: conv.last_inbound_ts }); conv.turns = conv.turns.slice(-10);\n    let kind = 'message';\n    if (/^\\s*(stop|unsubscribe|band karo|cancel)\\s*$/i.test(text)) { kind = 'optout'; conv.opted_out = true; conv.stage = 'opted_out'; }\n    else if (conv.opted_out) { conv.opted_out = false; conv.stage = 're-engaged'; }          // they wrote again → re-engaged\n    else if (conv.handoff) kind = 'handoff_active';                                           // a human owns this chat now\n    out.push({ kind, wamid: m.id, wa_id: wa, name: conv.name, text, type: m.type, phone_number_id: v.metadata?.phone_number_id || cfg.phone_number_id,\n               history: conv.turns.slice(0, -1).slice(-6), stage: conv.stage, base: cfg.base, wa_token: cfg.wa_token, business: JSON.parse(cfg.business_profile), sales_channel: cfg.sales_channel });\n  }\n}\nif (!out.length) out.push({ kind: 'status', statuses: [] });\nreturn out.map(j => ({ json: j }));"
+      },
+      "name": "Verify signature, parse, dedupe, remember",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s0",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s1",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "status"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s2",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "duplicate",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "duplicate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s3",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "optout",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "optout"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s4",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "handoff_active",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "handoff_active"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s5",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "forged",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "forged"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Route event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        780,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/whatsapp/v20.0/{{ $json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: $json.wamid }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: mark as read",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify signature, parse, dedupe, remember').first().json.base }}/llm/complete",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ task: 'whatsapp_reply', input: { name: $('Verify signature, parse, dedupe, remember').first().json.name, text: $('Verify signature, parse, dedupe, remember').first().json.text, history: $('Verify signature, parse, dedupe, remember').first().json.history, business: $('Verify signature, parse, dedupe, remember').first().json.business } }) }}"
+      },
+      "name": "AI: intent and reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "const ev = $('Verify signature, parse, dedupe, remember').first().json;\nconst ai = $json.output;\nconst sd = $getWorkflowStaticData('global');\nconst conv = sd.conv[ev.wa_id];\nconv.turns.push({ role: 'assistant', text: ai.reply, ts: Date.now() }); conv.turns = conv.turns.slice(-10);\nconv.stage = ai.needs_human ? 'handoff' : (ai.booking_requested ? 'booking' : 'awaiting_reply');\nconv.last_outbound_ts = Date.now();\nconv.lead_score = ai.lead_score; conv.language = ai.language;\nconv.collected = { ...(conv.collected || {}), ...(ai.collected || {}) };\nconv.followup_sent = false;\nif (ai.needs_human) conv.handoff = true;\nconst route = ai.needs_human ? 'human' : (ai.booking_requested ? 'booking' : 'reply');\nreturn [{ json: { ...ev, ai, route, collected: conv.collected, usage: $json.usage } }];"
+      },
+      "name": "Update conversation state + choose route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/crm/contacts/upsert",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: '+' + $json.wa_id, name: $json.name, source: 'whatsapp', language: $json.ai.language, lead_score: $json.ai.lead_score, service: $json.collected.service, area: $json.collected.area, tags: ['whatsapp-lead', 'intent:' + $json.ai.intent] }) }}"
+      },
+      "name": "CRM: upsert contact (HubSpot / GHL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/crm/notes",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: $json.id, text: 'WhatsApp in: ' + $('Update conversation state + choose route').first().json.text + ' | intent=' + $('Update conversation state + choose route').first().json.ai.intent + ' score=' + $('Update conversation state + choose route').first().json.ai.lead_score + ' | reply: ' + $('Update conversation state + choose route').first().json.ai.reply }) }}"
+      },
+      "name": "CRM: log inbound + AI reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s0",
+                    "leftValue": "={{ $('Update conversation state + choose route').first().json.route }}",
+                    "rightValue": "reply",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "reply"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s1",
+                    "leftValue": "={{ $('Update conversation state + choose route').first().json.route }}",
+                    "rightValue": "booking",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "booking"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s2",
+                    "leftValue": "={{ $('Update conversation state + choose route').first().json.route }}",
+                    "rightValue": "human",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "human"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Intent route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        2360,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/whatsapp/v20.0/{{ $('Update conversation state + choose route').first().json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $('Update conversation state + choose route').first().json.wa_id, type: 'text', text: { preview_url: false, body: $('Update conversation state + choose route').first().json.ai.reply } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Update conversation state + choose route').first().json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: send AI reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        40
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/calendar/slots",
+        "options": {}
+      },
+      "name": "Calendar: next open slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/whatsapp/v20.0/{{ $('Update conversation state + choose route').first().json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $('Update conversation state + choose route').first().json.wa_id, type: 'text', text: { preview_url: false, body: $('Update conversation state + choose route').first().json.ai.reply + '\\n\\n' + $json.slots.slice(0,3).map((s,i) => (i+1) + ') ' + s.replace('T',' ')).join('\\n') + '\\n\\nReply 1, 2 or 3 to confirm.' } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Update conversation state + choose route').first().json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: send reply + 3 slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2900,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/crm/tasks",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: $('CRM: upsert contact (HubSpot / GHL)').first().json.id, title: 'WhatsApp booking request, confirm slot with ' + $('Update conversation state + choose route').first().json.name, due: new Date(Date.now() + 15*60000).toISOString() }) }}"
+      },
+      "name": "CRM: task, confirm booking (15 min SLA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3160,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $('Update conversation state + choose route').first().json.sales_channel, text: 'HANDOFF requested by ' + $('Update conversation state + choose route').first().json.name + ' (+' + $('Update conversation state + choose route').first().json.wa_id + '): \"' + $('Update conversation state + choose route').first().json.text + '\", AI paused on this chat, reply within 15 min' }) }}"
+      },
+      "name": "Slack: alert sales (handoff)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/crm/tasks",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: $('CRM: upsert contact (HubSpot / GHL)').first().json.id, title: 'Take over WhatsApp chat with ' + $('Update conversation state + choose route').first().json.name, due: new Date(Date.now() + 15*60000).toISOString() }) }}"
+      },
+      "name": "CRM: task, human callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2900,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Update conversation state + choose route').first().json.base }}/whatsapp/v20.0/{{ $('Update conversation state + choose route').first().json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $('Update conversation state + choose route').first().json.wa_id, type: 'text', text: { preview_url: false, body: $('Update conversation state + choose route').first().json.ai.reply } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Update conversation state + choose route').first().json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: send handoff message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3160,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, wa_id: $('Update conversation state + choose route').first().json.wa_id, intent: $('Update conversation state + choose route').first().json.ai.intent, route: $('Update conversation state + choose route').first().json.route, lead_score: $('Update conversation state + choose route').first().json.ai.lead_score, language: $('Update conversation state + choose route').first().json.ai.language, reply: $('Update conversation state + choose route').first().json.ai.reply }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (message handled)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, ignored: 'status update', statuses: $json.statuses }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (status ack)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1060,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, duplicate: true, wamid: $json.wamid }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (duplicate ack)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1060,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/crm/contacts/upsert",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: '+' + $json.wa_id, name: $json.name, tags: ['whatsapp-opted-out'], opted_out: true }) }}"
+      },
+      "name": "CRM: tag opted-out",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        660
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify signature, parse, dedupe, remember').first().json.base }}/whatsapp/v20.0/{{ $('Verify signature, parse, dedupe, remember').first().json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Verify signature, parse, dedupe, remember').first().json.wa_id, type: 'text', text: { body: 'You have been unsubscribed and will not receive further messages. Reply START to opt in again.' } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Verify signature, parse, dedupe, remember').first().json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: confirm opt-out",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        660
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, opted_out: true, wa_id: $('Verify signature, parse, dedupe, remember').first().json.wa_id }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (opt-out)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1580,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $json.sales_channel, text: 'New message from ' + $json.name + ' (+' + $json.wa_id + ') in a chat you own: \"' + $json.text + '\"' }) }}"
+      },
+      "name": "Slack: ping owner (human owns chat)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        800
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, handoff_active: true, ai_reply: false, wa_id: $('Verify signature, parse, dedupe, remember').first().json.wa_id }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (handoff active, AI paused)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-alerts', text: 'Dropped WhatsApp webhook with bad X-Hub-Signature-256 from ' + $json.source_ip + ' (' + $json.bytes + ' bytes)' }) }}"
+      },
+      "name": "Security: alert ops (forged request)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1060,
+        940
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'signature mismatch' }) }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "name": "Respond 401 (signature mismatch)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "Schedule: every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1480
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-followups",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook: run follow-ups now",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "app_secret",
+              "value": "CHANGE-ME-app-secret",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "verify_token",
+              "value": "CHANGE-ME-verify-token",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "wa_token",
+              "value": "CHANGE-ME-whatsapp-access-token",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "phone_number_id",
+              "value": "100000000000001",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "business_profile",
+              "value": "{\"name\": \"Your Business Name\", \"areas\": [\"Dubai Marina\", \"JLT\", \"Business Bay\", \"Lahore DHA\"], \"services\": {\"AC servicing\": {\"keywords\": [\"ac\", \"split\", \"cooling\"], \"from\": 150}, \"Deep cleaning\": {\"keywords\": [\"clean\"], \"from\": 300}, \"Plumbing\": {\"keywords\": [\"plumb\", \"leak\", \"pipe\"], \"from\": 120}}}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "followup_template",
+              "value": "lead_followup_v1",
+              "type": "string"
+            },
+            {
+              "id": "a7",
+              "name": "nudge_after_min",
+              "value": "120",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "sales_channel",
+              "value": "#sales-whatsapp",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (follow-ups)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        1560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nudge quiet conversations. Inside Meta's 24-hour customer-service window a free-form text is allowed;\n// outside it only an approved template may be sent. Opted-out, handed-off and already-nudged chats are skipped.\nconst cfg = $('Config (follow-ups)').first().json;\nconst force = !!($json.query?.force || $json.body?.force);\nconst sd = $getWorkflowStaticData('global');\nconst now = Date.now();\nconst out = [];\nfor (const c of Object.values(sd.conv || {})) {\n  const quietMin = (now - Math.max(c.last_inbound_ts || 0, c.last_outbound_ts || 0)) / 60000;\n  const hours = (now - (c.last_inbound_ts || 0)) / 36e5;\n  let skip = null;\n  if (c.opted_out) skip = 'opted_out';\n  else if (c.handoff) skip = 'human_owns_chat';\n  else if (c.followup_sent) skip = 'already_nudged';\n  else if (c.stage === 'booked') skip = 'booked';\n  else if (!force && quietMin < Number(cfg.nudge_after_min)) skip = 'not_quiet_yet';\n  if (skip) { out.push({ json: { wa_id: c.wa_id, name: c.name, action: 'skip', reason: skip } }); continue; }\n  const inside = hours < 24;\n  c.followup_sent = true; c.followup_ts = now;\n  out.push({ json: { wa_id: c.wa_id, name: c.name, action: inside ? 'freeform_nudge' : 'template', inside_window: inside, hours_since_inbound: +hours.toFixed(1),\n                     language: c.language || 'en', base: cfg.base, wa_token: cfg.wa_token, phone_number_id: cfg.phone_number_id, template: cfg.followup_template } });\n}\nreturn out.length ? out : [{ json: { action: 'skip', reason: 'no_conversations' } }];"
+      },
+      "name": "Find quiet conversations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        1560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "skip",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Needs a nudge?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        780,
+        1560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.inside_window }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Inside 24 h window?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/whatsapp/v20.0/{{ $json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.wa_id, type: 'text', text: { body: ($json.language === 'ur' ? 'Salam ' + $json.name.split(' ')[0] + ', kya main aapki quote/booking mein madad kar sakta hoon? Bas 1 reply karein.' : 'Hi ' + $json.name.split(' ')[0] + ', still need a hand with your quote or booking? Just reply 1 and I will sort it.') } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: free-form nudge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        1400
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/whatsapp/v20.0/{{ $json.phone_number_id }}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.wa_id, type: 'template', template: { name: $json.template, language: { code: $json.language === 'ur' ? 'ur' : 'en' }, components: [{ type: 'body', parameters: [{ type: 'text', text: $json.name.split(' ')[0] }] }] } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.wa_token }}"
+            }
+          ]
+        }
+      },
+      "name": "WhatsApp API: approved template (outside window)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        1600
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Find quiet conversations').item.json.base }}/crm/notes",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: '+' + $('Find quiet conversations').item.json.wa_id, text: 'WhatsApp follow-up sent (' + $('Find quiet conversations').item.json.action + ', ' + $('Find quiet conversations').item.json.hours_since_inbound + ' h since last inbound)' }) }}"
+      },
+      "name": "CRM: note follow-up sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        1500
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $('Find quiet conversations').all().map(i => i.json);\nconst sent = rows.filter(r => r.action !== 'skip');\nreturn [{ json: { ran_at: new Date().toISOString(), conversations: rows.length, nudged_freeform: sent.filter(r => r.action === 'freeform_nudge').length,\n  nudged_template: sent.filter(r => r.action === 'template').length, skipped: rows.filter(r => r.action === 'skip').reduce((a, r) => { a[r.reason] = (a[r.reason] || 0) + 1; return a; }, {}),\n  detail: rows.map(r => ({ wa_id: r.wa_id, action: r.action, reason: r.reason, hours_since_inbound: r.hours_since_inbound })) } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "name": "Follow-up summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        1560
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "No nudge needed",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        1680
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1980
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-alerts', text: 'WhatsApp agent failed: ' + $json.execution.error.message + ' (execution ' + $json.execution.id + ', node ' + ($json.execution.lastNodeExecuted || '?') + ')' }) }}"
+      },
+      "name": "Alert ops (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        1980
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        130,
+        1980
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base`, the WhatsApp phone number id and the verify token; the access token comes from your Meta app.\n2. Register the Webhook URL in the Meta app as the WhatsApp webhook and complete the verification handshake.\n3. Point the intent step at your model endpoint (`base`/llm/complete) or swap it for the OpenAI or Anthropic node, then activate. Follow-ups run on the schedule branch.\n\nMessage the number from a test phone and walk through every intent before going live.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        1050
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Meta verification (GET)": {
+      "main": [
+        [
+          {
+            "node": "Verify token matches?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify token matches?": {
+      "main": [
+        [
+          {
+            "node": "Respond hub.challenge (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 403 Forbidden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: WhatsApp inbound (Meta Cloud API)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Verify signature, parse, dedupe, remember",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify signature, parse, dedupe, remember": {
+      "main": [
+        [
+          {
+            "node": "Route event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route event": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp API: mark as read",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200 (status ack)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200 (duplicate ack)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CRM: tag opted-out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: ping owner (human owns chat)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Security: alert ops (forged request)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: mark as read": {
+      "main": [
+        [
+          {
+            "node": "AI: intent and reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: intent and reply": {
+      "main": [
+        [
+          {
+            "node": "Update conversation state + choose route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update conversation state + choose route": {
+      "main": [
+        [
+          {
+            "node": "CRM: upsert contact (HubSpot / GHL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: upsert contact (HubSpot / GHL)": {
+      "main": [
+        [
+          {
+            "node": "CRM: log inbound + AI reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: log inbound + AI reply": {
+      "main": [
+        [
+          {
+            "node": "Intent route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent route": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp API: send AI reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar: next open slots",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: alert sales (handoff)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar: next open slots": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp API: send reply + 3 slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: send reply + 3 slots": {
+      "main": [
+        [
+          {
+            "node": "CRM: task, confirm booking (15 min SLA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: alert sales (handoff)": {
+      "main": [
+        [
+          {
+            "node": "CRM: task, human callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: task, human callback": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp API: send handoff message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: send AI reply": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (message handled)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: task, confirm booking (15 min SLA)": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (message handled)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: send handoff message": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (message handled)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: tag opted-out": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp API: confirm opt-out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: confirm opt-out": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (opt-out)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: ping owner (human owns chat)": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (handoff active, AI paused)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security: alert ops (forged request)": {
+      "main": [
+        [
+          {
+            "node": "Respond 401 (signature mismatch)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: every hour": {
+      "main": [
+        [
+          {
+            "node": "Config (follow-ups)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: run follow-ups now": {
+      "main": [
+        [
+          {
+            "node": "Config (follow-ups)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (follow-ups)": {
+      "main": [
+        [
+          {
+            "node": "Find quiet conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find quiet conversations": {
+      "main": [
+        [
+          {
+            "node": "Needs a nudge?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs a nudge?": {
+      "main": [
+        [
+          {
+            "node": "Inside 24 h window?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No nudge needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inside 24 h window?": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp API: free-form nudge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp API: approved template (outside window)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: free-form nudge": {
+      "main": [
+        [
+          {
+            "node": "CRM: note follow-up sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp API: approved template (outside window)": {
+      "main": [
+        [
+          {
+            "node": "CRM: note follow-up sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: note follow-up sent": {
+      "main": [
+        [
+          {
+            "node": "Follow-up summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No nudge needed": {
+      "main": [
+        [
+          {
+            "node": "Follow-up summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

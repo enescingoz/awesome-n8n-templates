@@ -1,0 +1,574 @@
+{
+  "name": "Extract, validate and post supplier invoices with AI and route exceptions for review",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Extract, validate and post supplier invoices with AI and route exceptions for review\n\n**Who it is for.** Accounts payable teams receiving supplier invoices by email or upload.\n\n**What it does**\n- Extracts supplier, TRN, invoice number, date, subtotal, VAT, total and lines from the document.\n- Validates against the supplier master and open purchase orders: TRN format and match, duplicate number, lines add to subtotal, total equals subtotal plus VAT, extraction confidence, auto approve limit, supplier limit, PO match.\n- Routes by result: AUTO APPROVE posts the bill; REVIEW opens a ticket with the reasons; REJECT alerts accounts payable.\n- Every decision carries its rule code.\n\n**Setup**\n1. Set base and the limits in Config, or replace the HTTP Request nodes with your document extraction, accounting and ticketing nodes.\n2. Point your mailbox trigger or upload form at the Webhook URL.\n3. Adjust the VAT rate and tolerances in the validation Code node. Activate.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/invoice-intake\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1000,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "invoice-in",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: invoice received (email, drive or upload)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "auto_approve_limit",
+              "value": "5000",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "ap_channel",
+              "value": "#accounts-payable",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "total_tolerance",
+              "value": "0.05",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/documents/extract",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ file_name: $(\"Webhook: invoice received (email, drive or upload)\").first().json.body.file_name, mime: \"application/pdf\" }) }}"
+      },
+      "name": "AI: extract fields from document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.base }}/accounting/suppliers",
+        "options": {}
+      },
+      "name": "Accounting: supplier master",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        -120
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.base }}/accounting/purchase_orders",
+        "options": {}
+      },
+      "name": "Accounting: open purchase orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        120
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "numberInputs": 2
+      },
+      "name": "Merge lookups",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Deterministic validation between the AI extraction and the ledger. No AI decides anything here.\nconst cfg = $('Config').first().json;\nconst x = $('AI: extract fields from document').first().json.fields || {};\nconst file = $('Webhook: invoice received (email, drive or upload)').first().json.body.file_name;\nconst suppliers = $('Accounting: supplier master').first().json.rows;\nconst pos = $('Accounting: open purchase orders').first().json.rows;\nconst norm = s => String(s || '').toLowerCase().replace(/\\b(llc|fze|fzco|ltd|co|company|est)\\b\\.?/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();\nconst sd = $getWorkflowStaticData('global'); sd.seen = sd.seen || {};\nconst reasons = []; let status = 'AUTO_APPROVE';\nconst key = norm(x.supplier) + '|' + String(x.invoice_no || '').toUpperCase();\nif (!x.supplier || !x.invoice_no) { reasons.push('V-00 Extraction incomplete'); status = 'REVIEW'; }\nif (sd.seen[key]) { reasons.push('V-01 Duplicate invoice number for this supplier'); status = 'REJECT'; }\nconst sup = suppliers.find(s => norm(s.supplier_name) === norm(x.supplier));\nif (!sup) { reasons.push('V-02 Supplier not in master, new supplier approval required'); if (status !== 'REJECT') status = 'REVIEW'; }\nelse {\n  const trn = String(x.trn || '');\n  if (!/^\\d{15}$/.test(trn)) { reasons.push(`V-03 TRN format invalid (${trn})`); status = 'REJECT'; }\n  else if (trn !== sup.trn) { reasons.push('V-04 TRN differs from supplier master'); status = 'REJECT'; }\n}\nconst sum = (x.line_items || []).reduce((s, l) => s + Number(l.amount || 0), 0);\nif (Math.abs(sum - Number(x.subtotal || 0)) > Number(cfg.total_tolerance)) { reasons.push('V-05 Line items do not add to subtotal'); if (status !== 'REJECT') status = 'REVIEW'; }\nif (Math.abs(Number(x.subtotal || 0) * 1.05 - Number(x.total || 0)) > Number(cfg.total_tolerance)) { reasons.push('V-06 Total is not subtotal plus 5% VAT'); if (status !== 'REJECT') status = 'REVIEW'; }\nif (Number(x.confidence || 0) < 0.9) { reasons.push(`V-07 Extraction confidence ${x.confidence}`); if (status !== 'REJECT') status = 'REVIEW'; }\nconst po = pos.find(p => norm(p.supplier) === norm(x.supplier) && Math.abs(Number(p.amount) - Number(x.total)) <= 1);\nif (!po && Number(x.total || 0) > Number(cfg.auto_approve_limit)) { reasons.push(`V-08 Over auto approve limit (AED ${cfg.auto_approve_limit}) with no matching PO`); if (status !== 'REJECT') status = 'REVIEW'; }\nif (sup && Number(x.total || 0) > Number(sup.approved_limit_aed || 0) && !po) { reasons.push(`V-09 Over supplier limit AED ${sup.approved_limit_aed}`); if (status !== 'REJECT') status = 'REVIEW'; }\nif (status !== 'REJECT') sd.seen[key] = Date.now();\nreturn [{ json: { file, status, reasons, po_number: po ? po.po_number : null, supplier: x.supplier, trn: x.trn, invoice_no: x.invoice_no, date: x.date, subtotal: x.subtotal, vat: x.vat, total: x.total, currency: x.currency, confidence: x.confidence, line_items: x.line_items } }];\n"
+      },
+      "name": "Validate: TRN, duplicate, totals, PO match, limit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s0",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "AUTO_APPROVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AUTO_APPROVE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s1",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "REVIEW",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "REVIEW"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "s2",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "REJECT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "REJECT"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Route by status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/accounting/bills",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ supplier: $json.supplier, invoice_no: $json.invoice_no, date: $json.date, subtotal: $json.subtotal, vat: $json.vat, total: $json.total, po_number: $json.po_number, source_file: $json.file }) }}"
+      },
+      "name": "Accounting: post bill",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        -140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/review/queue",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ file: $json.file, status: $json.status, reasons: $json.reasons, supplier: $json.supplier, total: $json.total }) }}"
+      },
+      "name": "Review queue: human check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $(\"Config\").first().json.ap_channel, text: \"Rejected \" + $json.file + \" from \" + $json.supplier + \": \" + $json.reasons.join(\"; \") }) }}"
+      },
+      "name": "Slack: rejected, AP notified",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst v = $('Validate: TRN, duplicate, totals, PO match, limit').first().json;\nconst r = $json;\nreturn [{ json: { file: v.file, status: v.status, reasons: v.reasons, supplier: v.supplier, invoice_no: v.invoice_no, total: v.total, po_number: v.po_number, result: r.bill_id ? { bill_id: r.bill_id } : r.ticket ? { ticket: r.ticket } : { alerted: true } } }];\n"
+      },
+      "name": "Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (invoice handled)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"#ops-alerts\", text: \"Invoice intake failed: \" + ($json.execution?.error?.message || \"unknown\") }) }}"
+      },
+      "name": "Alert ops (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        320
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base`, the supplier master endpoint and the tolerance for totals.\n2. Point the extraction step at your model endpoint (`base`/llm/complete) or swap it for a document AI node.\n3. Point your inbox or document source at the Webhook URL and activate.\n\nTest with one clean invoice and one with a wrong total to see both routes.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        840
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: invoice received (email, drive or upload)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "AI: extract fields from document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: extract fields from document": {
+      "main": [
+        [
+          {
+            "node": "Accounting: supplier master",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Accounting: open purchase orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accounting: supplier master": {
+      "main": [
+        [
+          {
+            "node": "Merge lookups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accounting: open purchase orders": {
+      "main": [
+        [
+          {
+            "node": "Merge lookups",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge lookups": {
+      "main": [
+        [
+          {
+            "node": "Validate: TRN, duplicate, totals, PO match, limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate: TRN, duplicate, totals, PO match, limit": {
+      "main": [
+        [
+          {
+            "node": "Route by status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by status": {
+      "main": [
+        [
+          {
+            "node": "Accounting: post bill",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review queue: human check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: rejected, AP notified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accounting: post bill": {
+      "main": [
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review queue: human check": {
+      "main": [
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: rejected, AP notified": {
+      "main": [
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outcome": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (invoice handled)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

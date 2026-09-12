@@ -1,0 +1,654 @@
+{
+  "name": "Run month end close checks and send a management pack with AI commentary",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Run month end close checks and send a management pack with AI commentary\n\n**Who it is for.** Finance teams closing the month by hand from a trial balance and a checklist.\n\n**What it does**\n- Runs on the second working day or on demand. Pulls this month's and last month's trial balance and the close data.\n- Seven checks against a materiality figure: trial balance balances, bank reconciled, invoices posted, suspense cleared, VAT control agrees, fixed asset register agrees, receivables over 90 days reviewed.\n- Builds the P&L against last month with the change on every line; an AI step drafts the commentary from the figures and the check results.\n- Renders the management pack and distributes it, or BLOCKS the close and sends the failed checks instead.\n\n**Setup**\n1. Set base, period and materiality in Config, or replace the HTTP Request nodes with your accounting system (Zoho Books, QuickBooks Online, Xero) nodes.\n2. Set the AI credential on the commentary step. Point distribution at your email or Slack node.\n3. Activate; the schedule runs on the second working day.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/month-end-close-pack\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1000,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 2 * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule: 2nd working day 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "close-run",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook: run close now",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "a1",
+              "name": "period",
+              "value": "2026-08",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "finance_channel",
+              "value": "#finance-close",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "owner_email",
+              "value": "owner@example.com",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "materiality_aed",
+              "value": "5000",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.base }}/accounting/trial_balance",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "period",
+              "value": "={{ $json.period }}"
+            }
+          ]
+        }
+      },
+      "name": "Accounting: trial balance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        -40
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.base }}/accounting/prior_period",
+        "options": {}
+      },
+      "name": "Accounting: prior period",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.base }}/accounting/close_checks",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "period",
+              "value": "={{ $json.period }}"
+            }
+          ]
+        }
+      },
+      "name": "Accounting: close checks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "name": "Merge sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        780,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Everything a close reviewer would tick off by hand, decided by rule. Materiality from Config.\nconst cfg = $('Config').first().json;\nconst mat = Number(cfg.materiality_aed);\nconst tb = $('Accounting: trial balance').first().json.rows;\nconst prior = $('Accounting: prior period').first().json.rows;\nconst chk = $('Accounting: close checks').first().json;\nconst num = v => Number(String(v || '0').replace(/,/g, ''));\nconst checks = [];\nconst dr = tb.reduce((s, r) => s + num(r.debit), 0), cr = tb.reduce((s, r) => s + num(r.credit), 0);\nchecks.push({ check: 'Trial balance balances', result: Math.abs(dr - cr) < 1 ? 'PASS' : 'FAIL', detail: `Dr ${dr.toFixed(0)} / Cr ${cr.toFixed(0)}` });\nconst bu = chk.bank_unreconciled || [];\nconst oldBank = bu.filter(x => num(x.days_open) > 5);\nchecks.push({ check: 'Bank reconciled', result: oldBank.length ? 'FAIL' : bu.length ? 'WARN' : 'PASS', detail: `${bu.length} open items, ${oldBank.length} older than 5 days` });\nconst up = chk.unposted_invoices || [];\nconst upTotal = up.reduce((s, x) => s + num(x.amount), 0);\nchecks.push({ check: 'Supplier invoices posted', result: upTotal > mat ? 'FAIL' : up.length ? 'WARN' : 'PASS', detail: `${up.length} unposted, AED ${upTotal.toFixed(0)}` });\nchecks.push({ check: 'Suspense cleared', result: num(chk.suspense_balance) === 0 ? 'PASS' : num(chk.suspense_balance) > mat ? 'FAIL' : 'WARN', detail: `AED ${num(chk.suspense_balance).toFixed(0)} in suspense` });\nconst vat = chk.vat_control || {};\nchecks.push({ check: 'VAT control agrees to return', result: vat.return_filed ? 'PASS' : 'WARN', detail: `Output ${num(vat.output_vat).toFixed(0)}, input ${num(vat.input_vat).toFixed(0)}, net ${(num(vat.output_vat) - num(vat.input_vat)).toFixed(0)}; return ${vat.return_filed ? 'filed' : 'not yet filed'}` });\nchecks.push({ check: 'Fixed asset register agrees to GL', result: num(chk.fixed_asset_register_total) === num(chk.gl_fixed_assets) ? 'PASS' : 'FAIL', detail: `Register ${num(chk.fixed_asset_register_total).toFixed(0)} vs GL ${num(chk.gl_fixed_assets).toFixed(0)}` });\nconst ar90 = chk.aged_receivables_over_90 || [];\nconst ar90Total = ar90.reduce((s, x) => s + num(x.amount), 0);\nchecks.push({ check: 'Receivables over 90 days reviewed', result: ar90Total > mat ? 'WARN' : 'PASS', detail: `${ar90.length} invoices, AED ${ar90Total.toFixed(0)} over 90 days` });\n// P&L lines, this month vs prior, from the two trial balances (credits negative)\nconst bal = rows => { const m = {}; for (const r of rows) { const k = r.account.slice(0, 1); const v = num(r.debit) - num(r.credit); m[r.name] = (m[r.name] || 0) + v; } return m; };\nconst cur = bal(tb), prv = bal(prior);\nconst plNames = tb.filter(r => /^[4-8]/.test(r.account)).map(r => r.name).filter((v, i, a) => a.indexOf(v) === i);\nconst pl = plNames.map(n => { const c = -(cur[n] || 0), p = -(prv[n] || 0); const isRev = /revenue/i.test(n); const cc = isRev ? c : -c, pp = isRev ? p : -p; return { line: n, current: Math.round(cc), prior: Math.round(pp), change: Math.round(cc - pp), change_pct: pp ? Math.round(1000 * (cc - pp) / Math.abs(pp)) / 10 : null }; });\nconst revenue = pl.find(x => /revenue/i.test(x.line)) || { current: 0, prior: 0 };\nconst costs = pl.filter(x => !/revenue/i.test(x.line)).reduce((s, x) => s + x.current, 0);\nconst costsPrior = pl.filter(x => !/revenue/i.test(x.line)).reduce((s, x) => s + x.prior, 0);\nconst fails = checks.filter(c => c.result === 'FAIL').length, warns = checks.filter(c => c.result === 'WARN').length;\nreturn [{ json: { period: cfg.period, checks, pl, fails, warns, revenue: revenue.current, revenue_prior: revenue.prior, costs, costs_prior: costsPrior,\n  profit: revenue.current - costs, profit_prior: revenue.prior - costsPrior, status: fails ? 'BLOCKED' : warns ? 'READY WITH NOTES' : 'READY' } }];\n"
+      },
+      "name": "Run close checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/llm/complete",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ task: \"close_commentary\", input: { period: $json.period, revenue: $json.revenue, revenue_prior: $json.revenue_prior, costs: $json.costs, costs_prior: $json.costs_prior, profit: $json.profit, profit_prior: $json.profit_prior, pl: $json.pl, checks: $json.checks } }) }}"
+      },
+      "name": "AI: draft commentary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst r = $('Run close checks').first().json;\nconst ai = $json.output || {};\nconst lines = Array.isArray(ai.commentary) ? ai.commentary : (typeof ai === 'string' ? ai.split('\\n') : [\n  `Revenue AED ${r.revenue.toLocaleString()} against AED ${r.revenue_prior.toLocaleString()} last month.`,\n  `Operating costs AED ${r.costs.toLocaleString()} (prior AED ${r.costs_prior.toLocaleString()}).`,\n  `Profit AED ${r.profit.toLocaleString()} (prior AED ${r.profit_prior.toLocaleString()}).`]);\nconst biggest = [...r.pl].filter(x => x.change_pct !== null).sort((a, b) => Math.abs(b.change) - Math.abs(a.change)).slice(0, 3)\n  .map(x => `${x.line}: ${x.change >= 0 ? 'up' : 'down'} AED ${Math.abs(x.change).toLocaleString()} (${x.change_pct}%) on last month`);\nreturn [{ json: { period: r.period, status: r.status, fails: r.fails, warns: r.warns, checks: r.checks, pl: r.pl,\n  commentary: [...lines, 'Largest movements:', ...biggest, 'Every figure above is traceable to the trial balance export attached to this run.'] } }];\n"
+      },
+      "name": "Assemble pack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/reports/pack",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "name": "Render management pack (xlsx)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $('Assemble pack').first().json.fails }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Any check failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $(\"Config\").first().json.finance_channel, text: \"Close \" + $(\"Assemble pack\").first().json.period + \" BLOCKED: \" + $(\"Assemble pack\").first().json.checks.filter(c => c.result === \"FAIL\").map(c => c.check + \" (\" + c.detail + \")\").join(\"; \") + \". Draft pack: \" + $json.url }) }}"
+      },
+      "name": "Slack: close blocked, owners tagged",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        -20
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $(\"Config\").first().json.finance_channel, text: \"Close \" + $(\"Assemble pack\").first().json.period + \" \" + $(\"Assemble pack\").first().json.status + \". Pack: \" + $json.url + \". Notes: \" + $(\"Assemble pack\").first().json.checks.filter(c => c.result === \"WARN\").map(c => c.check).join(\", \") }) }}"
+      },
+      "name": "Slack: pack ready",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.base }}/messages/send",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"email\", to: $(\"Config\").first().json.owner_email, body: \"Management pack \" + $(\"Assemble pack\").first().json.period + \" attached. \" + $(\"Assemble pack\").first().json.commentary.join(\" \"), attachment: $(\"Render management pack (xlsx)\").first().json.url }) }}"
+      },
+      "name": "Email pack to owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst a = $('Assemble pack').first().json; const pack = $('Render management pack (xlsx)').first().json;\nreturn [{ json: { period: a.period, status: a.status, checks: a.checks.map(c => c.check + ': ' + c.result), pack_url: pack.url, pack_sheets: pack.sheets } }];\n"
+      },
+      "name": "Run summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond 200 (close run)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3120,
+        40
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"#ops-alerts\", text: \"Close workflow failed: \" + ($json.execution?.error?.message || \"unknown\") }) }}"
+      },
+      "name": "Alert ops (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        420
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base` and the ledger, AR and AP endpoints, or swap the HTTP Request nodes for your accounting system's nodes.\n2. Point the commentary step at your model endpoint (`base`/llm/complete) or swap it for the OpenAI or Anthropic node.\n3. Set the schedule to your close day and activate.\n\nRun it once on last month's data and compare the pack with the one you produced by hand.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        940
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule: 2nd working day 08:00": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: run close now": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Accounting: trial balance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Accounting: prior period",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Accounting: close checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accounting: trial balance": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accounting: prior period": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Accounting: close checks": {
+      "main": [
+        [
+          {
+            "node": "Merge sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge sources": {
+      "main": [
+        [
+          {
+            "node": "Run close checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run close checks": {
+      "main": [
+        [
+          {
+            "node": "AI: draft commentary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: draft commentary": {
+      "main": [
+        [
+          {
+            "node": "Assemble pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble pack": {
+      "main": [
+        [
+          {
+            "node": "Render management pack (xlsx)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render management pack (xlsx)": {
+      "main": [
+        [
+          {
+            "node": "Any check failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any check failed?": {
+      "main": [
+        [
+          {
+            "node": "Slack: close blocked, owners tagged",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: pack ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: close blocked, owners tagged": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: pack ready": {
+      "main": [
+        [
+          {
+            "node": "Email pack to owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email pack to owner": {
+      "main": [
+        [
+          {
+            "node": "Run summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run summary": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (close run)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,958 @@
+{
+  "name": "Score inbound leads with AI, reply by SMS or WhatsApp, book calendar slots and alert sales",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Score inbound leads with AI, reply by SMS or WhatsApp, book calendar slots and alert sales\n\n**Who it is for.** Sales teams that lose leads in the first hour: agencies, clinics, real estate, B2B services.\n\n**What it does**\n- Normalises the lead from any source (web form, ad platform, HubSpot or GoHighLevel webhook) with a 24 hour duplicate guard.\n- AI qualification returns a score, intent, summary and a drafted reply.\n- Hot leads get an instant SMS or WhatsApp reply, three calendar slots, a 15 minute sales task and a Slack alert.\n- Cooler leads are logged in the CRM and started on a nurture sequence.\n- A second trigger takes voice agent call ended webhooks (Retell, VAPI), writes the summary to the CRM and books a visit when asked.\n\n**Setup**\n1. Set base in Config or replace the HTTP Request nodes with your CRM, calendar, messaging and Slack nodes.\n2. Point the form, ad platform and voice agent webhooks at the two Webhook URLs.\n3. Set the AI credential on the qualification step. Activate.\n\nAll external systems are reached through HTTP Request nodes against `base` in the Config node, so the whole flow imports and runs against any REST backend; swap any of them for the native n8n node of your system. Built and tested on sample data by Finamatik: https://finamatik.com/work/ai-lead-response-engine\n\n**Requirements.** n8n 1.100 or later; for the AI steps, a model endpoint at `base`/llm/complete or the OpenAI or Anthropic node in its place; your own systems reachable over HTTPS.\n\n**How to customise.** Every rule lives in one Code or Config node and is named for what it decides; change the thresholds there, not in the branches.",
+        "height": 1000,
+        "width": 560,
+        "color": 1
+      },
+      "name": "Read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-in",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook: new lead (form / ad / GHL)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "call-ended",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook: voice agent call ended (Retell / VAPI)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "test_mode",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "c3",
+              "name": "hot_threshold",
+              "value": 70,
+              "type": "number"
+            },
+            {
+              "id": "c4",
+              "name": "brand",
+              "value": "Your Business Name",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise any lead source into one shape and drop duplicates within 24h (workflow static data).\nconst body = $input.first().json.body || $input.first().json;\nconst cfg = $('Config').first().json;\nconst lead = {\n  name: body.name || body.full_name || [body.first_name, body.last_name].filter(Boolean).join(' ') || 'Unknown',\n  email: (body.email || '').toLowerCase().trim(),\n  phone: (body.phone || body.phone_number || '').replace(/[^+\\d]/g, ''),\n  service: body.service || body.interest || body.form_name || 'general enquiry',\n  message: body.message || body.notes || body.comments || '',\n  source: body.source || body.utm_source || 'web-form',\n  company: body.company || '', budget: body.budget || '',\n  received_at: new Date().toISOString()\n};\nif (!lead.email && !lead.phone) throw new Error('Lead has neither email nor phone, rejected');\nconst key = lead.email || lead.phone;\nconst seen = $getWorkflowStaticData('global'); seen.leads = seen.leads || {};\nconst last = seen.leads[key];\nlead.duplicate = !!(last && Date.now() - last < 24*3600*1000);\nseen.leads[key] = Date.now();\nreturn [{ json: { ...lead, cfg } }];"
+      },
+      "name": "Normalise + dedupe (24h)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.duplicate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Not a duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.cfg.base }}/llm/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ task: 'qualify_lead', input: { name: $json.name, service: $json.service, message: $json.message, company: $json.company, budget: $json.budget } }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "AI: qualify lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "notes": "Live mode: same node pointed at api.anthropic.com/v1/messages with the credential; prompt asks for {score,intent,summary,reply,next_step} JSON."
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('Normalise + dedupe (24h)').first().json;\nconst ai = $input.first().json.output || {};\nconst score = Number(ai.score ?? 0);\nreturn [{ json: { ...lead, ai, score, hot: score >= lead.cfg.hot_threshold, usage: $input.first().json.usage } }];"
+      },
+      "name": "Merge lead + AI verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.cfg.base }}/crm/contacts/upsert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $json.email, phone: $json.phone, name: $json.name, source: $json.source, service: $json.service, lead_score: $json.score, intent: $json.ai.intent, tags: [$json.hot ? 'hot-lead' : 'nurture'] }) }}",
+        "options": {}
+      },
+      "name": "CRM: upsert contact (HubSpot / GHL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('Merge lead + AI verdict').first().json;\nconst crm = $input.first().json;\nreturn [{ json: { ...lead, contact_id: crm.id, crm_status: crm.status } }];"
+      },
+      "name": "Attach contact id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ $json.hot }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Hot lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.cfg.base }}/messages/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $json.phone ? 'sms' : 'email', to: $json.phone || $json.email, body: $json.ai.reply }) }}",
+        "options": {}
+      },
+      "name": "Reply in < 60 s (SMS / WhatsApp / email)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2020,
+        60
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Attach contact id').first().json.cfg.base }}/calendar/slots",
+        "options": {}
+      },
+      "name": "Calendar: next open slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Attach contact id').first().json.cfg.base }}/messages/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'sms', to: $('Attach contact id').first().json.phone || $('Attach contact id').first().json.email, body: 'Pick a time: ' + $json.slots.slice(0,3).map((s,i) => (i+1) + ') ' + s.replace('T',' ')).join('  ') + '. Reply with the number.' }) }}",
+        "options": {}
+      },
+      "name": "Offer 3 slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2460,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Attach contact id').first().json.cfg.base }}/crm/tasks",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: $('Attach contact id').first().json.contact_id, title: 'HOT lead, call within 15 min: ' + $('Attach contact id').first().json.name, due: new Date(Date.now()+15*60000).toISOString() }) }}",
+        "options": {}
+      },
+      "name": "CRM: task for sales rep (15 min SLA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2680,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Attach contact id').first().json.cfg.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#sales-hot-leads', text: '🔥 ' + $('Attach contact id').first().json.name + ' (' + $('Attach contact id').first().json.service + ') score ' + $('Attach contact id').first().json.score + ', ' + $('Attach contact id').first().json.ai.summary }) }}",
+        "options": {}
+      },
+      "name": "Slack alert to sales",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2900,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.cfg.base }}/messages/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'email', to: $json.email || $json.phone, body: 'Thanks ' + $json.name.split(' ')[0] + ', here is our guide to ' + $json.service + '. I will check in next week.', sequence: 'nurture-5-day' }) }}",
+        "options": {}
+      },
+      "name": "Nurture: start 5-day sequence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2020,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Attach contact id').first().json.cfg.base }}/crm/notes",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: $('Attach contact id').first().json.contact_id, text: 'AI triage: ' + $('Attach contact id').first().json.ai.summary + ' | score ' + $('Attach contact id').first().json.score + ' | next: ' + $('Attach contact id').first().json.ai.next_step }) }}",
+        "options": {}
+      },
+      "name": "CRM: note with AI summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const l = $('Attach contact id').first().json;\nreturn [{ json: { ok: true, lead: l.name, score: l.score, route: l.hot ? 'hot: replied + slots offered + rep task' : 'nurture sequence started', contact_id: l.contact_id, tokens: l.usage } }];"
+      },
+      "name": "Respond to webhook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true, skipped: 'duplicate lead within 24h', key: $json.email || $json.phone } }];"
+      },
+      "name": "Skip duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (calls)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retell/VAPI-style payload: {call_id, from, to, transcript, duration_s, recording_url}\nconst b = $input.first().json.body || $input.first().json;\nif (!b.transcript) throw new Error('No transcript in call payload');\nreturn [{ json: { call_id: b.call_id, phone: (b.from || '').replace(/[^+\\d]/g,''), transcript: b.transcript, duration_s: b.duration_s, base: $json.base } }];"
+      },
+      "name": "Parse call payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base }}/llm/complete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ task: 'summarise_call', input: { transcript: $json.transcript } }) }}",
+        "options": {}
+      },
+      "name": "AI: summarise call + detect booking intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        900
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse call payload').first().json.base }}/crm/contacts/upsert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $('Parse call payload').first().json.phone, source: 'inbound-call', last_call_outcome: $json.output.outcome }) }}",
+        "options": {}
+      },
+      "name": "CRM: upsert caller",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse call payload').first().json.base }}/crm/notes",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contact_id: $json.id, text: 'Call ' + $('Parse call payload').first().json.call_id + ' (' + $('Parse call payload').first().json.duration_s + 's): ' + $('AI: summarise call + detect booking intent').first().json.output.summary + ' | follow-up: ' + $('AI: summarise call + detect booking intent').first().json.output.follow_up }) }}",
+        "options": {}
+      },
+      "name": "CRM: call summary note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ $('AI: summarise call + detect booking intent').first().json.output.outcome }}",
+              "rightValue": "appointment_requested",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Appointment requested?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Parse call payload').first().json.base }}/calendar/slots",
+        "options": {}
+      },
+      "name": "Calendar: slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse call payload').first().json.base }}/calendar/book",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ slot: $json.slots[0], contact: $('CRM: upsert caller').first().json.id, reason: 'from call ' + $('Parse call payload').first().json.call_id }) }}",
+        "options": {}
+      },
+      "name": "Book first slot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse call payload').first().json.base }}/messages/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'sms', to: $('Parse call payload').first().json.phone, body: 'Booked: technician visit ' + $json.slot.replace('T',' ') + '. Reply R to reschedule.' }) }}",
+        "options": {}
+      },
+      "name": "SMS confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ai = $('AI: summarise call + detect booking intent').first().json.output;\nlet slot = null; try { slot = $('Book first slot').first().json.slot; } catch (e) {}\nreturn [{ json: { ok: true, call_id: $('Parse call payload').first().json.call_id, outcome: ai.outcome, booked: ai.outcome === 'appointment_requested', slot } }];"
+      },
+      "name": "Respond (call)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config (errors)').first().json.base }}/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: '#ops-alerts', text: 'Lead engine failed: ' + ($json.execution?.error?.message || 'unknown') + ' (execution ' + ($json.execution?.id || '?') + ')' }) }}",
+        "options": {}
+      },
+      "name": "Alert ops (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "base",
+              "value": "https://api.your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Config (errors)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        130,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Setup in three steps\n\n1. Open **Config** and set `base`, the CRM and calendar endpoints and the messaging sender, or swap the HTTP Request nodes for your native nodes.\n2. Point the two AI steps at your model endpoint (`base`/llm/complete) or swap them for the OpenAI or Anthropic node.\n3. Point your web form, ad platform or voice agent webhook at the Webhook URL and activate.\n\nSend one hot lead, one cool lead and one duplicate before going live.",
+        "height": 300,
+        "width": 560,
+        "color": 7
+      },
+      "name": "Setup steps",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        1040
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: new lead (form / ad / GHL)": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Normalise + dedupe (24h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise + dedupe (24h)": {
+      "main": [
+        [
+          {
+            "node": "Not a duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not a duplicate?": {
+      "main": [
+        [
+          {
+            "node": "AI: qualify lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: qualify lead": {
+      "main": [
+        [
+          {
+            "node": "Merge lead + AI verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge lead + AI verdict": {
+      "main": [
+        [
+          {
+            "node": "CRM: upsert contact (HubSpot / GHL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: upsert contact (HubSpot / GHL)": {
+      "main": [
+        [
+          {
+            "node": "Attach contact id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach contact id": {
+      "main": [
+        [
+          {
+            "node": "Hot lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hot lead?": {
+      "main": [
+        [
+          {
+            "node": "Reply in < 60 s (SMS / WhatsApp / email)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nurture: start 5-day sequence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply in < 60 s (SMS / WhatsApp / email)": {
+      "main": [
+        [
+          {
+            "node": "Calendar: next open slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar: next open slots": {
+      "main": [
+        [
+          {
+            "node": "Offer 3 slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offer 3 slots": {
+      "main": [
+        [
+          {
+            "node": "CRM: task for sales rep (15 min SLA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: task for sales rep (15 min SLA)": {
+      "main": [
+        [
+          {
+            "node": "Slack alert to sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack alert to sales": {
+      "main": [
+        [
+          {
+            "node": "CRM: note with AI summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nurture: start 5-day sequence": {
+      "main": [
+        [
+          {
+            "node": "CRM: note with AI summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: note with AI summary": {
+      "main": [
+        [
+          {
+            "node": "Respond to webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: voice agent call ended (Retell / VAPI)": {
+      "main": [
+        [
+          {
+            "node": "Config (calls)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (calls)": {
+      "main": [
+        [
+          {
+            "node": "Parse call payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse call payload": {
+      "main": [
+        [
+          {
+            "node": "AI: summarise call + detect booking intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: summarise call + detect booking intent": {
+      "main": [
+        [
+          {
+            "node": "CRM: upsert caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: upsert caller": {
+      "main": [
+        [
+          {
+            "node": "CRM: call summary note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: call summary note": {
+      "main": [
+        [
+          {
+            "node": "Appointment requested?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appointment requested?": {
+      "main": [
+        [
+          {
+            "node": "Calendar: slots",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond (call)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar: slots": {
+      "main": [
+        [
+          {
+            "node": "Book first slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Book first slot": {
+      "main": [
+        [
+          {
+            "node": "SMS confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS confirmation": {
+      "main": [
+        [
+          {
+            "node": "Respond (call)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Config (errors)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config (errors)": {
+      "main": [
+        [
+          {
+            "node": "Alert ops (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
