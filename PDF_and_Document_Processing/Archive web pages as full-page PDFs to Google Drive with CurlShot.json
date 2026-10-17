@@ -1,0 +1,238 @@
+{
+  "name": "Archive web pages as full-page PDFs to Google Drive with CurlShot",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "aae4d845-1ddf-4242-a78d-5b06bb2cec3d",
+      "name": "Run workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "36e0fc4a-b659-451c-8689-404e5464bd1e",
+      "name": "Every Monday at 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "df8310b5-befb-4032-972b-49d6a75391a4",
+              "name": "urls",
+              "value": "={{ ['https://example.com', 'https://example.org'] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae4f1b83-be59-485f-ba20-f6abacd3189c",
+      "name": "Pages to archive",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "urls",
+        "options": {
+          "destinationFieldName": "url"
+        }
+      },
+      "id": "409ea53c-6087-4db2-a6a9-1acbd712f066",
+      "name": "One item per page",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        480,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://curlshot.com/api/v1/screenshot",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "format",
+              "value": "pdf"
+            },
+            {
+              "name": "full_page",
+              "value": "true"
+            },
+            {
+              "name": "block_cookie_banners",
+              "value": "true"
+            },
+            {
+              "name": "block_ads",
+              "value": "true"
+            },
+            {
+              "name": "pdf_print_background",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "52271b13-56b7-45e9-9eea-27c04558558b",
+      "name": "Capture page as PDF (CurlShot)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        400
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "name": "={{ $('One item per page').item.json.url.replace(/^https?:\\/\\//, '').replace(/[^a-zA-Z0-9.-]+/g, '_') }}_{{ $now.toFormat('yyyy-LL-dd') }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "3710b4a8-6187-492a-981b-95ad3e9507db",
+      "name": "Save PDF to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        960,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Archive web pages as full-page PDFs\nCaptures each URL in **Pages to archive** as a full-page PDF with CurlShot (cookie banners and ads hidden first) and saves it to Google Drive with the date in the file name. Runs on demand or every Monday.\n\n### Setup\n1. Get a free CurlShot access key at https://curlshot.com/register (100 screenshots a month, no card).\n2. Open **Capture page as PDF (CurlShot)**, create a **Bearer Auth** credential and paste only the access key. The exported workflow contains no key.\n3. Connect your Google Drive credential and pick a folder in **Save PDF to Google Drive**.\n4. Edit the `urls` list.\n\nWant an image instead? Change `format` to `png`, `jpeg` or `webp`. Options: https://curlshot.com/docs/options",
+        "height": 420,
+        "width": 420,
+        "color": 4
+      },
+      "id": "77e77d6b-95ba-4a15-a5c2-9ab0be326e45",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Run workflow": {
+      "main": [
+        [
+          {
+            "node": "Pages to archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday at 06:00": {
+      "main": [
+        [
+          {
+            "node": "Pages to archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pages to archive": {
+      "main": [
+        [
+          {
+            "node": "One item per page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per page": {
+      "main": [
+        [
+          {
+            "node": "Capture page as PDF (CurlShot)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture page as PDF (CurlShot)": {
+      "main": [
+        [
+          {
+            "node": "Save PDF to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
