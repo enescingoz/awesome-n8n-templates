@@ -1,0 +1,179 @@
+{
+  "name": "Crypto price-level alerts to Telegram (fire once, re-arm)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "17566533-72a9-57af-ba80-982da637ebd4",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "* * * * *"
+            }
+          ]
+        }
+      },
+      "id": "2095ca7d-79b8-5231-992a-828301fb2327",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7fc9de21-d7fe-56bd-92f5-6c0006bdeb87",
+              "name": "telegramBotToken",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "3427f1cb-ab89-55d8-8b4e-d17c3e769b0d",
+              "name": "telegramChatId",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "d4f68c5f-9b5d-5857-84b0-1c8a8e54aa92",
+              "name": "discordWebhookUrl",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "15b26699-a561-5832-a61d-a3a221473b7c",
+              "name": "telegramApiBase",
+              "value": "https://api.telegram.org",
+              "type": "string"
+            },
+            {
+              "id": "0f5dcf74-38f2-5f52-8935-ddef5f3c07c5",
+              "name": "levels",
+              "value": "BTCUSDT>100000, BTCUSDT<80000, ETHUSDT>4000, SOLUSDT<120",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "787f7dac-efac-5948-a4c3-f90d6c9ee1c8",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Config').first().json;\nconst http = (url, opts = {}) => this.helpers.httpRequest({ url, json: true, timeout: 20000, ...opts });\nconst state = $getWorkflowStaticData('global'); // persists between *active* (scheduled) runs\nconst fmt = (n, d = 2) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d });\n\nconst rules = String(cfg.levels).split(',').map(s => s.trim()).filter(Boolean).map(s => {\n  const m = s.match(/^([A-Z0-9]+)\\s*([<>])\\s*([\\d.]+)$/i);\n  if (!m) throw new Error(`Bad level \"${s}\". Use e.g. BTCUSDT>100000`);\n  return { key: s, sym: m[1].toUpperCase(), op: m[2], lvl: Number(m[3]) };\n});\nconst syms = [...new Set(rules.map(r => r.sym))];\nconst prices = await http(`https://data-api.binance.vision/api/v3/ticker/price?symbols=${encodeURIComponent(JSON.stringify(syms))}`);\nconst px = Object.fromEntries(prices.map(p => [p.symbol, Number(p.price)]));\nstate.fired = state.fired || {};\nconst out = [];\nfor (const r of rules) {\n  const p = px[r.sym]; const hit = r.op === '>' ? p > r.lvl : p < r.lvl;\n  // not marked as fired here: Notify sets fired[key] only after the message was delivered\n  if (hit && !state.fired[r.key]) out.push({ json: { text: `🎯 <b>${r.sym}</b> ${r.op === '>' ? 'above' : 'below'} ${fmt(r.lvl, 8)} — now ${fmt(p, 8)}`, commit: [{ path: ['fired', r.key], value: true }] } });\n  if (!hit) state.fired[r.key] = false;\n}\nreturn out.length ? out : [{ json: { info: 'No level crossed', prices: px } }];"
+      },
+      "id": "cd19c224-13ba-5d7d-8574-f205c1dfc49a",
+      "name": "Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sends every incoming item's `text` to Telegram and/or Discord.\n// Leave tokens empty to run in dry-run mode (messages are returned, not sent).\n// Reliability: the Check node never marks an alert as \"done\" itself. It attaches a\n// `commit` list of state updates to each alert; they are applied here ONLY after the\n// message was delivered. A failed send is reported and retried on the next run.\nconst cfg = $('Config').first().json;\nconst state = $getWorkflowStaticData('global');\nconst apply = (ops = []) => {\n  for (const { path, value, op } of ops) {\n    let o = state;\n    for (const k of path.slice(0, -1)) o = o[k] = o[k] || {};\n    const last = path[path.length - 1];\n    if (op === 'push') (o[last] = o[last] || []).push(value); else o[last] = value;\n  }\n};\nconst out = [];\nlet failed = 0;\nconst deferred = [];\nfor (const item of $input.all()) {\n  const { text, commit, commitIfAllSent } = item.json;\n  if (commitIfAllSent) deferred.push(commitIfAllSent);\n  if (!text) { apply(commit); continue; }\n  const sent = [];\n  try {\n    if (cfg.telegramBotToken && cfg.telegramChatId) {\n      const base = cfg.telegramApiBase || 'https://api.telegram.org';\n      const r = await this.helpers.httpRequest({\n        method: 'POST', url: `${base}/bot${cfg.telegramBotToken}/sendMessage`, json: true,\n        body: { chat_id: cfg.telegramChatId, text, parse_mode: 'HTML', disable_web_page_preview: true },\n      });\n      if (r && r.ok === false) throw new Error(`Telegram: ${r.description || 'not ok'}`);\n      sent.push('telegram');\n    }\n    if (cfg.discordWebhookUrl) {\n      await this.helpers.httpRequest({\n        method: 'POST', url: cfg.discordWebhookUrl, json: true,\n        body: { content: text.replace(/<\\/?b>/g, '**').replace(/<[^>]+>/g, '') },\n      });\n      sent.push('discord');\n    }\n  } catch (e) {\n    failed++;\n    out.push({ json: { text, sent, error: String(e.message || e), willRetry: true } });\n    continue;\n  }\n  apply(commit); // delivered (or dry-run): now it is safe to remember it\n  out.push({ json: { text, sent, dryRun: sent.length === 0 } });\n}\nif (!failed) deferred.forEach(apply);\nreturn out;"
+      },
+      "id": "57ba2702-2489-5b19-9571-f5bb97e46292",
+      "name": "Notify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Price level alerts\nDefine levels like `BTCUSDT>100000, ETHUSDT<2500`. Alerts once when price crosses the level, re-arms when it crosses back.\n\nUses Binance public market data (data-api.binance.vision), no key, works from regions where binance.com is blocked.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "70080224-77c4-54ec-bc47-04394f82d1f5",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -360
+      ]
+    }
+  ],
+  "connections": {
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
