@@ -1,0 +1,196 @@
+{
+  "name": "Heartbeat Watchdog for Scheduled Jobs",
+  "id": "hbWatchdog24Oct26",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Heartbeat watchdog for scheduled jobs\n\nAlerts when a cron job, scheduled script or another workflow stops sending its heartbeat.\n\n**How it works**\n1. Each job POSTs `{\"job\": \"nightly-export\", \"interval_minutes\": 60}` to the webhook at the end of every successful run.\n2. Every minute, the check marks a job **late** when no heartbeat arrived for more than 1.5 times its interval, and **down** after more than 2 times.\n3. You get one alert per state change (late, down, back to normal), not one per minute.\n\n**Setup**\n- Activate the workflow: heartbeat timestamps are kept in workflow static data, which n8n only saves for active (production) executions.\n- Replace the *Send alert* node with Slack, Email, Telegram or any other notification node. Use `{{ $json.message }}` as the text.\n- Add a job by sending its first heartbeat. Remove a job by clearing the workflow static data.\n\n**Limits**\n- A watchdog inside the same n8n instance cannot tell you that this instance is down. Watch the watchdog from outside (an external uptime or heartbeat monitor).\n- With a check every minute, an alert arrives up to about 1 minute after the threshold. Timing table for each interval: https://datvero.com/heartbeat-detection-envelope.html\n",
+        "height": 560,
+        "width": 520,
+        "color": 5
+      },
+      "id": "fe96d66e-8c1d-5238-bbb6-646373cac997",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "heartbeat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "45b9b9d6-862a-5ed0-8636-d71cbb35d2b4",
+      "name": "Heartbeat webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ],
+      "webhookId": "8ddbec68-94fc-5357-a3e6-f0f3f7b5464e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Record one heartbeat. Body: {\"job\": \"nightly-export\", \"interval_minutes\": 60}\nconst body = $input.first().json.body || {};\nconst job = String(body.job || '').trim().slice(0, 100);\nconst interval = Number(body.interval_minutes);\nif (!job || !Number.isFinite(interval) || interval <= 0 || interval > 10080) {\n  return [{ json: { ok: false, error: 'Send {\"job\": \"<name>\", \"interval_minutes\": <1-10080>}' } }];\n}\nconst data = $getWorkflowStaticData('global');\ndata.jobs = data.jobs || {};\nconst previous = data.jobs[job] || {};\nconst recovered = previous.state === 'late' || previous.state === 'down';\ndata.jobs[job] = { last: Date.now(), interval, state: 'ok' };\nreturn [{ json: { ok: true, job, interval_minutes: interval, recovered, previous_state: previous.state || null, received_at: new Date().toISOString() } }];\n"
+      },
+      "id": "d168dc67-c46b-5603-89a9-8d6db60da3f0",
+      "name": "Record heartbeat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "45c7fb3b-5b6c-5d6e-8f35-8a856a259291",
+      "name": "Reply to the job",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// A heartbeat that arrives after a late or down state is reported once as a recovery.\nconst item = $input.first().json;\nif (!item.recovered) return [];\nreturn [{ json: { job: item.job, state: 'ok', previous_state: item.previous_state, message: `${item.job} is back to normal: heartbeat received at ${item.received_at}` } }];\n"
+      },
+      "id": "f878ab56-06ab-5dd0-a3db-3da92cbc6fb7",
+      "name": "Recovered?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "0f50374e-8fe3-5713-a77d-c5470be1c324",
+      "name": "Every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Runs every minute. A job is late after 1.5x its interval and down after 2x,\n// strict comparisons, like the Datvero heartbeat detection envelope.\nconst LATE = 1.5, DOWN = 2;\nconst data = $getWorkflowStaticData('global');\nconst jobs = data.jobs || {};\nconst now = Date.now();\nconst out = [];\nfor (const [job, j] of Object.entries(jobs)) {\n  const elapsedMin = (now - j.last) / 60000;\n  const state = elapsedMin > j.interval * DOWN ? 'down' : elapsedMin > j.interval * LATE ? 'late' : 'ok';\n  if (state !== j.state && state !== 'ok') {\n    out.push({ json: { job, state, previous_state: j.state, elapsed_minutes: Math.round(elapsedMin * 10) / 10,\n      interval_minutes: j.interval, last_heartbeat: new Date(j.last).toISOString(),\n      message: `${job} is ${state}: no heartbeat for ${Math.round(elapsedMin)} min (expected every ${j.interval} min)` } });\n  }\n  j.state = state;\n}\nreturn out;\n"
+      },
+      "id": "54f8454c-9d47-5269-83ec-600b292699d5",
+      "name": "Check late and down jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        260
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "87896287-5eda-5854-b765-1465807deabe",
+      "name": "Send alert (replace me)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        740,
+        140
+      ]
+    }
+  ],
+  "connections": {
+    "Heartbeat webhook": {
+      "main": [
+        [
+          {
+            "node": "Record heartbeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record heartbeat": {
+      "main": [
+        [
+          {
+            "node": "Reply to the job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to the job": {
+      "main": [
+        [
+          {
+            "node": "Recovered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recovered?": {
+      "main": [
+        [
+          {
+            "node": "Send alert (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Check late and down jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check late and down jobs": {
+      "main": [
+        [
+          {
+            "node": "Send alert (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
