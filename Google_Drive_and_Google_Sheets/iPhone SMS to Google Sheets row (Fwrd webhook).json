@@ -1,0 +1,93 @@
+{
+  "name": "iPhone SMS to Google Sheets row (Fwrd webhook)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fwrd-sms-sheet",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "8c1d3f60-1a7e-4c55-9b0e-2f4b6d1a9e01",
+      "name": "Fwrd webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "8c1d3f60-1a7e-4c55-9b0e-2f4b6d1a9e02"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fwrd posts {\"content\": \"...\", \"text\": \"...\"} (the same message twice) and adds \"sender\" only when Include Who Sent It is on.\nconst CODE = /(?<!\\d)(\\d{3,4})[ -]?(\\d{3,4})(?!\\d)|(?<!\\d)(\\d{4,8})(?!\\d)/;\n\nreturn $input.all().map((item) => {\n  const body = item.json.body ?? {};\n  const text = typeof body.content === 'string' ? body.content : '';\n  const m = text.match(CODE);\n  return {\n    json: {\n      received_at: new Date().toISOString(),\n      sender: body.sender ?? '',\n      code: m ? (m[3] ?? m[1] + m[2]) : '',\n      text,\n    },\n  };\n});"
+      },
+      "id": "8c1d3f60-1a7e-4c55-9b0e-2f4b6d1a9e03",
+      "name": "Shape the row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "PASTE_YOUR_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "8c1d3f60-1a7e-4c55-9b0e-2f4b6d1a9e04",
+      "name": "Append to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Fwrd webhook": {
+      "main": [
+        [
+          {
+            "node": "Shape the row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape the row": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
