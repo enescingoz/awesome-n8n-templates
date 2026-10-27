@@ -1,0 +1,159 @@
+{
+  "name": "Set up an Instagram comment-to-DM automation for your next post (CommentKeyword)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e01",
+      "name": "Run it",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1c3e5f7-1111-4c2a-9b1d-000000000001",
+              "name": "keyword",
+              "value": "GUIDE",
+              "type": "string"
+            },
+            {
+              "id": "a1c3e5f7-1111-4c2a-9b1d-000000000002",
+              "name": "dmMessage",
+              "value": "Hi {{namefirst}}! Here is the free guide: https://example.com/guide",
+              "type": "string"
+            },
+            {
+              "id": "a1c3e5f7-1111-4c2a-9b1d-000000000003",
+              "name": "publicReply",
+              "value": "Sent! Check your DMs",
+              "type": "string"
+            },
+            {
+              "id": "a1c3e5f7-1111-4c2a-9b1d-000000000004",
+              "name": "target",
+              "value": "next_post",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e02",
+      "name": "Your automation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://commentkeyword.com/api/keywords",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  keyword: $json.keyword,\n  dmMessages: [$json.dmMessage],\n  commentReplies: $json.publicReply ? [$json.publicReply] : [],\n  publicReplyEnabled: Boolean($json.publicReply),\n  scope: $json.target === 'all_posts' ? 'global' : 'post_specific',\n  includeNextPost: $json.target !== 'all_posts'\n}) }}",
+        "options": {}
+      },
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e03",
+      "name": "Create the automation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d4f6a8-2222-4d3b-8c2e-000000000001",
+              "name": "publicId",
+              "value": "={{ $json.data.publicId }}",
+              "type": "string"
+            },
+            {
+              "id": "b2d4f6a8-2222-4d3b-8c2e-000000000002",
+              "name": "keyword",
+              "value": "={{ $json.data.keyword }}",
+              "type": "string"
+            },
+            {
+              "id": "b2d4f6a8-2222-4d3b-8c2e-000000000003",
+              "name": "active",
+              "value": "={{ $json.data.isActive }}",
+              "type": "boolean"
+            },
+            {
+              "id": "b2d4f6a8-2222-4d3b-8c2e-000000000004",
+              "name": "status",
+              "value": "={{ $json.data.includeNextPost ? 'Waiting for your next post or reel' : 'Live on all posts' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e04",
+      "name": "Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Comment KEYWORD, get a DM\nPeople comment a word on your Instagram post or reel (\"comment GUIDE\") and get your link by DM, automatically. This workflow creates that automation in [CommentKeyword](https://commentkeyword.com/instagram-automation-api) through Instagram's official API.\n\nWith `target` = `next_post` it waits for the next post or reel you publish and attaches to it, so you don't need a post ID. Use `all_posts` to listen on every post.\n\n### Setup (2 minutes)\n1. Create a free CommentKeyword account and connect your Instagram professional account.\n2. In **Settings → API**, create a token with `keywords:read` and `keywords:write`. API access is included on the Free plan.\n3. In **Create the automation**, add a **Header Auth** credential: name `Authorization`, value `Bearer YOUR_TOKEN`.\n4. Edit **Your automation**, then run the workflow.",
+        "height": 520,
+        "width": 440
+      },
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e05",
+      "name": "About",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-520, 120]
+    },
+    {
+      "parameters": {
+        "content": "### Edit these\n- **keyword**: one short word. It matches as a whole word, so GUIDE doesn't fire on \"guidelines\".\n- **dmMessage**: the DM. `{{namefirst}}`, `{{name}}` and `{{handle}}` are filled in per person.\n- **publicReply**: reply under the comment. Leave empty for none.\n- **target**: `next_post` or `all_posts`.\n\nThis messages real people who comment the word, so check the text before you run it.",
+        "height": 300,
+        "width": 340,
+        "color": 5
+      },
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e06",
+      "name": "Edit these",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [140, -60]
+    },
+    {
+      "parameters": {
+        "content": "### Errors\n- **401**: wrong or revoked token.\n- **403**: the token lacks `keywords:write`.\n- **409**: the word is already active on the same posts, or the plan's active-keyword limit is reached.\n\nAPI reference: https://commentkeyword.com/api-docs",
+        "height": 220,
+        "width": 340,
+        "color": 7
+      },
+      "id": "6f0d2a51-3c1e-4b7a-9a55-0d3f6c2b8e07",
+      "name": "Errors",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [520, 480]
+    }
+  ],
+  "connections": {
+    "Run it": {
+      "main": [[{ "node": "Your automation", "type": "main", "index": 0 }]]
+    },
+    "Your automation": {
+      "main": [[{ "node": "Create the automation", "type": "main", "index": 0 }]]
+    },
+    "Create the automation": {
+      "main": [[{ "node": "Result", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
