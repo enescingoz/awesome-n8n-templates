@@ -340,7 +340,7 @@ Discover 10 Notion automation templates for n8n. Store positive feedback from Ty
 
 ### How can I automate Slack with n8n?
 
-Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered summaries, build Slack bots using Google Gemini, automate customer support ticketing with Linear, enhance security operations with Qualys integration, enrich Pipedrive CRM data, create IT knowledge base chatbots, track sentiment on support issues, and manage certificates via Venafi Cloud.
+Explore 10 Slack automation templates for n8n. Monitor RSS feeds with AI-powered summaries, build Slack bots using Google Gemini, automate customer support ticketing with Linear, enhance security operations with Qualys integration, enrich Pipedrive CRM data, create IT knowledge base chatbots, track sentiment on support issues, and manage certificates via Venafi Cloud.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -353,6 +353,7 @@ Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered 
 | Sentiment Analysis Tracking on Support Issues with Linear and Slack | Tracks sentiment on support issues by integrating with Linear and Slack, performing sentiment analysis using OpenAI on Linear comments, and notifying relevant Slack channels. | Support | [Link to Template](Slack/Sentiment%20Analysis%20Tracking%20on%20Support%20Issues%20with%20Linear%20and%20Slack.json) |
 | Slack slash commands AI Chat Bot | Implements an AI chatbot accessible via Slack slash commands, processing user commands, interacting with an AI model, and responding within Slack. | IT | [Link to Template](Slack/Slack%20slash%20commands%20AI%20Chat%20Bot.json) |
 | Venafi Cloud Slack Cert Bot | Provides a Slack bot that interacts with Venafi Cloud for certificate management, allowing users to check certificate status, receive alerts, or request certificate actions via Slack. | Security | [Link to Template](Slack/Venafi%20Cloud%20Slack%20Cert%20Bot.json) |
+| Send new SAM.gov contract opportunities to Slack every morning | Posts new federal contract notices that match your keywords, NAICS codes and states to Slack each morning, through a paid Apify Actor. | Sales | [Link to Template](Slack/Send%20new%20SAM.gov%20contract%20opportunities%20to%20Slack%20every%20morning.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
