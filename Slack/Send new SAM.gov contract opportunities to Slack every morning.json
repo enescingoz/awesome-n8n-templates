@@ -1,0 +1,106 @@
+{
+  "name": "Send new SAM.gov contract opportunities to Slack every morning",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Send new SAM.gov contract opportunities to Slack every morning\n\nEvery weekday at 7:00 this workflow finds federal contract notices posted on SAM.gov since the last run that match your states, NAICS codes and keywords, and posts each one to a Slack channel with its deadline, set aside and link.\n\nEach notice also says who won similar work at that agency before (from USAspending), so you can size up the competition before you open it.\n\n### How it works\n1. **Schedule** runs it each weekday morning.\n2. **Your filters** holds the states, NAICS codes and keywords to watch.\n3. **Find new notices** calls the \"SAM.gov Scraper: Government Contracts, RFPs, Past Award Winners\" Actor on Apify, which reads the daily public SAM.gov extract and remembers what it already sent you, so each run posts only new notices.\n4. **Post to Slack** sends one message per notice.\n\n### Set up\n1. Create an Apify account and copy your API token from Settings, API and Integrations.\n2. In n8n, add a Header Auth credential named Apify with header `Authorization` and value `Bearer YOUR_TOKEN`.\n3. Connect your Slack account and pick a channel in **Post to Slack**.\n4. Edit **Your filters**.\n\n### Requirements\nAn Apify account (the Actor is paid per notice returned, a few cents a day for most filters) and a Slack workspace.\n\n### Customize\nSwap Slack for email, Teams or Google Sheets. Add `setAsideCodes` such as SBA or SDVOSBC, or `agencies` such as \"Army\", in **Your filters**.",
+        "height": 760,
+        "width": 460,
+        "color": 4
+      },
+      "id": "3f2b7f2e-1a2b-4c3d-8e9f-000000000001",
+      "name": "About this template",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-520, -160]
+    },
+    {
+      "parameters": {
+        "content": "### Your filters\nUse two-letter state codes, NAICS codes or prefixes (5415 covers 541511 to 541519) and plain keywords. Leave a list empty to skip that filter.",
+        "height": 200,
+        "width": 300
+      },
+      "id": "3f2b7f2e-1a2b-4c3d-8e9f-000000000002",
+      "name": "Note on filters",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, -160]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "3f2b7f2e-1a2b-4c3d-8e9f-000000000003",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "f1", "name": "states", "value": "[\"VA\", \"MD\"]", "type": "array" },
+            { "id": "f2", "name": "naicsCodes", "value": "[\"5415\"]", "type": "array" },
+            { "id": "f3", "name": "keywords", "value": "[\"software\", \"cloud\"]", "type": "array" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3f2b7f2e-1a2b-4c3d-8e9f-000000000004",
+      "name": "Your filters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/plainrecordlabs~federal-contract-opportunities/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ states: $json.states, naicsCodes: $json.naicsCodes, keywords: $json.keywords, postedWithinDays: 4, onlyNew: true, openOnly: true, includeDescription: false, maxResults: 50 }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "3f2b7f2e-1a2b-4c3d-8e9f-000000000005",
+      "name": "Find new notices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 100],
+      "credentials": {
+        "httpHeaderAuth": { "id": "", "name": "Apify" }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "__rl": true, "mode": "list", "value": "" },
+        "text": "=*{{ $json.title }}*\n{{ $json.subTier }}, {{ $json.office }}\nType: {{ $json.noticeType }} | NAICS {{ $json.naicsCode }} | Set aside: {{ $json.setAside || 'none' }} | State: {{ $json.state || 'n/a' }}\nDue {{ $json.responseDeadline }} ({{ $json.daysToDeadline }} days)\nPast awards at this agency for this NAICS: {{ $json.marketHistory ? $json.marketHistory.contractAwards : 'n/a' }}\n{{ $json.samUrl }}",
+        "otherOptions": {}
+      },
+      "id": "3f2b7f2e-1a2b-4c3d-8e9f-000000000006",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [660, 100]
+    }
+  ],
+  "connections": {
+    "Schedule": { "main": [[{ "node": "Your filters", "type": "main", "index": 0 }]] },
+    "Your filters": { "main": [[{ "node": "Find new notices", "type": "main", "index": 0 }]] },
+    "Find new notices": { "main": [[{ "node": "Post to Slack", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
