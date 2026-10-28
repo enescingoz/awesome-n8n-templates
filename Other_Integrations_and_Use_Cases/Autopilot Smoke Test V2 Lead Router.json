@@ -1,0 +1,117 @@
+{
+  "name": "Autopilot Smoke Test V2 Lead Router",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "smoke-lead"
+      },
+      "id": "node-0-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {}
+      },
+      "id": "node-1-normalize",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {}
+      },
+      "id": "node-2-route",
+      "name": "Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "node-3-record",
+      "name": "Record",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Full documented version\n\nThis community template is the free version. The complete documented version (setup guide, node-by-node walkthrough, error handling) is available on Polar.\n\nBuy it here: https://polar.sh/workflowforge/checkout?product_id=smoke-test-001\n\nVisit the Polar buy link above for the full documented version.",
+        "height": 320,
+        "width": 460,
+        "color": 4
+      },
+      "id": "autopilot-sticky-polar-buy-link",
+      "name": "Full Version - Polar Buy Link",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        -220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route": {
+      "main": [
+        [
+          {
+            "node": "Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateId": 0,
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "pinData": {}
+}
