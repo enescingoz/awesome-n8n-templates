@@ -1,0 +1,197 @@
+{
+  "name": "Daily RSS Digest to Telegram with OpenAI Summary",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a1457b46-b71d-4dd6-bc2f-43f9552ff37d",
+      "name": "Every Morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://hnrss.org/frontpage"
+      },
+      "id": "918cd368-f660-4dc8-8198-831e8aea76cf",
+      "name": "Read RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only items published in the last 24 hours and build one text block\nconst cutoff = Date.now() - 24 * 60 * 60 * 1000;\nconst fresh = $input.all()\n  .map(i => i.json)\n  .filter(j => {\n    const t = Date.parse(j.isoDate || j.pubDate || '');\n    return !isNaN(t) && t >= cutoff;\n  })\n  .slice(0, 40);\nif (fresh.length === 0) {\n  return [];\n}\nconst headlines = fresh\n  .map((j, k) => `${k + 1}. ${j.title} (${j.link})`)\n  .join('\n');\nreturn [{ json: { count: fresh.length, headlines } }];"
+      },
+      "id": "0849885b-f4fa-4a3a-84b3-13802dae90ff",
+      "name": "Keep Last 24h",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here are today's headlines ({{ $json.count }} items):\n\n{{ $json.headlines }}\n\nSummarise them into exactly 5 short bullet points. Start each line with a dash. Keep the most important link in brackets at the end of the line.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a concise news editor. Reply with plain text only, no intro and no outro."
+            }
+          ]
+        }
+      },
+      "id": "43964ab3-c62b-4e1c-aac0-0a1256d7f0b9",
+      "name": "Summarise Headlines",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "92cd1dd4-fd85-4e35-a4f1-23a44834d61e",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        520
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_ME",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=Daily digest\n\n{{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "c6bbabf7-5ca3-4b9b-8331-fe1a45cbdbce",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_ME",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "width": 520,
+        "height": 240,
+        "content": "## Daily RSS digest to Telegram\n\n1. In **Read RSS Feed** put your own RSS URL.\n2. Create an **OpenAI** credential and select it in **OpenAI Chat Model**.\n3. Create a **Telegram** bot with @BotFather, add it as a credential, and set your **chat id** in **Send to Telegram**.\n4. Adjust the time in **Every Morning** (cron, default 08:00) and activate the workflow.\n\nIf nothing new was published in 24h, the run ends quietly without a message.\n\nTemplate by GL Tools - https://www.gltools.de"
+      },
+      "id": "8a89d584-a769-429e-a4b8-d0f8cc27341c",
+      "name": "Setup Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every Morning": {
+      "main": [
+        [
+          {
+            "node": "Read RSS Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read RSS Feed": {
+      "main": [
+        [
+          {
+            "node": "Keep Last 24h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Last 24h": {
+      "main": [
+        [
+          {
+            "node": "Summarise Headlines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarise Headlines",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarise Headlines": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

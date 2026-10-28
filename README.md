@@ -173,6 +173,7 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 | Translate Telegram audio messages with AI (55 supported languages) | Receives voice messages, transcribes them, and sends back translations in over 50 languages. | Support | [Link to Template](Telegram/Translate%20Telegram%20audio%20messages%20with%20AI%20(55%20supported%20languages).json) |
 | Bitcoin price alert to Telegram with CoinPaprika | Polls the keyless CoinPaprika API on a schedule and sends a Telegram alert when Bitcoin moves 5% or more in 24h. No API key or signup required; swap the coin id to track any asset. | Finance | [Link to Template](Telegram/Bitcoin%20price%20alert%20to%20Telegram%20with%20CoinPaprika.json) |
 | Empower Your AI Chatbot with Long-Term Memory and Dynamic Tool Routing | External workflow enhancing an AI chatbot with long-term memory and dynamic tool routing capabilities. | Support | [Link to Template](https://n8n.io/workflows/3025-empower-your-ai-chatbot-with-long-term-memory-and-dynamic-tool-routing/) |
+| Daily RSS Digest to Telegram with OpenAI Summary | Reads an RSS feed every morning, keeps the items from the last 24 hours, lets OpenAI condense the headlines into 5 bullet points and sends the digest to a Telegram chat. | Ops | [Link to Template](Telegram/Daily%20RSS%20Digest%20to%20Telegram%20with%20OpenAI%20Summary.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
