@@ -1,0 +1,342 @@
+{
+  "name": "Send Telegram alerts when followed tennis players start, win a set or finish",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Live tennis score alerts to Telegram\n\n### How it works\nEvery 20 minutes the workflow reads the live matches from Live Tennis API and keeps those of the players you follow. It compares each match with the previous run. Telegram gets a message when a match goes live, when a set ends and when the match finishes. A match that leaves the live list is read again until it shows its final score and winner, retirements and walkovers included. It is read every run for an hour, then less often, for up to a week. Clubs and coaches get a ping instead of refreshing a scores page.\n\n### Setup\n1. Create a **Header Auth** credential. Its Name is `X-API-Key` and its Value is your Live Tennis API key. Select it on every HTTP Request node.\n2. Create a Telegram bot with @BotFather and add a **Telegram** credential with its token.\n3. In **Config**, set `followedPlayerIds` (comma-separated ids, found with `GET /players?search=`) and `telegramChatId`.\n4. Activate the workflow. It remembers what it saw only between active runs, not manual tests.\n\n### Customization\nChange the schedule to poll faster on a paid plan. Edit the message text in the two Code nodes.\n\nThe free plan allows 100 requests a day. Every 20 minutes is 72. A match awaiting its result adds three in its first hour, then one an hour for a day, then four a day.\n\nTested on n8n 2.44.6.",
+        "height": 650,
+        "width": 520
+      },
+      "id": "43858a16-42a4-525a-91ab-8500bf78611b",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Read and compare\nOne request lists every live match. The Code node keeps followed players and finds what changed since the last run.",
+        "height": 300,
+        "width": 880,
+        "color": 7
+      },
+      "id": "ab38caaf-68b4-5416-8527-0e1ecc634fcf",
+      "name": "Read and compare",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Finished matches\nA match that left the live list is read again until its result is in, for up to a week.",
+        "height": 280,
+        "width": 480,
+        "color": 7
+      },
+      "id": "15ad7ccf-f038-5b8a-b904-e23f93196b99",
+      "name": "Finished matches",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        960,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 20
+            }
+          ]
+        }
+      },
+      "id": "5b9b6647-8d0c-54d0-b334-e10979d08b0a",
+      "name": "Every 20 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5351c946-4f09-576e-83ae-436b9337a32c",
+              "name": "followedPlayerIds",
+              "value": "34, 13, 55, 889",
+              "type": "string"
+            },
+            {
+              "id": "3a2c5358-bb8a-589f-abdc-7c284ced3228",
+              "name": "telegramChatId",
+              "value": "YOUR_TELEGRAM_CHAT_ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e95733f3-cb82-512f-917e-502bf5b3d867",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.livetennisapi.com/api/public/v1/matches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "live"
+            },
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "offset",
+                    "value": "={{ $pageCount * 200 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.meta || !$response.body.meta.has_more }}",
+              "limitPagesFetched": true,
+              "maxRequests": 20,
+              "requestInterval": 2500
+            }
+          }
+        }
+      },
+      "id": "a7449d70-a327-5316-becb-b5efb9376ab5",
+      "name": "Get live matches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        340,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Config').first().json;\nconst followed = new Set(String(cfg.followedPlayerIds || '').split(',')\n  .map(s => Number(s.trim())).filter(n => n > 0));\nconst records = $input.all()\n  .flatMap(i => Array.isArray(i.json.data) ? i.json.data : [i.json])\n  .filter(r => r && r.id);\nfunction setScores(score) {\n  const g = score && score.games;\n  if (!Array.isArray(g) || g.length !== 2 || !Array.isArray(g[0])) return [];\n  return g[0].map((x, i) => `${x}-${g[1][i]}`);\n}\n\n// What the last run saw. Kept between runs only when the workflow is active.\nconst state = $getWorkflowStaticData('global');\nconst seen = state.liveMatches || {};\nconst now = {};\nconst out = [];\nconst total = s => s[0] + s[1];\nfor (const m of records) {\n  const p1 = (m.players && m.players.p1) || {};\n  const p2 = (m.players && m.players.p2) || {};\n  if (!followed.has(p1.id) && !followed.has(p2.id)) continue;\n  const names = `${p1.name} v ${p2.name}`;\n  const where = [m.tournament, m.round].filter(Boolean).join(', ');\n  const before = seen[m.id];\n  const read = (m.score && Array.isArray(m.score.sets)) ? m.score.sets : null;\n  if (!before) {\n    now[m.id] = { sets: read || [0, 0], names, where };\n    const line = setScores(m.score).join(' ');\n    out.push({ json: { kind: 'started', matchId: m.id,\n      text: `Live now: ${names} (${where}).` + (line ? ` Score ${line}.` : '') } });\n    continue;\n  }\n  // No score this run, or a correction that took a set back: keep what we had, so the same\n  // set is never announced twice. A correction that keeps the count is taken as it is.\n  if (!read || total(read) < total(before.sets)) {\n    now[m.id] = { sets: before.sets, names, where };\n    continue;\n  }\n  now[m.id] = { sets: read, names, where };\n  if (total(read) === total(before.sets)) continue;\n  const gained1 = read[0] > before.sets[0], gained2 = read[1] > before.sets[1];\n  const done = setScores(m.score).slice(0, total(read)).join(' ');\n  const who = gained1 === gained2 ? 'Sets move on' : `Set to ${gained1 ? p1.name : p2.name}`;\n  out.push({ json: { kind: 'set', matchId: m.id,\n    text: `${who}: ${names}, sets ${read[0]}-${read[1]}` + (done ? ` (${done})` : '') + `. ${where}.` } });\n}\n// A followed match that left the live list has ended, or its scores have paused. Keep it and\n// read it until it shows a result: every run for the first hour, then hourly for a day, then\n// every six hours, for up to a week. That keeps a slow result from eating the daily allowance.\nconst HOUR = 3600 * 1000;\nfor (const id of Object.keys(seen)) {\n  if (now[id]) continue;\n  const gone = seen[id].goneSince || Date.now();\n  const age = Date.now() - gone;\n  if (age > 7 * 24 * HOUR) continue;\n  now[id] = { ...seen[id], goneSince: gone };\n  const every = age < HOUR ? 0 : age < 24 * HOUR ? HOUR : 6 * HOUR;\n  if (seen[id].checkedAt && Date.now() - seen[id].checkedAt < every) continue;\n  now[id].checkedAt = Date.now();\n  out.push({ json: { kind: 'ended', matchId: Number(id) } });\n}\nstate.liveMatches = now;\nreturn out;"
+      },
+      "id": "29d4002b-386c-5568-be21-970685b9065d",
+      "name": "Find starts, sets and finishes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4f5552cf-51b8-515b-8d37-bad4bb3cb790",
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "ended",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2f1dd4de-8a96-5133-81b1-d7a9b978acd1",
+      "name": "Did the match end?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.livetennisapi.com/api/public/v1/matches/{{ $json.matchId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "06713833-e6c4-5ef1-a123-f0f9e681e8c4",
+      "name": "Get the final result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        520
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function setScores(score) {\n  const g = score && score.games;\n  if (!Array.isArray(g) || g.length !== 2 || !Array.isArray(g[0])) return [];\n  return g[0].map((x, i) => `${x}-${g[1][i]}`);\n}\n\nfunction finalLine(m, winnerFirst) {\n  const sets = setScores(m.score)\n    .map(x => winnerFirst && m.winner === 2 ? x.split('-').reverse().join('-') : x);\n  const last = sets[sets.length - 1];\n  if (m.outcome === 'completed' && sets.length >= 3 && (last === '1-0' || last === '0-1')) {\n    sets[sets.length - 1] = `${last} (match tiebreak)`;\n  }\n  return sets.join(' ');\n}\n\nconst state = $getWorkflowStaticData('global');\nconst live = state.liveMatches || {};\nconst out = [];\nfor (const item of $input.all()) {\n  const m = item.json;\n  // Not finished yet: it stays on the list and is read again next run.\n  if (m.status !== 'completed') continue;\n  const p1 = m.players.p1, p2 = m.players.p2;\n  const where = [m.tournament, m.round].filter(Boolean).join(', ');\n  if (!m.winner) {\n    // Over, but no winner published yet: say so once, and keep reading until there is one.\n    if (live[m.id] && !live[m.id].noResultSent) {\n      live[m.id].noResultSent = true;\n      out.push({ json: { text: `Ended without a result yet: ${p1.name} v ${p2.name}. ${where}.` } });\n    }\n    continue;\n  }\n  delete live[m.id];\n  const won = m.winner === 1 ? p1 : p2, lost = m.winner === 1 ? p2 : p1;\n  const how = m.outcome === 'retired' ? ' (retired)' : m.outcome === 'walkover' ? ' (walkover)' : '';\n  const line = finalLine(m, true);\n  out.push({ json: { text: `Final: ${won.name} beat ${lost.name}` + (line ? ` ${line}` : '') +\n    `${how}. ${where}.` } });\n}\nstate.liveMatches = live;\nreturn out;"
+      },
+      "id": "3c2ca547-a322-57ad-b513-b70631163df7",
+      "name": "Write the result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Config').first().json.telegramChatId }}",
+        "text": "={{ $json.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "8ce217ce-b683-5436-a783-548475196752",
+      "name": "Send Telegram message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        300
+      ],
+      "webhookId": "acde1c41-0f1e-5b31-9380-cc7fe1e3843b"
+    }
+  ],
+  "connections": {
+    "Every 20 minutes": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get live matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get live matches": {
+      "main": [
+        [
+          {
+            "node": "Find starts, sets and finishes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find starts, sets and finishes": {
+      "main": [
+        [
+          {
+            "node": "Did the match end?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Did the match end?": {
+      "main": [
+        [
+          {
+            "node": "Get the final result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Telegram message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the final result": {
+      "main": [
+        [
+          {
+            "node": "Write the result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the result": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -150,6 +150,7 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| Send Telegram alerts when followed tennis players start, win a set or finish | Sends a Telegram message when a tennis player you follow starts a match, wins a set or finishes, using the Live Tennis API live scores. | Ops | [Link to Template](Telegram/Send%20Telegram%20alerts%20when%20followed%20tennis%20players%20start%2C%20win%20a%20set%20or%20finish.json) |
 | RSS Keyword Alert to Telegram | Polls RSS feeds and sends a Telegram alert only when an entry matches a keyword you choose, with duplicate-entry protection. | Ops | [Link to Template](Telegram/RSS%20Keyword%20Alert%20to%20Telegram.json) |
 | Agentic Telegram AI bot with LangChain nodes and new tools | An advanced Telegram bot leveraging LangChain and OpenAI for conversational AI. Supports memory, dynamic tool use, and handles incoming events for rich, context-aware chat interactions. | Support | [Link to Template](Telegram/Agentic%20Telegram%20AI%20bot%20with%20with%20LangChain%20nodes%20and%20new%20tools.json) |
 | AI-Powered Children's Arabic Storytelling on Telegram | A Telegram bot that uses OpenAI to generate and narrate children's stories in Arabic, making storytelling interactive and educational for young users. | Support | [Link to Template](Telegram/AI-Powered%20Children_s%20Arabic%20Storytelling%20on%20Telegram.json) |
