@@ -138,6 +138,7 @@ This collection includes 9 email automation templates for n8n covering Gmail, Ou
 | Daily Email Notification | Summarizes daily inbox emails using local LLM (Ollama) and sends notifications via Telegram or ntfy. | Ops | [Link to Template](Gmail_and_Email_Automation/Daily%20Email%20Notification.json) |
 | Website-Grounded Cold Email Writer | Fetches each lead's real website, extracts the page text, and writes a personalized cold email grounded only in that content. Flags thin or broken sites for human review instead of inventing facts. | Sales | [Link to Template](Gmail_and_Email_Automation/Website-Grounded%20Cold%20Email%20Writer.json) |
 | Inbox Rail Audit - Gmail payment rails to Google Sheets | One pass over ~13 months of Gmail receipt metadata. Groups charges by payment rail (PayPal, Apple/Apple Pay, Google Play/Pay, Stripe/Paddle, SEPA/incasso, Klarna), writes amount/last4/VERIFIED evidence to Google Sheets. No PDF download, no mailbox writes, no LLM. | Finance/Ops | [Link to Template](Gmail_and_Email_Automation/Inbox%20Rail%20Audit%20-%20Gmail%20payment%20rails%20to%20Google%20Sheets.json) |
+| Autopilot Smoke Test Webhook Lead Router | Accepts a webhook lead payload, normalizes the fields and records the lead in a Google Sheet. Built as an end-to-end smoke test of the autopilot GitHub distribution module. | Ops | [Link to Template](Other_Integrations_and_Use_Cases/Autopilot%20Smoke%20Test%20Webhook%20Lead%20Router.json) |
 
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
