@@ -283,7 +283,7 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 
 ### What n8n templates are available for DevOps and server automation?
 
-This section includes 9 DevOps and reliability templates for n8n, including a local check for empty or malformed workflow outputs with an optional count-only monitoring receipt. Audit a public page and build an implementation acceptance pack, trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, diagnose failed n8n execution JSON without connecting to a live instance, find active workflows that stopped running altogether, or get a Telegram alert only when a site's up/down state changes.
+This section includes 11 DevOps and reliability templates for n8n, including a local check for empty or malformed workflow outputs with an optional count-only monitoring receipt. Audit a public page and build an implementation acceptance pack, trigger Linux system updates via authenticated webhooks over SSH, control Docker Compose services remotely, watch disk usage across mountpoints, diagnose failed n8n execution JSON without connecting to a live instance, find active workflows that stopped running altogether, or get a Telegram alert only when a site's up/down state changes.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -296,6 +296,8 @@ This section includes 9 DevOps and reliability templates for n8n, including a lo
 | Uptime Ping Alert | Pings a URL every 5 minutes and notifies Telegram only when the up/down state actually changes (no repeated alerts while it stays down). No external API key beyond a Telegram bot token. | SSH Tools | [Link to Template](devops/uptime-ping-alert.json) |
 | GitHub Stars and Dev.to Engagement Monitor | Checks GitHub repo stars/forks/open issues and dev.to article reactions/comments on a schedule, compiling them into one record per run — for tracking whether anyone noticed what you shipped without opening five tabs. Easy to extend: duplicate an HTTP node per repo/article you want to track. | Marketing | [Link to Template](devops/GitHub%20Stars%20and%20Dev.to%20Engagement%20Monitor.json) |
 | n8n Silent Workflow Check | Finds workflows that are active but have not run — the failure that produces no failed execution, so an error workflow never fires for it. Compares every active workflow against its last execution on a schedule and returns the ones quiet longer than your threshold. No external API key beyond an n8n API key. | Engineering | [Link to Template](devops/n8n%20Silent%20Workflow%20Check.json) |
+| Back Up n8n Workflows to GitHub Every Night | Saves every workflow to a private GitHub repo as one JSON file each night, updating files that already exist so you get version history. Uses the n8n API and a GitHub token scoped to one repository. | Engineering | [Link to Template](devops/n8n-workflow-backup-to-github.json) |
+| n8n Error Alerts on Telegram | An error workflow that sends a Telegram message with the workflow name, failed node, error and execution link whenever any workflow it covers fails. | Engineering | [Link to Template](devops/n8n-error-alerts-telegram.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />

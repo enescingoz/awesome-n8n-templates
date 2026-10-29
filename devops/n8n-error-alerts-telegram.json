@@ -1,0 +1,70 @@
+{
+  "name": "Error alerts for all your n8n workflows (Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Error alerts on Telegram\nSends you a Telegram message whenever another workflow fails, with the workflow name, the node that failed, the error and a link to the execution.\n\n1. Add your Telegram bot credential and your chat ID in **Send alert**.\n2. Save and activate this workflow.\n3. In each workflow you want covered, open Settings and pick this workflow as the **Error workflow**.\n\nFree template by [serverserv](https://serverserv.com/n8n-templates.html). MIT licence.",
+        "height": 340,
+        "width": 440,
+        "color": 7
+      },
+      "id": "00473f9c-8729-59da-bf15-54ed9ff20260",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "bc4d1a82-a2a5-57ff-8755-75fbbe434c5b",
+      "name": "When a workflow fails",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "123456789",
+        "text": "=Workflow failed: {{ $json.workflow.name }}\nNode: {{ $json.execution.lastNodeExecuted || 'unknown' }}\nError: {{ ($json.execution.error && $json.execution.error.message || 'no message').slice(0, 500) }}\n{{ $json.execution.url || '' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "325e25fa-9b0a-57dd-b2a4-22de68974cd8",
+      "name": "Send alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "When a workflow fails": {
+      "main": [
+        [
+          {
+            "node": "Send alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

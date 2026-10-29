@@ -1,0 +1,258 @@
+{
+  "name": "Back up all n8n workflows to GitHub every night",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Nightly n8n backup to GitHub\nSaves every workflow as a JSON file in a GitHub repository each night, and updates files that already exist.\n\n1. Create a **private** repository. Workflows can contain URLs, IDs and notes you do not want public. Credential secrets are not exported.\n2. Create an n8n API key (Settings > n8n API) and add it as an n8n credential. Use your instance URL with /api/v1 as the base URL.\n3. Add a GitHub credential with access to that repository only, and set the owner and repo in the three GitHub nodes.\n\nFree template by [serverserv](https://serverserv.com/n8n-templates.html). MIT licence.",
+        "height": 380,
+        "width": 460,
+        "color": 7
+      },
+      "id": "ef096bc6-711c-5688-b7e4-4eae5b1080ee",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "id": "039370be-787d-5970-8521-2d2d156c47e1",
+      "name": "Every night",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "filters": {},
+        "requestOptions": {}
+      },
+      "id": "a6288386-464a-5704-ab90-dc2e82f6c796",
+      "name": "Get all workflows",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        220,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const wf = $json;\nconst safe = (wf.name || 'workflow').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);\nreturn { json: { path: `workflows/${safe}-${wf.id}.json`, content: JSON.stringify(wf, null, 2), name: wf.name } };"
+      },
+      "id": "9942b066-0c81-51f3-bf07-acf255393604",
+      "name": "Prepare file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-name"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "n8n-backups"
+        },
+        "filePath": "={{ $json.path }}",
+        "asBinaryProperty": false,
+        "additionalParameters": {}
+      },
+      "id": "6cace28a-b62f-525f-98fa-5fcbea5a2486",
+      "name": "Does file exist?",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        140
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.sha }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0ff42fb1-a823-5a5d-a3e7-df340c475067",
+      "name": "Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-name"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "n8n-backups"
+        },
+        "filePath": "={{ $('Prepare file').item.json.path }}",
+        "fileContent": "={{ $('Prepare file').item.json.content }}",
+        "commitMessage": "=Backup: {{ $('Prepare file').item.json.name }}"
+      },
+      "id": "a22e4c3c-7ff3-598d-a63c-cc2cd2d83019",
+      "name": "Update file",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "create",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "your-github-name"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "n8n-backups"
+        },
+        "filePath": "={{ $('Prepare file').item.json.path }}",
+        "fileContent": "={{ $('Prepare file').item.json.content }}",
+        "commitMessage": "=Backup: {{ $('Prepare file').item.json.name }}"
+      },
+      "id": "bb875799-975c-58e5-ba63-7044ab55b766",
+      "name": "Create file",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Every night": {
+      "main": [
+        [
+          {
+            "node": "Get all workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all workflows": {
+      "main": [
+        [
+          {
+            "node": "Prepare file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare file": {
+      "main": [
+        [
+          {
+            "node": "Does file exist?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does file exist?": {
+      "main": [
+        [
+          {
+            "node": "Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exists?": {
+      "main": [
+        [
+          {
+            "node": "Update file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
