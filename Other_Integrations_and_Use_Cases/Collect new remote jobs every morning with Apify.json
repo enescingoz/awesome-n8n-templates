@@ -1,0 +1,103 @@
+{
+  "name": "Collect new remote jobs every morning with Apify",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Daily new remote jobs\nRuns the TinyRex Remote Jobs Scraper on Apify each morning and returns only jobs not seen in earlier runs (already-seen jobs are free).\n\n## Setup\n1. Create a Query Auth credential: name `token`, value your Apify API token.\n2. Select it in the HTTP node.\n3. Edit the JSON body, then connect the last node to Google Sheets, Slack or email.\n\nApify bills the actor per result on your own Apify account (free plan credit covers a test).",
+        "height": 420,
+        "width": 420
+      },
+      "id": "n0",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "n1",
+      "name": "Every morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/tinyrex~remote-jobs-scraper/run-sync-get-dataset-items?format=json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"keywords\": [\n    \"python\"\n  ],\n  \"sources\": [\n    \"himalayas\",\n    \"remoteok\",\n    \"weworkremotely\"\n  ],\n  \"publishedWithinDays\": 2,\n  \"onlyNewJobs\": true,\n  \"stateKey\": \"n8n-daily\",\n  \"includeDescription\": false\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "n2",
+      "name": "Run TinyRex actor on Apify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({json: {title: i.json.title, company: i.json.company, url: i.json.url, salary: i.json.salary ? JSON.stringify(i.json.salary) : '', source: i.json.sourceName}}));"
+      },
+      "id": "n3",
+      "name": "Shape rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every morning": {
+      "main": [
+        [
+          {
+            "node": "Run TinyRex actor on Apify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run TinyRex actor on Apify": {
+      "main": [
+        [
+          {
+            "node": "Shape rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
