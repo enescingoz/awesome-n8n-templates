@@ -1,0 +1,419 @@
+{
+  "name": "Find local businesses without a website in any city and save them to Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### Who it is for\n\nAgencies, consultants and freelancers who sell websites, SEO, ads or automation to local\nbusinesses. It builds a first prospect list for a new city or niche from official Google data,\nwithout a scraping subscription and without community nodes.\n\n### How it works\n\n1. **Set niche, city and sheet name** holds the four values you edit: the search text\n   (`clinica dental`), the city (`Santiago, Chile`), the Google region code (`CL`) and the\n   worksheet name.\n2. **Search businesses in Google Maps** calls Google Places API (New) `places:searchText` with a\n   field mask that asks only for the fields this template uses, because a `*` mask bills a higher\n   SKU. It follows `nextPageToken` for up to three pages of 20 results each.\n3. **Flatten results into one row per business** turns the pages into one item per place with a\n   stable `placeId`, a formatted address, the phone, the rating and the review count.\n4. **Skip businesses already saved in earlier runs** drops the `placeId` values seen in previous\n   executions, so a daily run appends only new businesses instead of repeating the same list.\n5. **Keep only businesses with no website** discards the ones that already have a site: what\n   reaches the sheet is the part of the market with a visible digital gap.\n6. **Append rows to Google Sheets** writes the rows, one per business, to your worksheet.\n\n### How to set up\n\n1. Open **Set niche, city and sheet name** and edit the four values. `regionCode` is the\n   two-letter country code that Google uses for the region bias (`CL`, `AR`, `MX`, `ES`, `US`).\n2. Create an **HTTP Header Auth** credential in n8n: header name `X-Goog-Api-Key`, value = your\n   Google Places API key. Attach it to **Search businesses in Google Maps**.\n3. Create a **Google Sheets OAuth2** credential and attach it to the last node. Put the ID of\n   your spreadsheet in that node's *Document ID* field, replacing\n   `REPLACE_WITH_YOUR_SPREADSHEET_ID`.\n4. Create the worksheet (tab) with the name you wrote in step 1. Click **Execute workflow** to run it\n   from the manual trigger; the scheduled trigger is what runs it daily once you activate the workflow.\n5. When the run looks right, activate the workflow: it will run every day at 08:00 in the\n   instance timezone.\n\n### What you need\n\n- An n8n instance (developed and tested on n8n 2.x and 3.0, self-hosted).\n- A Google Cloud project with **Places API (New)** enabled, and an API key restricted to that API.\n  Places API is a paid API with a monthly free credit; this template makes at most 3 requests per\n  run and asks for a narrow field mask on purpose.\n- A Google Sheet (or any Google Drive spreadsheet) where you can create a tab.\n\n### How to extend\n\nThe last filter is the place to put your own rule: keep businesses with a rating below 4.5, with\nfewer than 30 reviews, or any other signal that matches who you sell to. The rows are plain text\nplus numbers, so you can append an AI node to write a first-contact message, or a CRM node to push\nthe rows into HubSpot, Pipedrive or Notion.\n\n### Limits, stated on purpose\n\n- Google returns at most 60 results per query (three pages of 20); to cover a whole city, change\n  the niche or the city and run it again. The dedupe keeps all of those runs in one list.\n- Businesses without a website in Google are not necessarily good prospects: some are closed, some\n  have a Facebook page only. The filter narrows the list, it does not qualify it.\n- No error handling beyond n8n defaults: if Google answers 403, check that the API is enabled and\n  that the key allows Places API (New).",
+        "height": 700,
+        "width": 700,
+        "color": 4
+      },
+      "id": "f0c91372-069b-42ad-be8c-39ea8ae9bd67",
+      "name": "NOTA - ### Who it is for",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "content": "1. EDIT HERE - the only four values you need to change.\nregionCode is the two-letter country code Google uses (CL, AR, MX, ES, US).",
+        "height": 160,
+        "width": 420,
+        "color": 5
+      },
+      "id": "498cc8d1-e8cd-46c7-a25c-3943f4355b04",
+      "name": "NOTA - 1. EDIT HERE - the only four values you ",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        60,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "content": "2. GOOGLE PLACES (New)\nOne request per page, 20 results each, stops when nextPageToken is empty.\nAttach an HTTP Header Auth credential: X-Goog-Api-Key = your Places key.",
+        "height": 160,
+        "width": 460,
+        "color": 5
+      },
+      "id": "715f14e6-36b7-4e3c-bb48-536b17b2cb47",
+      "name": "NOTA - 2. GOOGLE PLACES (New)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        700,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "content": "3. DEDUPLICATE ACROSS RUNS\nplaceId values seen in previous executions are skipped, so a daily run appends only\nnew businesses. Clear the node's history if you want to start from zero.",
+        "height": 160,
+        "width": 420,
+        "color": 5
+      },
+      "id": "7404080f-7663-41ae-aa3e-c393e841c414",
+      "name": "NOTA - 3. DEDUPLICATE ACROSS RUNS",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "4. THE POINT OF THE LIST\nOnly businesses without a website (tieneWeb = false) reach the sheet.\nEverything that is filtered out ends in the 'false' branch and is not saved anywhere.",
+        "height": 160,
+        "width": 460,
+        "color": 5
+      },
+      "id": "e8ef455d-8ae8-4748-b31b-75dbc22b8f3f",
+      "name": "NOTA - 4. THE POINT OF THE LIST",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "dda37901-6153-426c-b050-987159dc919e",
+      "name": "Run every day at 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ec27aa58-957c-4053-8b39-18653818c782",
+      "name": "Run manually (test with this one)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "47443ead-702f-47e4-a56b-0551a8b7c53a",
+              "name": "nicho",
+              "value": "clinica dental",
+              "type": "string"
+            },
+            {
+              "id": "aaf1cb46-1101-4094-843a-a1ca9e0ceed7",
+              "name": "ciudad",
+              "value": "Santiago, Chile",
+              "type": "string"
+            },
+            {
+              "id": "929db9cf-7aab-4c95-ba1e-ab26c7cc908f",
+              "name": "regionCode",
+              "value": "CL",
+              "type": "string"
+            },
+            {
+              "id": "bb2c318a-aad9-48e3-965c-38b371352a69",
+              "name": "nombreHoja",
+              "value": "Leads",
+              "type": "string"
+            }
+          ],
+          "options": {}
+        },
+        "options": {}
+      },
+      "id": "ae3a0edb-c4e0-4c3e-8109-4c2f2548363c",
+      "name": "Set niche, city and sheet name",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        360,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://places.googleapis.com/v1/places:searchText",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-FieldMask",
+              "value": "places.id,places.displayName,places.formattedAddress,places.primaryType,places.primaryTypeDisplayName,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.businessStatus,places.googleMapsUri,nextPageToken"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ textQuery: $json.nicho + ' en ' + $json.ciudad, languageCode: $json.regionCode === 'CL' ? 'es' : 'en', regionCode: $json.regionCode, pageSize: 20 }) }}",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "pageToken",
+                    "value": "={{ $response.body.nextPageToken }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.nextPageToken }}",
+              "limitPagesFetched": true,
+              "maxRequests": 3,
+              "requestInterval": 2000
+            }
+          }
+        }
+      },
+      "id": "71deb36f-b2bb-4ee1-8901-60a34b72ea12",
+      "name": "Search businesses in Google Maps",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Google Places (New) devuelve varias paginas, cada una con un array \"places\".\n// Esto lo convierte en un item por negocio, con un placeId estable que sirve para deduplicar.\nconst cfg = $('Set niche, city and sheet name').first().json;\nconst out = [];\n\nfor (const item of $input.all()) {\n  const places = item.json.places || [];\n  for (const p of places) {\n    const web = p.websiteUri || '';\n    const addressParts = String(p.formattedAddress || '').split(',');\n    // La direccion de Google termina en el pais: la localidad es la penultima parte\n    // (\"Av. Providencia 1234, Providencia, Santiago, Chile\" -> Santiago).\n    const locality = addressParts.length > 1\n      ? addressParts[addressParts.length - 2].trim()\n      : (cfg.ciudad || '');\n\n    out.push({\n      json: {\n        placeId: p.id || '',\n        nombre: (p.displayName && p.displayName.text) || '',\n        categoria: (p.primaryTypeDisplayName && p.primaryTypeDisplayName.text) || p.primaryType || '',\n        direccion: p.formattedAddress || '',\n        localidad: locality,\n        telefono: p.nationalPhoneNumber || p.internationalPhoneNumber || '',\n        sitioWeb: web,\n        tieneWeb: Boolean(web),\n        rating: Number(p.rating || 0),\n        resenas: Number(p.userRatingCount || 0),\n        estadoNegocio: p.businessStatus || '',\n        googleMaps: p.googleMapsUri || '',\n        consulta: (cfg.nicho || '') + ' en ' + (cfg.ciudad || ''),\n        capturadoEn: new Date().toISOString(),\n      },\n    });\n  }\n}\n\nif (out.length === 0) {\n  throw new Error('Google Places returned no results. Check the niche and the city in \"Set niche, city and sheet name\", and that Places API (New) is enabled for your key.');\n}\n\nreturn out;"
+      },
+      "id": "e7312510-4e2e-462c-a86f-e9387619b43d",
+      "name": "Flatten results into one row per business",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "logic": "removeItemsWithAlreadySeenKeyValues",
+        "dedupeValue": "placeId",
+        "options": {
+          "scope": "workflow",
+          "historySize": 5000
+        }
+      },
+      "id": "8297221b-8d13-4893-bba0-bd466bce53c8",
+      "name": "Skip businesses already saved in earlier runs",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c7666e4d-85d1-4dd6-b8d0-2244779fea9c",
+              "leftValue": "={{ $json.tieneWeb }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b3725413-7241-41fc-8ba1-387ce7162462",
+      "name": "Keep only businesses with no website",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1620,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Set niche, city and sheet name').first().json.nombreHoja }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "78f4e547-e461-4070-83b1-0dd5e09d85c7",
+      "name": "Append rows to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1940,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "53bdbc44-f9ab-4678-9c20-82243bafbdb3",
+      "name": "Discarded: this business already has a website",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1940,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Run every day at 08:00": {
+      "main": [
+        [
+          {
+            "node": "Set niche, city and sheet name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually (test with this one)": {
+      "main": [
+        [
+          {
+            "node": "Set niche, city and sheet name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set niche, city and sheet name": {
+      "main": [
+        [
+          {
+            "node": "Search businesses in Google Maps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search businesses in Google Maps": {
+      "main": [
+        [
+          {
+            "node": "Flatten results into one row per business",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten results into one row per business": {
+      "main": [
+        [
+          {
+            "node": "Skip businesses already saved in earlier runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip businesses already saved in earlier runs": {
+      "main": [
+        [
+          {
+            "node": "Keep only businesses with no website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only businesses with no website": {
+      "main": [
+        [
+          {
+            "node": "Append rows to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Discarded: this business already has a website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "2a12bebd-4018-4576-8355-581fb948ddea",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
