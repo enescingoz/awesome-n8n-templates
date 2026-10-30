@@ -1,0 +1,169 @@
+{
+  "name": "Daily EU tender alert by CPV code (TED → email / Slack)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Daily EU tender alert by CPV code (TED)\nRuns every weekday, asks the **itulo/ted-tender-feed** Apify actor for *new* contract notices on TED (Tenders Electronic Daily) that match your CPV codes and buyer countries, and sends one digest.\n\n**Setup**\n1. Install the Apify node (`@apify/n8n-nodes-apify`) and add an Apify API credential.\n2. Edit the *Input JSON* in **Fetch new TED notices**: `cpvCodes` (8 digits, parent codes match children), `countries` (ISO alpha-2).\n3. Configure SMTP in **Send email digest**, or enable the Slack node.\n\n`alertMode: true` + `alertStateKey` makes the actor remember what it already returned, so each run only contains new notices.\n\nData: TED, © European Union, reused under Commission Decision 2011/833/EU. Every record carries an `attribution` field; keep it in what you forward.",
+        "height": 520,
+        "width": 480
+      },
+      "id": "3093c426-828d-44a4-b5d7-b0e0334ea7dc",
+      "name": "Sticky Note 4568",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "d129e4a7-1813-4493-8803-fc8c561202a6",
+      "name": "Every weekday 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "jcGqBCVowOvega1FL",
+          "mode": "list",
+          "cachedResultName": "EU Tender Feed (TED) - CPV, country & alert mode (itulo/ted-tender-feed)",
+          "cachedResultUrl": "https://console.apify.com/actors/jcGqBCVowOvega1FL/input"
+        },
+        "customBody": "={\n  \"cpvCodes\": [\"72000000\", \"48000000\"],\n  \"countries\": [\"FI\", \"SE\", \"EE\"],\n  \"countryField\": \"buyer\",\n  \"noticeTypes\": [\"competition\"],\n  \"maxResults\": 200,\n  \"language\": \"eng\",\n  \"collapseByProcedure\": true,\n  \"alertMode\": true,\n  \"alertStateKey\": \"n8n-daily-it-tenders\"\n}",
+        "timeout": 300,
+        "memory": 256,
+        "build": ""
+      },
+      "id": "7efb126e-e60e-46c9-b748-e87abd1b82a3",
+      "name": "Fetch new TED notices",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "notesInFlow": true,
+      "notes": "Apify Store actor https://apify.com/itulo/ted-tender-feed (pay-per-event). Add your own Apify API credential."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build one digest (HTML for email, mrkdwn for Slack) from the new TED notices.\n// The actor runs in alertMode, so it only returns notices it has not returned before\n// for this alertStateKey. If there is nothing new, stop here (no email / Slack).\nconst notices = $input.all().map(i => i.json).filter(n => n.publicationNumber);\nif (notices.length === 0) return [];\n\nconst esc = s => String(s ?? '').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));\nconst value = n => n.estimatedValue && n.estimatedValue.amount\n  ? `${Number(n.estimatedValue.amount).toLocaleString('en')} ${n.estimatedValue.currency || ''}`.trim() : 'n/a';\nconst attribution = notices[0].attribution;\n\nconst rows = notices.map(n => `<tr>\n  <td><a href=\"${esc(n.url)}\">${esc(n.publicationNumber)}</a></td>\n  <td>${esc(n.title)}</td>\n  <td>${esc((n.buyerNames || []).join(', '))} (${esc((n.buyerCountries || []).join(', '))})</td>\n  <td>${esc(n.mainCpv)}</td>\n  <td>${esc(n.tenderDeadline || 'n/a')}</td>\n  <td>${esc(value(n))}</td>\n</tr>`).join('\\n');\n\nconst html = `<p>${notices.length} new EU tender notice(s) matching your CPV / country filter.</p>\n<table border=\"1\" cellpadding=\"4\" cellspacing=\"0\">\n<tr><th>Notice</th><th>Title</th><th>Buyer</th><th>Main CPV</th><th>Deadline</th><th>Est. value</th></tr>\n${rows}\n</table>\n<p style=\"font-size:small\">${esc(attribution)}</p>`;\n\nconst slack = [`*${notices.length} new EU tender notice(s)*`]\n  .concat(notices.slice(0, 20).map(n => `• <${n.url}|${n.publicationNumber}> ${n.title} — deadline ${n.tenderDeadline || 'n/a'}`))\n  .concat(notices.length > 20 ? [`…and ${notices.length - 20} more`] : [])\n  .concat([`_${attribution}_`])\n  .join('\\n');\n\nreturn [{ json: { count: notices.length, subject: `${notices.length} new EU tenders (TED) for your CPV codes`, html, slack } }];"
+      },
+      "id": "1952f32d-dc18-412d-beab-dd2a202926c2",
+      "name": "Build digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@example.com",
+        "toEmail": "you@example.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "8a15ccd0-252e-4733-8e45-6b22e9cedff1",
+      "name": "Send email digest",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#tenders",
+          "mode": "name"
+        },
+        "text": "={{ $json.slack }}",
+        "otherOptions": {}
+      },
+      "id": "6f7deb63-70dd-4b06-be02-99288bc037c4",
+      "name": "Post to Slack (optional)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        740,
+        100
+      ],
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Every weekday 07:00": {
+      "main": [
+        [
+          {
+            "node": "Fetch new TED notices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch new TED notices": {
+      "main": [
+        [
+          {
+            "node": "Build digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build digest": {
+      "main": [
+        [
+          {
+            "node": "Send email digest",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Slack (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
