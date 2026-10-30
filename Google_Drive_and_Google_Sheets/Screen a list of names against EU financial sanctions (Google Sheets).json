@@ -1,0 +1,208 @@
+{
+  "name": "Screen a list of names against EU financial sanctions (Google Sheets)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Screen a list of names against the EU consolidated sanctions list\nReads a `name` column from a Google Sheet, screens every name in **one** run of the **itulo/eu-sanctions-screen** Apify actor (European Commission Financial Sanctions Files, consolidated list), and writes one result row per candidate to a second tab.\n\n**Setup**\n1. Install the Apify node (`@apify/n8n-nodes-apify`) and add an Apify API credential.\n2. Tab 1: a column `name`. Tab 2: empty results tab (headers are created from the first run).\n3. Tune `fuzzyThreshold` in **Build screening input**.\n\n**Important:** results are an informational aid, not legal advice. `possible_match` rows need manual review against the Official Journal of the EU; only the regulations published there are legally binding.\n\nData: European Commission, consolidated list of persons, groups and entities subject to EU financial sanctions; reused under Commission Decision 2011/833/EU. Keep the attribution column.",
+        "height": 540,
+        "width": 480
+      },
+      "id": "3fe28454-e2bb-469b-8e6b-9a78d6143eb0",
+      "name": "Sticky Note 6fab",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -260
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d0a6e011-96cd-48cc-a5c7-3c9b28537f88",
+      "name": "Run screening",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "options": {}
+      },
+      "id": "2f87c21b-a0ef-4acd-8464-10c4d7893774",
+      "name": "Read names from sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect the \"name\" column into one actor input (one actor run screens the whole list).\nconst queries = $input.all().map(i => String(i.json.name || '').trim()).filter(Boolean);\nif (queries.length === 0) throw new Error('No names found: the sheet needs a column called \"name\".');\nreturn [{ json: { input: {\n  queries,\n  subjectType: 'all',        // 'person' | 'enterprise' | 'all'\n  fuzzyThreshold: 0.85,      // raise to reduce possible matches, lower to catch more spelling variants\n  maxMatchesPerQuery: 5,\n  includeClearQueries: true  // also return one 'clear' row per name with no candidate\n}}}];"
+      },
+      "id": "23423c27-eee6-4b55-a1b4-2f3b3c7f7197",
+      "name": "Build screening input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "726vgLbzE8fO96XZr",
+          "mode": "list",
+          "cachedResultName": "EU Consolidated Financial Sanctions Screening (FSF) (itulo/eu-sanctions-screen)",
+          "cachedResultUrl": "https://console.apify.com/actors/726vgLbzE8fO96XZr/input"
+        },
+        "customBody": "={{ JSON.stringify($json.input) }}",
+        "timeout": 300,
+        "memory": 256,
+        "build": ""
+      },
+      "id": "ba5ab1c3-8d96-4b4c-a20f-f5860a7221e6",
+      "name": "Screen against EU sanctions list",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "notesInFlow": true,
+      "notes": "Apify Store actor https://apify.com/itulo/eu-sanctions-screen (pay-per-event). Add your own Apify API credential."
+    },
+    {
+      "parameters": {
+        "jsCode": "// One row per (query, candidate). Fuzzy scores are review indicators, never determinations.\nreturn $input.all().map(i => i.json).map(r => ({ json: {\n  query: r.query,\n  status: r.status,                 // exact_match | possible_match | clear ...\n  score: r.score ?? '',\n  matchedName: r.primaryName || '',\n  subjectType: r.subjectType || '',\n  programme: r.programme || '',\n  euReferenceNumber: r.euReferenceNumber || '',\n  regulation: r.regulationNumberTitle || '',\n  regulationUrl: r.regulationPublicationUrl || '',\n  listPublicationDate: r.listPublicationDate || '',\n  needsReview: r.status && r.status !== 'clear' ? 'YES' : 'no',\n  disclaimer: r.disclaimer || '',\n  attribution: r.attribution || '',\n}}));"
+      },
+      "id": "006a24ec-cd92-49d8-a06d-037b67b9c3e6",
+      "name": "Shape results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "c5b62868-bf37-487d-94d6-0e2b32ac6dc8",
+      "name": "Write results to sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1100,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Run screening": {
+      "main": [
+        [
+          {
+            "node": "Read names from sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read names from sheet": {
+      "main": [
+        [
+          {
+            "node": "Build screening input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build screening input": {
+      "main": [
+        [
+          {
+            "node": "Screen against EU sanctions list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screen against EU sanctions list": {
+      "main": [
+        [
+          {
+            "node": "Shape results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape results": {
+      "main": [
+        [
+          {
+            "node": "Write results to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
