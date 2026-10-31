@@ -1,0 +1,911 @@
+{
+  "name": "Send a fax with human approval",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f0a0f0a0-0000-4000-8000-000000000001",
+      "name": "Run workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000002-0",
+              "name": "to",
+              "value": "+15550000001",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000002-1",
+              "name": "text",
+              "value": "Hello from n8n. This page was prepared, quoted and sent through Fax for Agents.",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000002-2",
+              "name": "filename",
+              "value": "hello-from-n8n",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000002-3",
+              "name": "approval_message",
+              "value": "n8n workflow asks to send this fax. Approve it in the dashboard or by mail.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000002",
+      "name": "Fax input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.faxforagents.com/v1/documents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "=n8n-{{ $execution.id }}-document"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { text: $json.text, filename: $json.filename } }}"
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000003",
+      "name": "Prepare the document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.faxforagents.com/v1/fax-quotes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { document_id: $json.id, to: $('Fax input').item.json.to } }}"
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000004",
+      "name": "Quote the fax",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "approval-required",
+              "leftValue": "={{ $json.authorization_required }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000005",
+      "name": "Approval required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.faxforagents.com/v1/approval-requests",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { kind: 'send', quote_id: $json.id, message: $('Fax input').item.json.approval_message } }}"
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000006",
+      "name": "Ask a person to approve",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000007",
+      "name": "Wait 30 seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        140
+      ],
+      "webhookId": "f0a0f0a0-0000-4000-8000-000000000007"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.faxforagents.com/v1/approval-requests/{{ $('Ask a person to approve').item.json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000008",
+      "name": "Check the approval",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "approved",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "pending",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pending"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000009",
+      "name": "Approval status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1760,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000010-0",
+              "name": "quote_id",
+              "value": "={{ $('Quote the fax').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000010-1",
+              "name": "approval_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000010",
+      "name": "Send under the approval",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1980,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=The approval request is {{ $json.status }}. Nothing was sent. A person decides whether to ask again."
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000011",
+      "name": "Not approved",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000012-0",
+              "name": "quote_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000012-1",
+              "name": "approval_id",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000012",
+      "name": "Send without approval",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.faxforagents.com/v1/faxes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "=n8n-{{ $execution.id }}-send"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.approval_id ? { quote_id: $json.quote_id, approval_id: $json.approval_id } : { quote_id: $json.quote_id } }}"
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000013",
+      "name": "Send the fax",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000014",
+      "name": "Wait 10 seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2420,
+        300
+      ],
+      "webhookId": "f0a0f0a0-0000-4000-8000-000000000014"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.faxforagents.com/v1/faxes/{{ $('Send the fax').item.json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000015",
+      "name": "Check the fax",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "delivered",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "delivered"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "partial",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "partial"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "unknown",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "unknown"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000016",
+      "name": "Fax state",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000017-0",
+              "name": "result",
+              "value": "delivered",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000017-1",
+              "name": "fax_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000017-2",
+              "name": "pages_sent",
+              "value": "={{ $json.pages_sent }}",
+              "type": "number"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000017-3",
+              "name": "amount_micro",
+              "value": "={{ $json.amount_micro }}",
+              "type": "number"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000017-4",
+              "name": "evidence",
+              "value": "={{ $json.evidence }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000017",
+      "name": "Delivered",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3080,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000018-0",
+              "name": "result",
+              "value": "failed",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000018-1",
+              "name": "fax_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000018-2",
+              "name": "failure_code",
+              "value": "={{ $json.failure_code }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000018-3",
+              "name": "next_step",
+              "value": "A person decides whether to fix the number or the document and send again.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000018",
+      "name": "Failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3080,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000019-0",
+              "name": "result",
+              "value": "={{ $json.state }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000019-1",
+              "name": "fax_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000019-2",
+              "name": "pages_sent",
+              "value": "={{ $json.pages_sent }}",
+              "type": "number"
+            },
+            {
+              "id": "f0a0f0a0-0000-4000-8000-000000000019-3",
+              "name": "next_step",
+              "value": "Never retransmit on your own. Some or all pages can have reached the recipient. A person reconciles with them.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000019",
+      "name": "Needs a person",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3080,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Send a fax with human approval\nFax for Agents, https://faxforagents.com. REST API only, HTTP Request nodes with one **Bearer Auth** credential.\n\n**Before the first run** open any HTTP node and pick or create a Bearer Auth credential with your API key. A test key (`ffa_test_...`) reaches the sandbox, no carrier, no cost. Keys: https://app.faxforagents.com\n\nEdit **Fax input** for the destination and the text. Sandbox outcomes: `+15550000001` delivered, `+15550000003` partial, `+15550000005` unknown, `+15550000007` failed.",
+        "height": 260,
+        "width": 860
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000020",
+      "name": "Note 20",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## The approvals rule\nA live send needs a human approval bound to this exact quote, or a delegated policy the account owner wrote. The workflow asks with `POST /v1/approval-requests` and polls every 30 seconds until a person decides. It can never approve its own send: an API key used by automation cannot carry `approval:decide`.",
+        "height": 200,
+        "width": 1060
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000021",
+      "name": "Note 21",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## After the send\n`queued` is not delivered. The workflow polls `GET /v1/faxes/{id}` every 10 seconds until the carrier answers. `delivered` carries the carrier's evidence. `partial` and `unknown` stop here and a person reconciles, nothing retransmits on its own.\n\nPrice card launch-v1, effective 2026-10-28: $0.039 per page sent, $0.019 per page received. `amount_micro` is USD in micro-units (39000 is $0.039).",
+        "height": 220,
+        "width": 760
+      },
+      "id": "f0a0f0a0-0000-4000-8000-000000000022",
+      "name": "Note 22",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Run workflow": {
+      "main": [
+        [
+          {
+            "node": "Fax input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fax input": {
+      "main": [
+        [
+          {
+            "node": "Prepare the document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the document": {
+      "main": [
+        [
+          {
+            "node": "Quote the fax",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quote the fax": {
+      "main": [
+        [
+          {
+            "node": "Approval required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval required?": {
+      "main": [
+        [
+          {
+            "node": "Ask a person to approve",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send without approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask a person to approve": {
+      "main": [
+        [
+          {
+            "node": "Wait 30 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30 seconds": {
+      "main": [
+        [
+          {
+            "node": "Check the approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the approval": {
+      "main": [
+        [
+          {
+            "node": "Approval status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval status": {
+      "main": [
+        [
+          {
+            "node": "Send under the approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send under the approval": {
+      "main": [
+        [
+          {
+            "node": "Send the fax",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send without approval": {
+      "main": [
+        [
+          {
+            "node": "Send the fax",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the fax": {
+      "main": [
+        [
+          {
+            "node": "Wait 10 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 10 seconds": {
+      "main": [
+        [
+          {
+            "node": "Check the fax",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the fax": {
+      "main": [
+        [
+          {
+            "node": "Fax state",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fax state": {
+      "main": [
+        [
+          {
+            "node": "Delivered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs a person",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs a person",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 10 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

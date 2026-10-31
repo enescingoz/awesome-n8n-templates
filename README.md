@@ -447,10 +447,11 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 
 ### What other n8n integration templates are available?
 
-This section includes 49 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
+This section includes 50 additional n8n integration templates covering a wide range of platforms and use cases. Highlights include API schema extraction, Pennylane invoice automation, Pinterest analysis with AI, SIEM alert enrichment with MITRE ATT&CK, Bitrix24 chatbots, GitLab code review with ChatGPT, LINE assistant integration, Spotify playlist archiving, Zoom meeting AI assistants, Siri AI agents via Apple Shortcuts, and Todoist inbox organization.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| Send a fax with human approval | Prepares a document, quotes it, asks a person to approve when the Fax for Agents API requires it, sends, then polls until the carrier reports delivered, failed, partial or unknown. HTTP Request nodes only, one Bearer Auth credential, free sandbox key. | Ops/Communication | [Link to Template](Other_Integrations_and_Use_Cases/Send%20a%20fax%20with%20human%20approval.json) |
 | Generate a product image with Magic Hour | Generate one product image, require completion, and download PNG binary data. Requires the Magic Hour community node and API credits. | Marketing/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20a%20product%20image%20with%20Magic%20Hour.json) |
 | Animate a product photo with Magic Hour | Animate a product photo into a short video, require completion, and download MP4 binary data. Requires the Magic Hour community node and API credits. | Marketing/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Animate%20a%20product%20photo%20with%20Magic%20Hour.json) |
 | Recover a completed video with Magic Hour | Retrieve a completed video by project ID without starting another paid generation; stop if unfinished. Requires the Magic Hour community node. | Engineering/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Recover%20a%20completed%20video%20with%20Magic%20Hour.json) |
