@@ -451,6 +451,7 @@ This section includes 49 additional n8n integration templates covering a wide ra
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| Preflight a CRM import and route conflicting duplicates for human review | Checks a supplied contact batch before field mapping and holds conflicting duplicates for human review. Includes [setup and tested limitations](docs/nexai-crm-import-preflight.md). | Ops | [Link to Template](Other_Integrations_and_Use_Cases/Preflight%20a%20CRM%20import%20and%20route%20conflicting%20duplicates%20for%20human%20review.json) |
 | Generate a product image with Magic Hour | Generate one product image, require completion, and download PNG binary data. Requires the Magic Hour community node and API credits. | Marketing/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20a%20product%20image%20with%20Magic%20Hour.json) |
 | Animate a product photo with Magic Hour | Animate a product photo into a short video, require completion, and download MP4 binary data. Requires the Magic Hour community node and API credits. | Marketing/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Animate%20a%20product%20photo%20with%20Magic%20Hour.json) |
 | Recover a completed video with Magic Hour | Retrieve a completed video by project ID without starting another paid generation; stop if unfinished. Requires the Magic Hour community node. | Engineering/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Recover%20a%20completed%20video%20with%20Magic%20Hour.json) |

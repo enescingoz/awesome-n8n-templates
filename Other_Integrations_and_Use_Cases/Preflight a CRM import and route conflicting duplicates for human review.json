@@ -1,0 +1,181 @@
+{
+  "name": "Preflight a CRM import and route conflicting duplicates for human review",
+  "nodes": [
+    {
+      "id": "run-sample-preflight",
+      "name": "Run sample preflight",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "fictional-batch-and-crm-snapshot",
+      "name": "Fictional batch and CRM snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Fictional sample data only; example.invalid addresses cannot receive mail.\nreturn [{json: {\n  batchId: 'demo-batch-001',\n  existingContacts: [\n    {email:'existing@example.invalid', crmId:'demo-crm-1'},\n    {email:'ambiguous@example.invalid', crmId:'demo-crm-2'},\n    {email:'ambiguous@example.invalid', crmId:'demo-crm-3'}\n  ],\n  records: [\n    {sourceId:'row-1', email:' NEW@example.invalid ', company:'Sample Alpha'},\n    {sourceId:'row-2', email:'new@example.invalid', company:'Sample Alpha'},\n    {sourceId:'row-3', email:'conflict@example.invalid', company:'Sample Beta'},\n    {sourceId:'row-4', email:'conflict@example.invalid', company:'Different Sample'},\n    {sourceId:'row-5', email:'existing@example.invalid', company:'Sample Existing'},\n    {sourceId:'row-6', email:'ambiguous@example.invalid', company:'Sample Ambiguous'},\n    {sourceId:'row-7', email:'not-an-address', company:'Sample Invalid'},\n    {sourceId:'row-8', email:'missingcompany@example.invalid', company:''},\n    {sourceId:'row-9', email:'other@example.invalid', company:'Sample Other'},\n    {sourceId:'row-9', email:'another@example.invalid', company:'Sample Reused ID'}\n  ]\n}}];"
+      }
+    },
+    {
+      "id": "validate-and-classify-batch",
+      "name": "Validate and classify batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Preflight only: no writes, outreach, external calls, or durable deduplication.\nconst items = $input.all();\nif (items.length !== 1) throw new Error('Supply exactly one batch envelope.');\nconst b = items[0].json;\nif (typeof b.batchId !== 'string' || !b.batchId.trim()) throw new Error('batchId must be a non-empty string.');\nif (!Array.isArray(b.records) || !Array.isArray(b.existingContacts)) throw new Error('records and existingContacts must be arrays.');\nconst emailKey = v => typeof v === 'string' ? v.trim().toLowerCase() : '';\nconst text = v => typeof v === 'string' ? v.trim() : '';\nconst emailShape = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nconst existing = new Map();\nfor (const c of b.existingContacts) {\n  if (!c || typeof c !== 'object') throw new Error('Malformed existing contact.');\n  const key = emailKey(c.email), id = text(c.crmId);\n  if (!emailShape.test(key) || !id) throw new Error('Existing contacts need an email and crmId.');\n  if (!existing.has(key)) existing.set(key, new Set());\n  existing.get(key).add(id);\n}\nconst rows = b.records.map((r, i) => {\n  if (!r || typeof r !== 'object' || Array.isArray(r)) throw new Error('Each record must be an object.');\n  return {sourceId:text(r.sourceId), email:emailKey(r.email), company:text(r.company), rowNumber:i+1};\n});\nconst idCounts = new Map(), emailGroups = new Map();\nfor (const r of rows) {\n  if (r.sourceId) idCounts.set(r.sourceId, (idCounts.get(r.sourceId)||0)+1);\n  if (r.email) {\n    if (!emailGroups.has(r.email)) emailGroups.set(r.email, []);\n    emailGroups.get(r.email).push(r);\n  }\n}\nconst decisions = rows.map(r => {\n  const reasons = [];\n  if (!r.sourceId) reasons.push('missing_source_id');\n  if (r.sourceId && idCounts.get(r.sourceId)>1) reasons.push('reused_source_id');\n  if (!emailShape.test(r.email)) reasons.push('invalid_email_shape');\n  if (!r.company) reasons.push('missing_company');\n  const group = emailGroups.get(r.email)||[];\n  if (new Set(group.map(x => x.company)).size>1) reasons.push('conflicting_batch_duplicates');\n  const matches = existing.get(r.email)||new Set();\n  if (matches.size>1) reasons.push('ambiguous_crm_match');\n  let decision = reasons.length ? 'human_review' : 'ready_for_mapping';\n  // Suppress duplicate rows only after checking every row in their group is valid.\n  const groupHasInvalid = group.some(x => !x.sourceId || idCounts.get(x.sourceId)>1 || !x.company || !emailShape.test(x.email));\n  if (!reasons.length && groupHasInvalid) {reasons.push('duplicate_group_has_invalid_row');decision='human_review';}\n  if (!reasons.length && group.length>1 && group[0].rowNumber!==r.rowNumber) {\n    decision='skip_identical_batch_duplicate';reasons.push('same_email_and_company_as_earlier_row');\n  }\n  return {...r, decision, reasons, proposedAction:decision==='ready_for_mapping' ? (matches.size===1?'map_existing':'map_new') : 'none', crmId:matches.size===1?[...matches][0]:null};\n});\nconst summary = {total:decisions.length, ready_for_mapping:0, human_review:0, skip_identical_batch_duplicate:0};\nfor (const r of decisions) summary[r.decision]++;\nreturn [{json:{batchId:b.batchId.trim(), summary, decisions, limitations:[\n  'Only email and company are compared. Extend the comparison when mapping more fields.',\n  'Email matching lowercases the entire address; change the policy if your source preserves case-sensitive local parts.',\n  'Email shape is not mailbox verification or permission to contact anyone.',\n  'An empty existingContacts array means no existing contacts were supplied, not that the CRM is empty.',\n  'No CRM writes or durable idempotency ledger. Repeated runs only reproduce a preflight report.'\n]}}];"
+      }
+    },
+    {
+      "id": "rows-ready-for-field-mapping",
+      "name": "Rows ready for field mapping",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        180
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b=$input.first().json; return b.decisions.filter(r=>r.decision==='ready_for_mapping').map(r=>({json:{batchId:b.batchId,...r}}));"
+      }
+    },
+    {
+      "id": "human-review-and-skipped-duplicates",
+      "name": "Human review and skipped duplicates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b=$input.first().json; return b.decisions.filter(r=>r.decision!=='ready_for_mapping').map(r=>({json:{batchId:b.batchId,...r}}));"
+      }
+    },
+    {
+      "id": "read-batch-summary",
+      "name": "Read batch summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        660
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b=$input.first().json; return [{json:{batchId:b.batchId,summary:b.summary,limitations:b.limitations}}];"
+      }
+    },
+    {
+      "id": "setup-and-scope",
+      "name": "Setup and scope",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        -100
+      ],
+      "parameters": {
+        "content": "## CRM import preflight — no credentials needed\nFor operations teams reviewing a contact import before any CRM write. Import this JSON and run the manual trigger. All sample records are fictional. No services, keys or personal data are required.\n\nThis workflow is a preflight report, not an importer. It makes no network calls and sends no messages. Never connect the outputs directly to outreach.",
+        "height": 330,
+        "width": 650
+      }
+    },
+    {
+      "id": "replace-sample-data-deliberately",
+      "name": "Replace sample data deliberately",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        -100
+      ],
+      "parameters": {
+        "content": "## Use your own batch\nReplace the sample Code node with one item containing batchId (non-empty string), records (array of sourceId, email, company), and existingContacts (array of email, crmId). Supply a current, authorized CRM snapshot. An empty snapshot does not prove there are no existing matches.\n\nEmail keys are trimmed and lowercased; company strings are trimmed but case-sensitive. Extra fields are deliberately ignored: add them to normalization and conflict comparison before mapping them. Missing fields and ambiguous matches need human review.",
+        "height": 360,
+        "width": 650
+      }
+    },
+    {
+      "id": "interpret-the-outputs",
+      "name": "Interpret the outputs",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        340
+      ],
+      "parameters": {
+        "content": "## Expected sample result\n10 rows: 2 ready for mapping, 7 human review, 1 identical duplicate skipped. Check all three output nodes. Row 5 maps to an existing sample CRM ID; neither ready row has been written anywhere.\n\nEvery member of a conflicting email group is held for review. Reused source IDs are held even when email differs. Structurally malformed batches fail loudly. A group with an invalid row is not partially accepted.\n\nBefore adapting: review every exception, decide field ownership, protect logs containing contact data, test a copy against a non-production CRM, and add a durable idempotency mechanism. Re-running this workflow does not provide cross-run write protection.",
+        "height": 420,
+        "width": 650
+      }
+    }
+  ],
+  "connections": {
+    "Run sample preflight": {
+      "main": [
+        [
+          {
+            "node": "Fictional batch and CRM snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fictional batch and CRM snapshot": {
+      "main": [
+        [
+          {
+            "node": "Validate and classify batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and classify batch": {
+      "main": [
+        [
+          {
+            "node": "Rows ready for field mapping",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Human review and skipped duplicates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read batch summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false
+}
