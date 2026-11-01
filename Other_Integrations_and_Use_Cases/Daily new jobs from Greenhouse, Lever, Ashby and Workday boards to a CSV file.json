@@ -1,0 +1,437 @@
+{
+  "name": "Daily new jobs from Greenhouse, Lever, Ashby and Workday boards to a CSV file",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nFor job seekers, recruiters and researchers who track hiring at specific companies. Every morning at 8 the workflow asks the Apify Actor fecklesspleb/ats-jobs-scraper for jobs on the career boards you list (Greenhouse, Lever, Ashby, Workday, Workable, Recruitee, Teamtailor). Monitoring mode (onlyNewJobs) returns only jobs it has not returned before. A filter drops the Actor's free status records, **Skip jobs already saved** drops any Job ID this workflow has written before, and the new jobs are saved as a CSV file named `new_jobs_YYYY-MM-DD_HHmmss.csv`. The file needs no credential. A run with no new jobs writes no file.\n\n### Setup\n1. Copy your Apify API token from Apify Console > Settings > API & Integrations. In n8n create a **Header Auth** credential: Name `Authorization`, Value `Bearer ` followed by your token. Select it in **Run ATS Jobs Scraper**.\n2. In **Search settings**, set `companies` (board URLs or `ats:slug`), `keywords` (title words), `maxUsd` (spending cap per run) and `outputFolder`. n8n 2.x writes files only inside allowed folders: `/home/node/.n8n-files` is the default in the official Docker image; elsewhere use a folder listed in `N8N_RESTRICT_FILE_ACCESS_TO`.\n3. Click **Execute workflow**, open the CSV, then activate.\n\nDisclosure: fecklesspleb built this template and the paid Actor it calls ($0.002 per job returned). `maxUsd` is sent as `maxTotalChargeUsd`, which stops the run at your cap. Runs longer than 300 seconds return HTTP 408 to n8n while continuing on Apify, so keep each workflow to a few dozen boards. Built on n8n 2.45.4.\n\n### Customization\nYou can replace the two file nodes with Google Sheets, a database or a webhook node; only the CSV output is tested. Use a different `stateStoreName` for each separate search.",
+        "height": 860,
+        "width": 520
+      },
+      "id": "7c1db829-d7c3-5af5-bd3c-791d696b1102",
+      "name": "Main note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Schedule and settings\nChange the run time, boards, keywords and spending cap here.",
+        "height": 360,
+        "width": 460,
+        "color": 7
+      },
+      "id": "25515c8e-4c98-5d31-9590-b9202520b108",
+      "name": "Section: settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Fetch new jobs from Apify\nOne API call per run. maxTotalChargeUsd stops spending at your cap.",
+        "height": 360,
+        "width": 460,
+        "color": 7
+      },
+      "id": "d8c3298a-63db-54d0-b9e1-95366f0904ff",
+      "name": "Section: scrape",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        420,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Keep only new jobs\nDrops status records, then any Job ID this workflow saved in an earlier run.",
+        "height": 360,
+        "width": 680,
+        "color": 7
+      },
+      "id": "872e6df3-dfef-5b27-81c4-054c85e3e458",
+      "name": "Section: new",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Save as CSV\nOne dated file per run with new jobs. No credential needed.",
+        "height": 360,
+        "width": 480,
+        "color": 7
+      },
+      "id": "bd200825-e705-5130-b018-40471e262a41",
+      "name": "Section: csv",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "0337dd09-c88d-560a-8a54-3f5d1ab71752",
+      "name": "Every morning at 8",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b8d147a6-552d-59b9-ab19-9ef67b1ef6af",
+              "name": "companies",
+              "value": "[\"https://boards.greenhouse.io/airbnb\", \"https://jobs.lever.co/spotify\", \"ashby:ramp\"]",
+              "type": "array"
+            },
+            {
+              "id": "775f65e0-3226-56a7-b4fb-e0efe766fcbd",
+              "name": "keywords",
+              "value": "[\"engineer\", \"developer\"]",
+              "type": "array"
+            },
+            {
+              "id": "788c3761-5975-5693-98dd-09afe1088c97",
+              "name": "stateStoreName",
+              "value": "n8n-new-jobs",
+              "type": "string"
+            },
+            {
+              "id": "201b4dba-0dde-5668-b866-bb2d4fddc747",
+              "name": "maxUsd",
+              "value": "0.5",
+              "type": "number"
+            },
+            {
+              "id": "e90feb09-17a6-5bbd-b7ac-f7796869bbfa",
+              "name": "outputFolder",
+              "value": "/home/node/.n8n-files",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4e2a1f3b-c309-5aa8-9c4c-a09d79cf9eed",
+      "name": "Search settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/fecklesspleb~ats-jobs-scraper/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "={{ $json.maxUsd }}"
+            },
+            {
+              "name": "timeout",
+              "value": "280"
+            },
+            {
+              "name": "clean",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ companies: $json.companies, keywords: $json.keywords, onlyNewJobs: true, stateStoreName: $json.stateStoreName, includeDescription: false, maxTotalJobs: 500 }) }}",
+        "options": {
+          "timeout": 320000
+        }
+      },
+      "id": "469373e4-8e98-586f-87a0-56405527fb3f",
+      "name": "Run ATS Jobs Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a71f7813-8263-52b6-a841-c92ae88f7d0d",
+              "leftValue": "={{ !$json.type && ($json.status === undefined || $json.status === null || $json.status === 'active') && !!$json.uid && !!$json.url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "e4c56eed-72e0-5109-a84c-bee943438151",
+      "name": "Keep job records",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "885c3d8c-bf98-5d05-b88b-67142aa9d240",
+              "name": "Job ID",
+              "value": "={{ $json.uid }}",
+              "type": "string"
+            },
+            {
+              "id": "88c0c85a-2631-5532-a2f7-79ab95f602f1",
+              "name": "Company",
+              "value": "={{ $json.companyName || $json.companySlug }}",
+              "type": "string"
+            },
+            {
+              "id": "f11c36f0-5754-5578-91b4-3b9730e429d7",
+              "name": "Title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "10729068-c9ee-5efb-bd1e-4d3cd84fc6eb",
+              "name": "Location",
+              "value": "={{ ($json.locations || [$json.location]).filter(Boolean).join('; ') }}",
+              "type": "string"
+            },
+            {
+              "id": "dffc6977-b205-55be-8b6c-806aabad1ddd",
+              "name": "Work arrangement",
+              "value": "={{ $json.workArrangement || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "10c9d288-7f8b-58c0-96e2-105b864cf8f4",
+              "name": "Posted",
+              "value": "={{ $json.postedAt ? String($json.postedAt).slice(0, 10) : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f34285c0-8b61-511d-a193-8dfc77c33307",
+              "name": "Salary",
+              "value": "={{ $json.salaryText || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "4d6eb44c-e08f-54d4-b4f9-de7acbbc7b11",
+              "name": "URL",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "b141efae-b6e2-5aa4-9ec1-addbed3c336e",
+              "name": "ATS",
+              "value": "={{ $json.ats }}",
+              "type": "string"
+            },
+            {
+              "id": "b74a95fd-ebed-525b-9def-a6e412b34b69",
+              "name": "First seen",
+              "value": "={{ $json.firstSeenAt ? String($json.firstSeenAt).slice(0, 10) : $now.toISODate() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "05460a91-53b3-565d-9793-f951e3a7c68b",
+      "name": "Shape job row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "dedupeValue": "={{ $json['Job ID'] }}",
+        "options": {
+          "scope": "workflow",
+          "historySize": 10000
+        }
+      },
+      "id": "30e133b6-a667-59b0-b0c9-15877895a823",
+      "name": "Skip jobs already saved",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "csv",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "id": "2452693b-e645-5a85-8ce7-deeac4c3107a",
+      "name": "Convert to CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1700,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Search settings').first().json.outputFolder.replace(/\\/$/, '') }}/new_jobs_{{ $now.toFormat('yyyy-MM-dd_HHmmss') }}.csv",
+        "options": {}
+      },
+      "id": "92f34423-08e7-5224-8c90-255e70740db1",
+      "name": "Write CSV file",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Every morning at 8": {
+      "main": [
+        [
+          {
+            "node": "Search settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search settings": {
+      "main": [
+        [
+          {
+            "node": "Run ATS Jobs Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run ATS Jobs Scraper": {
+      "main": [
+        [
+          {
+            "node": "Keep job records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep job records": {
+      "main": [
+        [
+          {
+            "node": "Shape job row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape job row": {
+      "main": [
+        [
+          {
+            "node": "Skip jobs already saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip jobs already saved": {
+      "main": [
+        [
+          {
+            "node": "Convert to CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to CSV": {
+      "main": [
+        [
+          {
+            "node": "Write CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
