@@ -1,0 +1,144 @@
+{
+  "name": "Give an AI agent free live web search with cited sources (no API key)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0000-4000-8000-000000000001",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "q1",
+              "name": "query",
+              "value": "latest n8n release",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000002",
+      "name": "Set Query",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://relay.agentsearchhq.com/v1/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.query, max_results: 5 }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000003",
+      "name": "AgentSearch (free)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "notes": "Free: 25 searches/day per user, up to 5 results, no key. HTTP 429 = daily limit reached. Docs: https://agentsearchhq.com/agents.md?utm_source=n8n-nodes-agentsearch&utm_medium=package",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000004",
+      "name": "One Item per Result",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Free web search (no API key)\nSearches the web with AgentSearch and returns up to 5 cited results (title, URL, snippet). 25 free searches/day per user.\n\n### How it works\n1. **Manual Trigger** starts the run (swap for Chat, Schedule or Webhook).\n2. **Set Query** holds the question.\n3. **AgentSearch (free)** calls the free search endpoint, no credentials.\n4. **One Item per Result** splits results into items.\n\n### Setup\nEdit the query in **Set Query**, then run.\n\n### Customize\nConnect results to an AI Agent or LLM node to answer with citations. Self-hosted: install the community node `n8n-nodes-agentsearch`.",
+        "height": 560,
+        "width": 380,
+        "color": 4
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000010",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Daily limit\nHit the free daily limit? This node returns **429**. *Continue On Fail* is enabled so the workflow keeps running; connect a fallback if needed.",
+        "height": 200,
+        "width": 260,
+        "color": 3
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000011",
+      "name": "Sticky Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        380,
+        -220
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Query": {
+      "main": [
+        [
+          {
+            "node": "AgentSearch (free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AgentSearch (free)": {
+      "main": [
+        [
+          {
+            "node": "One Item per Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
