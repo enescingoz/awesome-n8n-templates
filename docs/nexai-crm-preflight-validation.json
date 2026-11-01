@@ -1,0 +1,19 @@
+{
+  "test_date": "2026-11-01",
+  "n8n_version": "2.45.7",
+  "node_version": "24.22.2",
+  "behavioral_checks_passed": 7,
+  "publication_artifact_engine_roundtrip_verified": true,
+  "executed_processing_nodes_per_run": 6,
+  "execution_status": "success",
+  "fictional_sample_summary": {
+    "total": 10,
+    "ready_for_mapping": 2,
+    "human_review": 7,
+    "skip_identical_batch_duplicate": 1
+  },
+  "production_connections": false,
+  "workflow_external_calls": false,
+  "classifier_sha256": "9ab156412434be75d7f6193cdfb6b4fe9f1227eb6f86998f30337a63c5ac4381",
+  "workflow_sha256": "5d437516bb75637212bf197540f6436046dced04d345ce990be837fa8246b1fe"
+}
