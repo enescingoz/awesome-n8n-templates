@@ -29,7 +29,7 @@
     },
     {
       "parameters": {
-        "command": "=cd {{ $json.params.service }} && docker compose up -d",
+        "command": "=cd -- '{{ $json.params.service }}' && docker compose up -d",
         "cwd": "/home/ferristhiel"
       },
       "type": "n8n-nodes-base.ssh",
@@ -51,7 +51,7 @@
     },
     {
       "parameters": {
-        "command": "=cd {{ $json.params.service }} && docker compose down",
+        "command": "=cd -- '{{ $json.params.service }}' && docker compose down",
         "cwd": "/home/ferristhiel"
       },
       "type": "n8n-nodes-base.ssh",
@@ -257,25 +257,23 @@
             {
               "id": "42946715-14dc-41f5-8226-92b395db2d38",
               "leftValue": "={{ $('Webhook').item.json.params.action }}",
-              "rightValue": "start",
+              "rightValue": "^(start|stop)$",
               "operator": {
                 "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
+                "operation": "regex"
               }
             },
             {
               "id": "84cf9cff-2378-40ba-9878-571cfce65a8a",
-              "leftValue": "={{ $('Webhook').item.json.params.action }}",
-              "rightValue": "stop",
+              "leftValue": "={{ $('Webhook').item.json.params.service }}",
+              "rightValue": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
               "operator": {
                 "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
+                "operation": "regex"
               }
             }
           ],
-          "combinator": "or"
+          "combinator": "and"
         },
         "options": {}
       },
@@ -290,7 +288,7 @@
     },
     {
       "parameters": {
-        "content": "## What it does:\nThis workflow is built for managing docker compose services via a http post request to turn on or off that service...\n## Setup:\nAdd your credentials for basic auth and ssh\nCopy the custom webhook url and get started!\nExample:\n``` curl\ncurl -X POST -u \"username:password\" https://<your-domain>/start/nextcloud\n```\n## Info:\nThis worklow is only for docker compose not for the docker engine cli!",
+        "content": "## What it does:\nThis workflow is built for managing docker compose services via a http post request to turn on or off that service...\n## Setup:\nAdd your credentials for basic auth and ssh\nCopy the custom webhook url and get started!\nExample:\n``` curl\ncurl -X POST -u \"username:password\" https://<your-domain>/webhook/<webhook-id>/docker/start/nextcloud\n```\nn8n puts the webhook ID in front of paths that have parameters. Copy the exact Production URL from the Webhook node.\n## Info:\nThis worklow is only for docker compose not for the docker engine cli!\nThe service name must be a plain directory name (letters, digits, `.`, `_`, `-`; max 64 chars). Anything else is rejected before the SSH command runs.",
         "height": 336,
         "width": 544
       },
