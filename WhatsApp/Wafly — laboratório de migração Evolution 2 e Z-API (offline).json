@@ -1,0 +1,89 @@
+{
+  "name": "Wafly — laboratório de migração Evolution 2 e Z-API (offline)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "manual",
+      "name": "Executar amostras",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "fixtures",
+      "name": "Amostras sintéticas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Amostras sintéticas, sem pessoas/credenciais reais. Nada é enviado.\nreturn [\n  {\n    \"json\": {\n      \"name\": \"Texto Evolution 2\",\n      \"provider\": \"evolution2\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"event\": \"messages.upsert\",\n        \"instance\": \"homologacao-exemplo\",\n        \"data\": {\n          \"key\": {\n            \"id\": \"EXEMPLO-TEXTO-001\",\n            \"remoteJid\": \"5511000000000@s.whatsapp.net\",\n            \"fromMe\": false\n          },\n          \"message\": {\n            \"conversation\": \"Quero comparar a operação gerenciada.\"\n          },\n          \"messageType\": \"conversation\"\n        }\n      },\n      \"expectedAccepted\": true\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Texto estendido Evolution 2\",\n      \"provider\": \"evolution2\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"event\": \"messages.upsert\",\n        \"instance\": \"homologacao-exemplo\",\n        \"data\": {\n          \"key\": {\n            \"id\": \"EXEMPLO-TEXTO-002\",\n            \"remoteJid\": \"5511000000000@s.whatsapp.net\",\n            \"fromMe\": false\n          },\n          \"message\": {\n            \"extendedTextMessage\": {\n              \"text\": \"Quero validar o fluxo no n8n.\",\n              \"contextInfo\": {\n                \"quotedMessage\": {\n                  \"conversation\": \"mensagem anterior\"\n                }\n              }\n            }\n          },\n          \"messageType\": \"conversation\"\n        }\n      },\n      \"expectedAccepted\": true\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Texto Z-API\",\n      \"provider\": \"zapi\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"5511000000000\",\n        \"fromMe\": false,\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": true\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Texto Wafly\",\n      \"provider\": \"wafly\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"5511000000000\",\n        \"fromMe\": false,\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": true\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Eco enviado por mim\",\n      \"provider\": \"evolution2\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"event\": \"messages.upsert\",\n        \"instance\": \"homologacao-exemplo\",\n        \"data\": {\n          \"key\": {\n            \"id\": \"EXEMPLO-TEXTO-001\",\n            \"remoteJid\": \"5511000000000@s.whatsapp.net\",\n            \"fromMe\": true\n          },\n          \"message\": {\n            \"conversation\": \"Quero comparar a operação gerenciada.\"\n          },\n          \"messageType\": \"conversation\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"mensagem_propria_ou_direcao_incerta\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Grupo\",\n      \"provider\": \"zapi\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"120000000000000000-group\",\n        \"fromMe\": false,\n        \"isGroup\": true,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"destino_fora_do_escopo\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"LID sem telefone\",\n      \"provider\": \"evolution2\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"event\": \"messages.upsert\",\n        \"instance\": \"homologacao-exemplo\",\n        \"data\": {\n          \"key\": {\n            \"id\": \"EXEMPLO-TEXTO-001\",\n            \"remoteJid\": \"100000000000000@lid\",\n            \"fromMe\": false\n          },\n          \"message\": {\n            \"conversation\": \"Quero comparar a operação gerenciada.\"\n          },\n          \"messageType\": \"conversation\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"destino_fora_do_escopo\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Imagem com legenda\",\n      \"provider\": \"wafly\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"5511000000000\",\n        \"fromMe\": false,\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {},\n        \"image\": {\n          \"caption\": \"Isto é legenda, não texto simples\",\n          \"imageUrl\": \"https://example.invalid/foto.jpg\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"conteudo_fora_do_escopo\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Atualização de status\",\n      \"provider\": \"evolution2\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"event\": \"messages.update\",\n        \"instance\": \"homologacao-exemplo\",\n        \"data\": {\n          \"key\": {\n            \"id\": \"EXEMPLO-TEXTO-001\",\n            \"remoteJid\": \"5511000000000@s.whatsapp.net\",\n            \"fromMe\": false\n          },\n          \"message\": {\n            \"conversation\": \"Quero comparar a operação gerenciada.\"\n          },\n          \"messageType\": \"conversation\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"evento_fora_do_escopo\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Outra instância\",\n      \"provider\": \"wafly\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"outra-instancia\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"5511000000000\",\n        \"fromMe\": false,\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"instancia_divergente\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Direção ausente\",\n      \"provider\": \"zapi\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"5511000000000\",\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"mensagem_propria_ou_direcao_incerta\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Sem ID\",\n      \"provider\": \"wafly\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"\",\n        \"phone\": \"5511000000000\",\n        \"fromMe\": false,\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": false,\n      \"expectedReason\": \"id_invalido\"\n    }\n  },\n  {\n    \"json\": {\n      \"name\": \"Repetição do texto Wafly\",\n      \"provider\": \"wafly\",\n      \"expectedInstance\": \"homologacao-exemplo\",\n      \"payload\": {\n        \"type\": \"ReceivedCallback\",\n        \"instanceId\": \"homologacao-exemplo\",\n        \"messageId\": \"EXEMPLO-TEXTO-001\",\n        \"phone\": \"5511000000000\",\n        \"fromMe\": false,\n        \"isGroup\": false,\n        \"isNewsletter\": false,\n        \"isStatusReply\": false,\n        \"isEdit\": false,\n        \"waitingMessage\": false,\n        \"broadcast\": false,\n        \"text\": {\n          \"message\": \"Quero comparar a operação gerenciada.\"\n        }\n      },\n      \"expectedAccepted\": true\n    }\n  }\n];"
+      }
+    },
+    {
+      "id": "normalize",
+      "name": "Normalizar e conferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function normalizeInbound(provider, payload, { expectedInstance } = {}) {\n  const reject = reason => ({ accepted: false, reason });\n  const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);\n  const identifier = value => typeof value === 'string' && value.length > 0\n    && value.length <= 200 && value === value.trim() && !/[\\u0000-\\u001f]/.test(value);\n  if (!['evolution2', 'zapi', 'wafly'].includes(provider)) return reject('provider_nao_suportado');\n  if (!identifier(expectedInstance) || /^(SUA_|SEU_)/.test(expectedInstance)) return reject('configure_instancia');\n  if (!record(payload)) return reject('payload_invalido');\n\n  let instance, messageId, phone, text;\n  if (provider === 'evolution2') {\n    if (!['messages.upsert', 'MESSAGES_UPSERT'].includes(payload.event)) return reject('evento_fora_do_escopo');\n    instance = payload.instance;\n    if (instance !== expectedInstance) return reject('instancia_divergente');\n    const data = payload.data;\n    if (!record(data) || !record(data.key)) return reject('payload_invalido');\n    if (data.key.fromMe !== false) return reject('mensagem_propria_ou_direcao_incerta');\n    // LID, grupos, canais e status não são convertidos em telefones por heurística.\n    if (typeof data.key.remoteJid !== 'string'\n      || !/^\\d{10,15}@s\\.whatsapp\\.net$/.test(data.key.remoteJid)) return reject('destino_fora_do_escopo');\n    if (data.key.participant) return reject('destino_fora_do_escopo');\n    if (!record(data.message)) return reject('conteudo_fora_do_escopo');\n    const keys = Object.keys(data.message).filter(key => key !== 'messageContextInfo');\n    if (keys.length !== 1) return reject('conteudo_fora_do_escopo');\n    if (keys[0] === 'conversation') text = data.message.conversation;\n    else if (keys[0] === 'extendedTextMessage' && record(data.message.extendedTextMessage)) {\n      text = data.message.extendedTextMessage.text;\n    } else return reject('conteudo_fora_do_escopo');\n    messageId = data.key.id;\n    phone = data.key.remoteJid.slice(0, -'@s.whatsapp.net'.length);\n  } else {\n    if (payload.type !== 'ReceivedCallback') return reject('evento_fora_do_escopo');\n    instance = payload.instanceId;\n    if (instance !== expectedInstance) return reject('instancia_divergente');\n    if (payload.fromMe !== false) return reject('mensagem_propria_ou_direcao_incerta');\n    if (payload.isGroup !== false || ['isNewsletter', 'broadcast', 'isStatusReply'].some(\n      flag => payload[flag] != null && payload[flag] !== false)\n      || payload.participantPhone) return reject('destino_fora_do_escopo');\n    if (['isEdit', 'waitingMessage'].some(flag => payload[flag] != null && payload[flag] !== false)) {\n      return reject('conteudo_fora_do_escopo');\n    }\n    const unsupported = ['image', 'audio', 'video', 'document', 'sticker', 'contact', 'location',\n      'reaction', 'notification', 'buttonsResponseMessage', 'listResponseMessage', 'pollVote',\n      'hydratedTemplate', 'buttonsMessage', 'carouselMessage', 'statusImage'];\n    if (unsupported.some(key => payload[key] != null) || !record(payload.text)) return reject('conteudo_fora_do_escopo');\n    messageId = payload.messageId;\n    phone = payload.phone;\n    text = payload.text.message;\n  }\n  if (!identifier(messageId)) return reject('id_invalido');\n  if (typeof phone !== 'string' || !/^\\d{10,15}$/.test(phone)) return reject('telefone_invalido');\n  if (typeof text !== 'string' || !text.trim() || text.length > 10000) return reject('texto_invalido');\n  return {\n    accepted: true,\n    reason: 'texto_individual',\n    event: {\n      provider, instance, message_id: messageId, phone, text, type: 'text',\n      is_group: false, from_me: false,\n      // Persista esta chave com unicidade atômica antes de executar efeitos externos.\n      dedupe_key: JSON.stringify([provider, instance, messageId]),\n    },\n  };\n}\n\n// Este fluxo manual recebe só as amostras do node anterior.\n// Na integração real, configure provider e expectedInstance no servidor.\n// Nunca deduza esses dois valores do corpo recebido da internet.\nconst seenInThisRun = new Set();\nreturn $input.all().map((item, index) => {\n  const sample = item.json;\n  const result = normalizeInbound(sample.provider, sample.payload, { expectedInstance: sample.expectedInstance });\n  const duplicateInThisRun = result.accepted && seenInThisRun.has(result.event.dedupe_key);\n  if (result.accepted) seenInThisRun.add(result.event.dedupe_key);\n  return { json: { sample: sample.name, ...result, duplicate_in_sample: duplicateInThisRun }, pairedItem: { item: index } };\n});\n"
+      }
+    },
+    {
+      "id": "instructions",
+      "name": "Leia antes de usar",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -300
+      ],
+      "parameters": {
+        "width": 780,
+        "height": 220,
+        "content": "## Laboratório offline v1 — 22/10/2026\nImporte e clique Executar workflow. Usa somente amostras sintéticas. Não há webhook, credencial nem envio.\n\nAceita somente texto recebido individual, ID e instância exatos. Rejeita grupo, mídia, status, eco próprio e LID sem telefone. duplicate_in_sample vale só nesta execução.\n\nPara sua integração: copie a função, configure provider/expectedInstance no servidor, autentique o webhook e persista dedupe_key com unicidade atômica antes de qualquer efeito. Valide com número próprio separado; não mantenha a mesma sessão nos dois fornecedores. Guia: https://wafly.com.br/tutoriais/migrar-evolution-z-api-n8n/#kit-de-migracao"
+      }
+    }
+  ],
+  "connections": {
+    "Executar amostras": {
+      "main": [
+        [
+          {
+            "node": "Amostras sintéticas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amostras sintéticas": {
+      "main": [
+        [
+          {
+            "node": "Normalizar e conferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
