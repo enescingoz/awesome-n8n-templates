@@ -288,7 +288,7 @@
     },
     {
       "parameters": {
-        "content": "## What it does:\nThis workflow is built for managing docker compose services via a http post request to turn on or off that service...\n## Setup:\nAdd your credentials for basic auth and ssh\nCopy the custom webhook url and get started!\nExample:\n``` curl\ncurl -X POST -u \"username:password\" https://<your-domain>/webhook/docker/start/nextcloud\n```\n## Info:\nThis worklow is only for docker compose not for the docker engine cli!\nThe service name must be a plain directory name (letters, digits, `.`, `_`, `-`; max 64 chars). Anything else is rejected before the SSH command runs.",
+        "content": "## What it does:\nThis workflow is built for managing docker compose services via a http post request to turn on or off that service...\n## Setup:\nAdd your credentials for basic auth and ssh\nCopy the custom webhook url and get started!\nExample:\n``` curl\ncurl -X POST -u \"username:password\" https://<your-domain>/webhook/<webhook-id>/docker/start/nextcloud\n```\nn8n puts the webhook ID in front of paths that have parameters. Copy the exact Production URL from the Webhook node.\n## Info:\nThis worklow is only for docker compose not for the docker engine cli!\nThe service name must be a plain directory name (letters, digits, `.`, `_`, `-`; max 64 chars). Anything else is rejected before the SSH command runs.",
         "height": 336,
         "width": 544
       },
