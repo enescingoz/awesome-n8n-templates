@@ -405,6 +405,7 @@ This section includes 7 WhatsApp and cross-channel messaging automation template
 
 | Title | Description | Department | Link |
 |---|---|---|---|
+| Wafly — laboratório de migração Evolution 2 e Z-API (offline) | Offline lab for normalizing fictional individual-text events from Evolution 2, Z-API and Wafly. Uses 13 samples, no credentials or network calls, and marks duplicates only within the sample run. | Engineering | [Link to Template](WhatsApp/Wafly%20%E2%80%94%20laborat%C3%B3rio%20de%20migra%C3%A7%C3%A3o%20Evolution%202%20e%20Z-API%20%28offline%29.json) |
 | Automate Sales Meeting Prep with AI & APIFY Sent To WhatsApp | This workflow automates sales meeting preparation using AI and Apify, sending relevant information to WhatsApp. | Sales/AI/Automation | [Link to Template](./WhatsApp/Automate%20Sales%20Meeting%20Prep%20with%20AI%20&%20APIFY%20Sent%20To%20WhatsApp.json) |
 | Building Your First WhatsApp Chatbot | This workflow guides you through building your first WhatsApp chatbot. | Customer Service/Development | [Link to Template](./WhatsApp/Building%20Your%20First%20WhatsApp%20Chatbot.json) |
 | Complete business WhatsApp AI-Powered RAG Chatbot using OpenAI | This workflow builds a complete business WhatsApp AI-powered RAG chatbot using OpenAI. | Customer Service/AI/Development | [Link to Template](./WhatsApp/Complete%20business%20WhatsApp%20AI-Powered%20RAG%20Chatbot%20using%20OpenAI.json) |
