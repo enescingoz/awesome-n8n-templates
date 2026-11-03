@@ -1,0 +1,312 @@
+{
+  "name": "VideoUpscaler — Upscale Video to 4K (Long-Polling Workflow)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## How it works\nThis workflow submits a video URL (or YouTube link) to **VideoUpscaler** and waits for the enhanced 1080p, 2K, or 4K MP4 output URL.\n\n1. **Set Video Input** defines `video_url` and target `resolution` (`1080p`, `2k`, or `4k`).\n2. **Start Upscale** calls `POST /api/v1/upscale` with `Idempotency-Key: {{ $execution.id }}` so retries never double-charge.\n3. **Poll Task (Wait up to 45s)** holds the HTTP connection open up to 45 seconds per request (`?wait=45`) and returns immediately when the render finishes.\n4. **Output 4K Video URL** outputs the final `output_url`, `credits_cost`, and `duration_seconds`.",
+        "height": 340,
+        "width": 420
+      },
+      "id": "b1f4c110-0001-4000-8000-000000000001",
+      "name": "How it works",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -60]
+    },
+    {
+      "parameters": {
+        "content": "## Setup (about 2 minutes)\n1. **VideoUpscaler API Key**: Open [Settings -> API Keys](https://videoupscaler.co/settings/apikeys) and create a `vu_live_...` key.\n2. **Header Auth Credential**: In **Start Upscale** and **Poll Task**, select **Header Auth** credential:\n   - **Name**: `Authorization`\n   - **Value**: `Bearer vu_live_YOUR_API_KEY`\n3. **Optional — Official Community Node**: On self-hosted n8n or n8n Cloud, install `n8n-nodes-videoupscaler` in *Settings -> Community Nodes* to replace the HTTP loop with a single **VideoUpscaler** node.",
+        "height": 300,
+        "width": 420,
+        "color": 4
+      },
+      "id": "b1f4c110-0002-4000-8000-000000000002",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Customise\n- Swap the manual trigger for a **Google Drive Trigger**, **Webhook**, **Airtable**, or an AI video generator node (Kling / Runway / Veo / Sora).\n- Connect **Output 4K Video URL** to **Google Drive (Upload)**, **YouTube**, **TikTok**, **S3**, or **Google Sheets**.\n- For multi-minute 4K videos, pass `webhook_url` in **Start Upscale** so VideoUpscaler pushes the finished task directly to an n8n Webhook trigger.",
+        "height": 260,
+        "width": 420,
+        "color": 5
+      },
+      "id": "b1f4c110-0003-4000-8000-000000000003",
+      "name": "Customise",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, 620]
+    },
+    {
+      "parameters": {},
+      "id": "b1f4c110-1001-4000-8000-000000000001",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "video-url-field",
+              "name": "video_url",
+              "value": "https://example.com/clip.mp4",
+              "type": "string"
+            },
+            {
+              "id": "resolution-field",
+              "name": "resolution",
+              "value": "4k",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f4c110-1002-4000-8000-000000000002",
+      "name": "Set Video Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://videoupscaler.co/api/v1/upscale",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_url\": {{ JSON.stringify($json.video_url) }},\n  \"resolution\": {{ JSON.stringify($json.resolution || '4k') }}\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "b1f4c110-1003-4000-8000-000000000003",
+      "name": "Start Upscale",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://videoupscaler.co/api/v1/tasks/{{ $json.id }}?wait=45",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 55000
+        }
+      },
+      "id": "b1f4c110-1004-4000-8000-000000000004",
+      "name": "Poll Task (Wait up to 45s)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "completed-cond",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1f4c110-1005-4000-8000-000000000005",
+      "name": "Is Completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "still-running-cond",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1f4c110-1006-4000-8000-000000000006",
+      "name": "Still Running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1340, 420]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "b1f4c110-1007-4000-8000-000000000007",
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1560, 420]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "output-url-field",
+              "name": "output_url",
+              "value": "={{ $json.output_url }}",
+              "type": "string"
+            },
+            {
+              "id": "task-id-field",
+              "name": "task_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "credits-cost-field",
+              "name": "credits_cost",
+              "value": "={{ $json.credits_cost }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f4c110-1008-4000-8000-000000000008",
+      "name": "Output 4K Video URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 180]
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set Video Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Video Input": {
+      "main": [
+        [
+          {
+            "node": "Start Upscale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Upscale": {
+      "main": [
+        [
+          {
+            "node": "Poll Task (Wait up to 45s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Task (Wait up to 45s)": {
+      "main": [
+        [
+          {
+            "node": "Is Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Completed?": {
+      "main": [
+        [
+          {
+            "node": "Output 4K Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Still Running?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still Running?": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "Poll Task (Wait up to 45s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
