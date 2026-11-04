@@ -1,0 +1,262 @@
+{
+  "name": "Find Google Maps business leads with emails and save them to Google Sheets with Apify",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Find Google Maps business leads with emails\n\n### How it works\n1. **Run every day at 08:00** starts the workflow. You can also click **Execute workflow**.\n2. **Set search input** holds the input for the [Google Maps Business Lead & Email Finder](https://apify.com/dataspryva/google-maps-business-lead-and-email-finder) Apify Actor.\n3. **Run Apify Actor and get rows** runs the Actor on your Apify account and returns its rows.\n4. **Clean and dedupe businesses** drops empty fields, removes duplicates by `placeId` and adds `_source` and `_scrapedAt`.\n5. **Append rows to Google Sheets** (disabled until set up) appends one row per item.\n\n### Setup\n1. Create an Apify account and copy your API token from **Settings > API & Integrations** in the Apify Console.\n2. In n8n create a **Query Auth** credential: name `token`, value your Apify token. Select it in **Run Apify Actor and get rows**.\n3. Edit **Set search input**: `searchQueries` (one phrase per search, include the place), `max_results` (leads to save), `extractEmails` and `onlySaveResults` (`onlyWithContacts` keeps businesses with an email or phone).\n4. Optional: add a Google Sheets credential, choose your spreadsheet and sheet in **Append rows to Google Sheets**, then enable the node.\n\n### Customization\nAdd `minRating` (for example `4.0`) to skip low-rated places, use `locationQuery` to apply one location to several phrases, or switch `mode` to `enrichWebsites` and pass `websites` to collect contacts for domains you already have.\n\n### Limits\n- Actor usage is billed to your Apify account (see the Actor's Pricing tab).\n- Rows return only if the run ends within 300 seconds; for large runs use the async `/runs` endpoint.\n- Public data only.",
+        "height": 720,
+        "width": 600
+      },
+      "id": "a7296b06-b9bd-4c61-a472-b50a0874d780",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -460
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Choose what to fetch\nThe daily trigger starts the run. Edit the Actor input in **Set search input**.",
+        "height": 380,
+        "width": 520,
+        "color": 7
+      },
+      "id": "7bf476c7-2661-49bb-a31f-06e54b40f192",
+      "name": "Section: input",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Run the Apify Actor\nCalls the Actor with your input and waits up to 300 seconds for the rows. Retries once on a network error.",
+        "height": 380,
+        "width": 300,
+        "color": 7
+      },
+      "id": "35f9fdde-a044-4120-ab8d-b10b1526b461",
+      "name": "Section: Apify",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        500,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Credential and cost\nSelect your Apify **Query Auth** credential here (parameter name `token`). Each run is billed to your Apify account.",
+        "height": 180,
+        "width": 300,
+        "color": 3
+      },
+      "id": "1a224493-3e16-4aba-aa59-65397ce411f6",
+      "name": "Warning: credential",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        500,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Clean and export\nRemoves empty fields and duplicates, then optionally appends the rows to Google Sheets. Connect any other node after **Businesses ready** instead.",
+        "height": 380,
+        "width": 780,
+        "color": 7
+      },
+      "id": "e9e6eb26-5506-4110-ac0c-889ef76fe260",
+      "name": "Section: export",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        840,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "811ff4ca-8fa0-4e5f-a408-775e1c827df4",
+      "name": "Run every day at 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"mode\": \"searchPlaces\",\n  \"searchQueries\": [\n    \"restaurants in New York, NY\"\n  ],\n  \"max_results\": 20,\n  \"extractEmails\": true,\n  \"onlySaveResults\": \"onlyWithContacts\"\n}\n",
+        "options": {}
+      },
+      "id": "e187ae5b-11d6-4e4e-ae6a-edd6fffa9d23",
+      "name": "Set search input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        60
+      ],
+      "notes": "Actor input. Field reference: the Input tab on the Actor page."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/dataspryva~google-maps-business-lead-and-email-finder/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "dba63390-6838-491e-a138-546d8d5606da",
+      "name": "Run Apify Actor and get rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        60
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Apify returns the dataset rows as a JSON array.\nconst payload = $input.all().map((item) => item.json);\nif (payload.length === 1 && payload[0] && payload[0].error) {\n  throw new Error('Apify error: ' + (payload[0].error.message || JSON.stringify(payload[0].error)));\n}\nconst rows = payload.length === 1 && Array.isArray(payload[0]) ? payload[0] : payload;\nconst keyField = \"placeId\";\nconst seen = new Set();\nconst clean = [];\nfor (const row of rows) {\n  if (!row || typeof row !== 'object') continue;\n  const out = {};\n  for (const [k, v] of Object.entries(row)) {\n    if (v === null || v === undefined || v === '') continue;\n    out[k] = typeof v === 'string' ? v.trim() : v;\n  }\n  const id = out[keyField] !== undefined ? String(out[keyField]).toLowerCase() : JSON.stringify(out);\n  if (seen.has(id)) continue;\n  seen.add(id);\n  out._source = \"https://apify.com/dataspryva/google-maps-business-lead-and-email-finder\";\n  out._scrapedAt = new Date().toISOString();\n  clean.push({ json: out });\n}\nreturn clean;"
+      },
+      "id": "f737a941-db5d-4f72-af4f-86860e968b26",
+      "name": "Clean and dedupe businesses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "22d9a20f-ebdd-4428-a56d-1a1976d63cb4",
+      "name": "Businesses ready",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "170b871d-7e55-4cac-a565-86e8e22c0239",
+      "name": "Append rows to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1400,
+        60
+      ],
+      "disabled": true,
+      "notes": "Enable after adding a Google Sheets credential and your spreadsheet ID."
+    }
+  ],
+  "connections": {
+    "Run every day at 08:00": {
+      "main": [
+        [
+          {
+            "node": "Set search input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set search input": {
+      "main": [
+        [
+          {
+            "node": "Run Apify Actor and get rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Apify Actor and get rows": {
+      "main": [
+        [
+          {
+            "node": "Clean and dedupe businesses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean and dedupe businesses": {
+      "main": [
+        [
+          {
+            "node": "Businesses ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Businesses ready": {
+      "main": [
+        [
+          {
+            "node": "Append rows to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
