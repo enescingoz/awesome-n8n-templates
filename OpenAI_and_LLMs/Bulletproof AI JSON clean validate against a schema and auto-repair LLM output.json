@@ -1,0 +1,919 @@
+{
+  "name": "Bulletproof AI JSON: clean, validate against a schema and auto-repair LLM output",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Run Once: Create Log Table",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "ai_json_guard_log",
+        "columns": {
+          "column": [
+            {
+              "name": "record_id",
+              "type": "string"
+            },
+            {
+              "name": "source",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "attempts",
+              "type": "number"
+            },
+            {
+              "name": "fixes",
+              "type": "string"
+            },
+            {
+              "name": "errors",
+              "type": "string"
+            },
+            {
+              "name": "data_json",
+              "type": "string"
+            },
+            {
+              "name": "raw_output",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      },
+      "name": "Create Log Data Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -1680,
+        -420
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Try It: Run Demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Three example tickets. Replace this node with your own data (form, webhook, sheet, email...).\nreturn [\n  { json: { record_id: 'T-1001', ticket: 'Hi, I was charged twice for my October invoice. Please refund one of them asap.' } },\n  { json: { record_id: 'T-1002', ticket: 'The export button crashes the app on Android 14 every time. Can you fix it?' } },\n  { json: { record_id: 'T-1003', ticket: 'Would love a dark mode. Not urgent, just an idea!' } },\n];\n"
+      },
+      "name": "Sample Support Tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "68e6111a-4b06-5730-85ae-cfb13bb47ee0",
+              "name": "json_schema",
+              "value": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"required\": [\n    \"category\",\n    \"priority\",\n    \"summary\",\n    \"needs_human\",\n    \"tags\"\n  ],\n  \"properties\": {\n    \"category\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"billing\",\n        \"bug\",\n        \"feature_request\",\n        \"account\",\n        \"other\"\n      ]\n    },\n    \"priority\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 5\n    },\n    \"summary\": {\n      \"type\": \"string\",\n      \"minLength\": 5,\n      \"maxLength\": 200\n    },\n    \"needs_human\": {\n      \"type\": \"boolean\"\n    },\n    \"tags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"maxItems\": 5\n    }\n  }\n}",
+              "type": "string"
+            },
+            {
+              "id": "db46474d-9e65-5ad3-9087-9c7c2cbdb4ec",
+              "name": "max_retries",
+              "value": 2,
+              "type": "number"
+            },
+            {
+              "id": "a672b3f1-f9dc-515c-b23f-0128f4657700",
+              "name": "coerce_types",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Demo Settings (edit me)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.ticket }}",
+        "hasOutputParser": false,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You turn customer support tickets into data.\nReply with one JSON object only, matching this JSON Schema:\n{{ $json.json_schema }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "name": "AI: Extract Ticket Fields",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1240,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1240,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The AI node returns one item per ticket, in order: {text} on success, {error} if the call failed\n// (its On Error setting is \"Continue\"). Matched to the settings by position, because LLM chain\n// outputs don't carry item links.\nconst settings = $('Demo Settings (edit me)').all();\nreturn $input.all().map((item, i) => {\n  const s = settings[i].json, j = item.json;\n  return { json: {\n    order: i, record_id: s.record_id, source: 'demo', task: s.ticket, schema: s.json_schema,\n    max_retries: s.max_retries, coerce_types: s.coerce_types, attempt: 1,\n    raw_output: j.text ?? j.output ?? '', llm_error: j.error ? (j.error.message || String(j.error)) : '',\n  } };\n});\n"
+      },
+      "name": "Package For Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "name": "When Called By Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1460,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Accepts raw_output (or text / output) plus schema (object or JSON string). Everything else is optional.\nconst j = $json;\nconst err = j.llm_error || j.error;\nreturn { json: {\n  order: $itemIndex, record_id: String(j.record_id ?? $itemIndex), source: j.source || 'caller', task: j.task || '',\n  schema: j.schema ?? j.json_schema ?? null, max_retries: Number(j.max_retries ?? 2), coerce_types: j.coerce_types !== false,\n  attempt: 1, raw_output: j.raw_output ?? j.text ?? j.output ?? '',\n  llm_error: err ? (err.message || String(err)) : '',\n} };\n"
+      },
+      "name": "Normalize Caller Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1240,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns whatever the model returned into a parsed JSON value, without another AI call.\n// Handles: ```json fences, <think>/<reasoning> blocks, \"Thought/Action/Final Answer\" agent steps,\n// prose before or after the JSON, Responses-API content blocks, {\"output\": ...} wrappers,\n// trailing commas, // comments, smart quotes, Python True/False/None and single-quoted keys.\nfunction toText(raw, fixes) {\n  if (raw === null || raw === undefined) return '';\n  if (typeof raw === 'string') return raw;\n  if (Array.isArray(raw) && raw.length && raw.every(b => b && typeof b === 'object' && ('text' in b || 'type' in b))) {\n    fixes.push('joined content blocks'); // Responses API / Anthropic style: [{type:'output_text', text:'...'}]\n    return raw.map(b => typeof b.text === 'string' ? b.text : (b.text && b.text.value) || '').join('\\n');\n  }\n  if (typeof raw === 'object') {\n    for (const k of ['text', 'output_text', 'content']) if (typeof raw[k] === 'string') { fixes.push('read .' + k); return raw[k]; }\n    return { __object: raw };\n  }\n  return String(raw);\n}\nfunction candidates(s) { // every balanced {...} or [...] that respects strings\n  const out = [];\n  for (let i = 0; i < s.length; i++) {\n    const open = s[i]; if (open !== '{' && open !== '[') continue;\n    const stack = []; let inStr = null, esc = false;\n    for (let j = i; j < s.length; j++) {\n      const c = s[j];\n      if (inStr) { if (esc) esc = false; else if (c === '\\\\') esc = true; else if (c === inStr) inStr = null; continue; }\n      if (c === '\"' || c === \"'\") { inStr = c; continue; }\n      if (c === '{' || c === '[') stack.push(c);\n      else if (c === '}' || c === ']') { stack.pop(); if (!stack.length) { out.push(s.slice(i, j + 1)); i = j; break; } }\n    }\n    if (out.length >= 20) break;\n  }\n  return out;\n}\nfunction lightRepair(t) {\n  return t\n    .replace(/[\\u201C\\u201D]/g, '\"').replace(/[\\u2018\\u2019]/g, \"'\")\n    .replace(/^\\s*\\/\\/.*$/gm, '')\n    .replace(/,\\s*([}\\]])/g, '$1')\n    .replace(/([{,]\\s*)'([^'\"\\n]+?)'\\s*:/g, '$1\"$2\":')\n    .replace(/:\\s*'([^'\"\\n]*)'(\\s*[,}\\]])/g, ': \"$1\"$2')\n    .replace(/([:\\[,]\\s*)True(\\s*[,}\\]])/g, '$1true$2').replace(/([:\\[,]\\s*)False(\\s*[,}\\]])/g, '$1false$2').replace(/([:\\[,]\\s*)None(\\s*[,}\\]])/g, '$1null$2');\n}\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json; const fixes = [];\n  let parsed, parseError = '', text = toText(j.raw_output, fixes);\n  if (j.llm_error) parseError = 'AI step failed: ' + String(j.llm_error).slice(0, 300);\n  else if (text && typeof text === 'object' && text.__object) { parsed = text.__object; text = JSON.stringify(parsed); }\n  else {\n    let s = String(text);\n    if (/<(think|thinking|reasoning)>/i.test(s)) { s = s.replace(/<(think|thinking|reasoning)>[\\s\\S]*?<\\/\\1>/gi, ''); fixes.push('removed <think> block'); }\n    const fa = s.lastIndexOf('Final Answer:');\n    if (fa >= 0) { s = s.slice(fa + 13); fixes.push('kept only the text after Final Answer:'); }\n    const fence = s.match(/```(?:json|JSON)?\\s*([\\s\\S]*?)```/);\n    if (fence) { s = fence[1]; fixes.push('stripped ``` code fence'); }\n    s = s.trim();\n    try { parsed = JSON.parse(s); }\n    catch (e) {\n      parseError = e.message;\n      const cands = candidates(s).sort((a, b) => b.length - a.length);\n      for (const c of cands) {\n        try { parsed = JSON.parse(c); fixes.push('removed text around the JSON'); parseError = ''; break; } catch (e2) {}\n        try { parsed = JSON.parse(lightRepair(c)); fixes.push('repaired JSON syntax (commas/quotes/True/None)'); parseError = ''; break; } catch (e3) { parseError = e3.message; }\n      }\n      if (parsed === undefined && !cands.length) parseError = !s ? 'Model output was empty' : /[\\[{]/.test(s) ? 'JSON is incomplete (the output looks cut off; raise Maximum Number of Tokens)' : 'No JSON object or array found in the model output';\n    }\n    // A JSON string that itself contains JSON (double-encoded)\n    if (typeof parsed === 'string' && /^\\s*[\\[{]/.test(parsed)) { try { parsed = JSON.parse(parsed); fixes.push('decoded double-encoded JSON'); } catch (e) {} }\n  }\n  out.push({ json: { ...j, raw_text: typeof text === 'string' ? text : JSON.stringify(text), parsed: parsed === undefined ? null : parsed,\n    parse_ok: parsed !== undefined && !j.llm_error, parse_error: parseError, fixes: [...(j.fixes || []), ...fixes] }, pairedItem: item.pairedItem });\n}\nreturn out;\n"
+      },
+      "name": "Clean + Extract JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validates the parsed JSON against your JSON Schema (a practical subset: type, required, properties,\n// additionalProperties, enum, items, min/max, minLength/maxLength, minItems/maxItems, pattern).\n// With coerce_types on, safe fixes are applied and listed: \"3\" -> 3, \"true\" -> true, 7 -> \"7\",\n// \"Billing\" -> \"billing\" (enum case), a single value -> [value], extra keys removed.\nfunction typeOf(v) { return v === null ? 'null' : Array.isArray(v) ? 'array' : Number.isInteger(v) ? 'integer' : typeof v; }\nfunction okType(v, t) { const a = typeOf(v); return t === a || (t === 'number' && a === 'integer'); }\nfunction check(v, s, path, errs, fixes, coerce) {\n  if (!s || typeof s !== 'object') return v;\n  const types = s.type ? [].concat(s.type) : null;\n  if (types && !types.some(t => okType(v, t))) {\n    let fixed, did = false;\n    if (coerce) for (const t of types) {\n      if ((t === 'number' || t === 'integer') && typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v)) && (t === 'number' || Number.isInteger(Number(v)))) { fixed = Number(v); did = true; break; }\n      if (t === 'integer' && typeof v === 'number' && Math.abs(v - Math.round(v)) < 1e-9) { fixed = Math.round(v); did = true; break; }\n      if (t === 'boolean' && typeof v === 'string' && /^(true|false|yes|no)$/i.test(v.trim())) { fixed = /^(true|yes)$/i.test(v.trim()); did = true; break; }\n      if (t === 'string' && (typeof v === 'number' || typeof v === 'boolean')) { fixed = String(v); did = true; break; }\n      if (t === 'array' && v !== null && v !== undefined && !Array.isArray(v)) { fixed = [v]; did = true; break; }\n      if (t === 'null' && (v === '' || v === 'null')) { fixed = null; did = true; break; }\n    }\n    if (did) { fixes.push(`coerced ${path || 'value'} ${JSON.stringify(v)} -> ${JSON.stringify(fixed)}`); v = fixed; }\n    else { errs.push(`${path || 'value'} must be ${types.join(' or ')}, got ${typeOf(v)} ${JSON.stringify(v).slice(0, 60)}`); return v; }\n  }\n  if (s.enum) {\n    if (!s.enum.includes(v)) {\n      const m = coerce && typeof v === 'string' ? s.enum.find(e => typeof e === 'string' && e.toLowerCase() === v.trim().toLowerCase()) : undefined;\n      if (m !== undefined) { fixes.push(`coerced ${path} ${JSON.stringify(v)} -> ${JSON.stringify(m)}`); v = m; }\n      else errs.push(`${path || 'value'} must be one of ${JSON.stringify(s.enum)}, got ${JSON.stringify(v)}`);\n    }\n  }\n  if (typeof v === 'number') {\n    if (s.minimum !== undefined && v < s.minimum) errs.push(`${path} must be >= ${s.minimum}, got ${v}`);\n    if (s.maximum !== undefined && v > s.maximum) errs.push(`${path} must be <= ${s.maximum}, got ${v}`);\n  }\n  if (typeof v === 'string') {\n    if (s.minLength !== undefined && v.length < s.minLength) errs.push(`${path} must have at least ${s.minLength} characters`);\n    if (s.maxLength !== undefined && v.length > s.maxLength) errs.push(`${path} must have at most ${s.maxLength} characters`);\n    if (s.pattern && !(new RegExp(s.pattern)).test(v)) errs.push(`${path} must match ${s.pattern}`);\n  }\n  if (Array.isArray(v)) {\n    if (s.minItems !== undefined && v.length < s.minItems) errs.push(`${path} needs at least ${s.minItems} items`);\n    if (s.maxItems !== undefined && v.length > s.maxItems) errs.push(`${path} allows at most ${s.maxItems} items`);\n    if (s.items) v = v.map((x, i) => check(x, s.items, `${path}[${i}]`, errs, fixes, coerce));\n  }\n  if (typeOf(v) === 'object') {\n    const props = s.properties || {};\n    for (const r of s.required || []) if (!(r in v) || v[r] === undefined) errs.push(`missing required field \"${path ? path + '.' : ''}${r}\"`);\n    for (const k of Object.keys(v)) {\n      if (props[k]) v[k] = check(v[k], props[k], path ? `${path}.${k}` : k, errs, fixes, coerce);\n      else if (s.additionalProperties === false) {\n        if (coerce) { fixes.push(`removed extra field \"${path ? path + '.' : ''}${k}\"`); delete v[k]; }\n        else errs.push(`unexpected field \"${path ? path + '.' : ''}${k}\"`);\n      }\n    }\n  }\n  return v;\n}\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json; const errs = [], fixes = [...(j.fixes || [])];\n  let schema = j.schema;\n  if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch (e) { schema = null; errs.push('Your JSON Schema itself is not valid JSON: ' + e.message); } }\n  let data = j.parsed;\n  if (!j.parse_ok) errs.push(j.parse_error || 'Could not parse JSON');\n  else if (schema) {\n    data = JSON.parse(JSON.stringify(data));\n    const wantObj = [].concat(schema.type || []).includes('object');\n    // n8n's Structured Output Parser convention wraps results as {\"output\": {...}}; models copy it.\n    if (wantObj && data && typeOf(data) === 'object' && Object.keys(data).length === 1 && 'output' in data && !(schema.properties || {}).output && typeOf(data.output) === 'object') { data = data.output; fixes.push('unwrapped {\"output\": ...}'); }\n    if (wantObj && Array.isArray(data) && data.length === 1 && typeOf(data[0]) === 'object') { data = data[0]; fixes.push('unwrapped single-item array'); }\n    data = check(data, schema, '', errs, fixes, j.coerce_types !== false);\n  }\n  const attempt = Number(j.attempt || 1), maxRetries = Number(j.max_retries ?? 2);\n  const valid = errs.length === 0;\n  const route = valid ? 'valid' : (attempt <= maxRetries ? 'retry' : 'give_up');\n  out.push({ json: { ...j, schema, data: valid ? data : null, valid, errors: errs, fixes, route,\n    history: [...(j.history || []), { attempt, errors: errs, fixes: fixes.slice((j.fixes || []).length) }] }, pairedItem: item.pairedItem });\n}\nreturn out;\n"
+      },
+      "name": "Validate Against Schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3258955f-6e9c-5b7a-af5f-915f9a47886b",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "valid",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Valid"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c0380438-2acd-584f-8fe8-e69641cae1a7",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "retry",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Retry"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a7549416-5368-5713-8df3-1561c13d0bd9",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "give_up",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Give Up"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Valid, Retry Or Give Up?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Tells the model exactly what was wrong, so the retry is a targeted fix instead of a re-roll.\nconst j = $json;\nconst prev = String(j.llm_error ? '(the AI step errored: ' + j.llm_error + ')' : j.raw_text || '').slice(0, 4000);\nconst prompt = [\n  'Your previous answer could not be used.',\n  'Problems found:', ...j.errors.map(e => '- ' + e), '',\n  'Return ONLY one JSON value that matches this JSON Schema. No code fences, no explanation, no text before or after it.',\n  JSON.stringify(j.schema), '',\n  j.task ? 'Original task:\\n' + String(j.task).slice(0, 4000) + '\\n' : '',\n  'Previous answer:', prev,\n].join('\\n');\nreturn { json: { ...j, correction_prompt: prompt } };\n"
+      },
+      "name": "Build Correction Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.correction_prompt }}",
+        "hasOutputParser": false,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You repair JSON for a program. Output only valid JSON, nothing else."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "name": "AI: Repair JSON",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        140,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "name": "OpenAI Chat Model (Repair)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        140,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Carries the context forward (matched by position, like Package For Guard), counts the attempt,\n// then loops back to Clean + Extract JSON.\nconst prompts = $('Build Correction Prompt').all();\nreturn $input.all().map((item, i) => {\n  const { correction_prompt, parsed, data, valid, errors, route, raw_text, parse_ok, parse_error, ...ctx } = prompts[i].json;\n  const j = item.json;\n  return { json: { ...ctx, attempt: ctx.attempt + 1,\n    raw_output: j.text ?? j.output ?? '', llm_error: j.error ? (j.error.message || String(j.error)) : '' } };\n});\n"
+      },
+      "name": "Next Attempt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst status = j.valid ? (j.attempt > 1 ? 'ok_after_retry' : 'ok') : 'failed';\nreturn { json: { ok: j.valid, status, data: j.data, errors: j.errors, fixes: j.fixes, attempts: j.attempt, order: j.order,\n  record_id: j.record_id, source: j.source, raw_output: j.valid ? '' : String(j.raw_text || j.llm_error || '').slice(0, 2000) } };\n"
+      },
+      "name": "Build Final Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "ai_json_guard_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "record_id": "={{ $json.record_id }}",
+            "source": "={{ $json.source }}",
+            "status": "={{ $json.status }}",
+            "attempts": "={{ $json.attempts }}",
+            "fixes": "={{ $json.fixes.join('; ') }}",
+            "errors": "={{ $json.errors.join('; ') }}",
+            "data_json": "={{ $json.ok ? JSON.stringify($json.data) : '' }}",
+            "raw_output": "={{ $json.raw_output }}"
+          },
+          "schema": [
+            {
+              "id": "record_id",
+              "displayName": "record_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "attempts",
+              "displayName": "attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fixes",
+              "displayName": "fixes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "errors",
+              "displayName": "errors",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_json",
+              "displayName": "data_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_output",
+              "displayName": "raw_output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Log Result (Failures = Dead Letter)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// This is what a calling workflow receives. Use data when ok is true; errors explain a failure.\n// Items finish in different passes of the repair loop, so this gathers every finished item so far,\n// in the original order. The last run (the one a calling workflow gets) has all of them.\nconst done = [];\nfor (let r = 0; r <= $runIndex; r++) done.push(...$('Build Final Result').all(0, r));\nreturn done.sort((a, b) => a.json.order - b.json.order).map(({ json: r }) => ({ json: {\n  ok: r.ok, status: r.status, data: r.data, errors: r.errors, fixes: r.fixes, attempts: r.attempts, record_id: r.record_id } }));\n"
+      },
+      "name": "Return Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Check Success Rate",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        860
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "ai_json_guard_log"
+        },
+        "matchType": "anyCondition",
+        "filters": {},
+        "returnAll": true
+      },
+      "name": "Read Log Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -1680,
+        860
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// How often does your prompt need help? A high retry rate means the prompt or schema needs work.\nconst rows = $input.all().map(i => i.json).filter(r => r.status);\nconst n = rows.length || 1, count = s => rows.filter(r => r.status === s).length;\nconst tally = {};\nfor (const r of rows) for (const e of String(r.errors || '').split('; ').filter(Boolean)) tally[e] = (tally[e] || 0) + 1;\nfor (const r of rows) for (const f of String(r.fixes || '').split('; ').filter(Boolean)) tally['fixed: ' + f.replace(/ \".*$/, '')] = (tally['fixed: ' + f.replace(/ \".*$/, '')] || 0) + 1;\nreturn [{ json: { total: rows.length,\n  ok_first_try_pct: Math.round(100 * count('ok') / n), ok_after_retry_pct: Math.round(100 * count('ok_after_retry') / n),\n  failed_pct: Math.round(100 * count('failed') / n),\n  top_issues: Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `${v}x ${k}`) } }];\n"
+      },
+      "name": "Summarize Success Rate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1460,
+        860
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Bulletproof AI JSON: clean, validate, repair\n\n### How it works\n1. The AI step returns **plain text** (no Structured Output Parser), so a bad answer can't stop the run with *\"Model output doesn't fit required format\"* or *\"Failed to parse agent steps\"*.\n2. **Clean + Extract JSON** fixes the usual mess without another AI call: ```json fences, `<think>` blocks, \"Thought / Final Answer\" agent text, chatter before or after the JSON, content-block arrays, trailing commas, smart quotes and `True`/`None`.\n3. **Validate Against Schema** checks it against your JSON Schema. Safe type fixes (\"3\" → 3, \"yes\" → true, \"Billing\" → \"billing\") are applied and listed.\n4. If it still fails, the exact errors go back to the model in a **correction prompt**, up to **max_retries** times.\n5. Every result is logged to the **ai_json_guard_log** Data Table. Failures are kept as a dead-letter row with the raw output.\n\n### Setup\n1. Open **OpenAI Chat Model** and **OpenAI Chat Model (Repair)** and pick your OpenAI credential. Any chat model node works.\n2. Run the **Run Once: Create Log Table** branch.\n3. Run **Try It: Run Demo**, then edit **Demo Settings (edit me)**: paste your JSON Schema and set max_retries.\n\n### Use it from your own workflows\nAdd an **Execute Workflow** node that calls this workflow with `raw_output` (the model's text), `schema` (JSON Schema) and, optionally, `task`, `max_retries` and `record_id`. It returns `ok`, `data`, `errors`, `fixes` and `attempts`.\n\n### Customize\nAdd rules to the schema (enum, minimum, maxLength, pattern). Turn off `coerce_types` to make it strict. Read **Check Success Rate** to see how often your prompt needs a repair.",
+        "width": 680,
+        "height": 1560,
+        "color": 1
+      },
+      "name": "Main Description",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2700,
+        -500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 0. One-time setup\nRun this branch once. It creates the **ai_json_guard_log** Data Table (or reuses it).",
+        "width": 480,
+        "height": 260,
+        "color": 7
+      },
+      "name": "Section 0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1960,
+        -520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Demo: AI step with no parser\n**Require Specific Output Format** is off, so the model's text always reaches the guard. Its **On Error** setting is *Continue*, so a failed AI call (rate limit, timeout) reaches the guard as an error and gets retried instead of stopping the run.",
+        "width": 1180,
+        "height": 500,
+        "color": 7
+      },
+      "name": "Section 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1960,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Call it from any workflow\n**Publish** this workflow once so other workflows can call it. Then send `raw_output` + `schema` with an **Execute Workflow** node. Optional: `task` (your original prompt, used in repairs), `max_retries`, `record_id`, `coerce_types`.",
+        "width": 980,
+        "height": 300,
+        "color": 7
+      },
+      "name": "Section 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1960,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Clean, extract, validate\nNo AI calls here. Each fix is listed in `fixes`, and each schema problem in `errors`.",
+        "width": 700,
+        "height": 400,
+        "color": 7
+      },
+      "name": "Section 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -820,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Repair loop\nOnly items that still fail come here. The model gets the exact errors, the schema, the task and its previous answer. **Next Attempt** sends the reply back through the same checks.",
+        "width": 680,
+        "height": 500,
+        "color": 7
+      },
+      "name": "Section 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 5. Log + return\nEvery item is logged. `failed` rows keep the raw output so you can see what the model said. **Return Result** is what callers receive.",
+        "width": 680,
+        "height": 400,
+        "color": 7
+      },
+      "name": "Section 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 6. Success rate\nRun this to see first-try vs. after-retry vs. failed percentages and the most common issues.",
+        "width": 700,
+        "height": 340,
+        "color": 7
+      },
+      "name": "Section 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1960,
+        720
+      ]
+    }
+  ],
+  "connections": {
+    "Run Once: Create Log Table": {
+      "main": [
+        [
+          {
+            "node": "Create Log Data Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Extract Ticket Fields",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Try It: Run Demo": {
+      "main": [
+        [
+          {
+            "node": "Sample Support Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample Support Tickets": {
+      "main": [
+        [
+          {
+            "node": "Demo Settings (edit me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demo Settings (edit me)": {
+      "main": [
+        [
+          {
+            "node": "AI: Extract Ticket Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Extract Ticket Fields": {
+      "main": [
+        [
+          {
+            "node": "Package For Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Called By Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Normalize Caller Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Package For Guard": {
+      "main": [
+        [
+          {
+            "node": "Clean + Extract JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Caller Input": {
+      "main": [
+        [
+          {
+            "node": "Clean + Extract JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean + Extract JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate Against Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Against Schema": {
+      "main": [
+        [
+          {
+            "node": "Valid, Retry Or Give Up?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model (Repair)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Repair JSON",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid, Retry Or Give Up?": {
+      "main": [
+        [
+          {
+            "node": "Build Final Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Correction Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Final Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Correction Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI: Repair JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Repair JSON": {
+      "main": [
+        [
+          {
+            "node": "Next Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next Attempt": {
+      "main": [
+        [
+          {
+            "node": "Clean + Extract JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Result": {
+      "main": [
+        [
+          {
+            "node": "Log Result (Failures = Dead Letter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Result (Failures = Dead Letter)": {
+      "main": [
+        [
+          {
+            "node": "Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success Rate": {
+      "main": [
+        [
+          {
+            "node": "Read Log Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Log Table": {
+      "main": [
+        [
+          {
+            "node": "Summarize Success Rate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
