@@ -1,0 +1,590 @@
+{
+ "name": "Internet-Puls (daniele-michelin.com)",
+ "active": false,
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 */6 * * *"
+      }
+     ]
+    }
+   },
+   "id": "t1",
+   "name": "Alle 6 Stunden",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "your-secret-path",
+    "responseMode": "onReceived",
+    "options": {}
+   },
+   "id": "t3",
+   "name": "Besucher-Knopf (Webhook)",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    190
+   ],
+   "webhookId": "edac1009-ca47-4c59-aaec-a1fb4ef26738"
+  },
+  {
+   "parameters": {
+    "inputSource": "passthrough"
+   },
+   "id": "t2",
+   "name": "Manuell / per CLI starten",
+   "type": "n8n-nodes-base.executeWorkflowTrigger",
+   "typeVersion": 1.1,
+   "position": [
+    0,
+    380
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.wheretheiss.at/v1/satellites/25544",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s1",
+   "name": "ISS-Position",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    -480
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s2",
+   "name": "Erdbeben (USGS)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    -320
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s3",
+   "name": "Hacker News",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    -160
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.wikimedia.org/feed/v1/wikipedia/de/featured/' + $now.toFormat('yyyy/MM/dd') }}",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s4",
+   "name": "Wikipedia meistgelesen",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    0
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m,weather_code,is_day",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s5",
+   "name": "Wetter am Server (Berlin)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    160
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://daniele-michelin.com/assets/status/status.json",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s6",
+   "name": "Status-Monitor (eigene Seite)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    320
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://api.github.com/repos/n8n-io/n8n",
+    "options": {
+     "timeout": 15000
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com n8n pulse (+https://daniele-michelin.com/n8n-live/)"
+      }
+     ]
+    }
+   },
+   "id": "s7",
+   "name": "GitHub: n8n",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    260,
+    480
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "numberInputs": 7
+   },
+   "id": "m1",
+   "name": "Zusammenführen",
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    540,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "// Collects the seven sources into one compact object. A failed source just becomes {ok:false}.\nconst get = (name) => { try { const j = $(name).first().json; return j && !j.error ? j : null; } catch (e) { return null; } };\n// who started this run: the 6-hour schedule, a visitor (webhook from the site) or the CLI\nlet started = Date.now(), by = 'manual';\ntry { started = Date.parse($('Alle 6 Stunden').first().json.timestamp) || started; by = 'schedule'; } catch (e) {}\ntry { const w = $('Besucher-Knopf (Webhook)').first().json; started = (w.body && w.body.t) || started; by = 'visitor'; } catch (e) {}\nconst s = {};\n\nlet j = get('ISS-Position');\ns.iss = j && j.latitude !== undefined ? { ok: true, lat: j.latitude, lon: j.longitude, alt: j.altitude, vel: j.velocity } : { ok: false };\n\nj = get('Erdbeben (USGS)');\nif (j && Array.isArray(j.features)) {\n  const top = j.features.map(f => ({ mag: f.properties.mag, place: f.properties.place, time: f.properties.time, url: f.properties.url,\n    lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })).sort((a, b) => b.mag - a.mag).slice(0, 15);\n  s.quakes = { ok: true, count: j.features.length, top };\n} else s.quakes = { ok: false };\n\nj = get('Hacker News');\nif (j && Array.isArray(j.hits) && j.hits.length) {\n  const h = [...j.hits].sort((a, b) => (b.points || 0) - (a.points || 0))[0];\n  s.hn = { ok: true, title: h.title, url: h.url || ('https://news.ycombinator.com/item?id=' + h.objectID), points: h.points, comments: h.num_comments,\n    hn: 'https://news.ycombinator.com/item?id=' + h.objectID };\n} else s.hn = { ok: false };\n\nj = get('Wikipedia meistgelesen');\nconst arts = j && j.mostread && Array.isArray(j.mostread.articles) ? j.mostread.articles.filter(a => !/^(Wikipedia|Spezial|Datei|Hilfe):/.test(a.title) && a.title !== 'Wikipedia:Hauptseite') : [];\ns.wiki = arts.length ? { ok: true, title: arts[0].normalizedtitle || arts[0].title, views: arts[0].views, url: arts[0].content_urls.desktop.page, extract: arts[0].extract } : { ok: false };\n\nj = get('Wetter am Server (Berlin)');\ns.weather = j && j.current ? { ok: true, temp: j.current.temperature_2m, wind: j.current.wind_speed_10m, code: j.current.weather_code, day: !!j.current.is_day } : { ok: false };\n\nj = get('Status-Monitor (eigene Seite)');\nif (j && j.services) {\n  const v = Object.entries(j.services);\n  s.status = { ok: true, total: v.length, up: v.filter(([k, x]) => x.state === 'ok').length, bad: v.filter(([k, x]) => x.state === 'problem').map(([k]) => k) };\n} else s.status = { ok: false };\n\nj = get('GitHub: n8n');\ns.github = j && j.stargazers_count ? { ok: true, stars: j.stargazers_count, forks: j.forks_count } : { ok: false };\n\nconst q = s.quakes.ok && s.quakes.top[0];\nconst facts = {\n  iss: s.iss.ok ? `ISS at ${s.iss.lat.toFixed(1)}, ${s.iss.lon.toFixed(1)}, ${Math.round(s.iss.vel)} km/h` : null,\n  quake: q ? `strongest quake in 24h: M${q.mag} ${q.place}; ${s.quakes.count} quakes M2.5+ in 24h` : null,\n  hackernews: s.hn.ok ? `top on Hacker News: \"${s.hn.title}\" (${s.hn.points} points)` : null,\n  wikipedia: s.wiki.ok ? `most read on German Wikipedia yesterday: \"${s.wiki.title}\" (${s.wiki.views} views)` : null,\n  weather_berlin: s.weather.ok ? `${s.weather.temp} °C, wind ${s.weather.wind} km/h` : null,\n  status_monitor: s.status.ok ? `${s.status.up} of ${s.status.total} monitored services reachable` : null,\n  n8n_github_stars: s.github.ok ? s.github.stars : null,\n};\nconst prompt = 'You are the cheerful on-air voice of a tiny robot radio station that lives inside an n8n workflow on a server in Berlin. '\n  + 'From the live facts below write ONE short bulletin of 2 sentences (max 240 characters) in German, English and Italian. Pick 2 or 3 facts, keep every number exactly as given, invent nothing. '\n  + 'Be playful and warm. If a fact is about death, disaster, war or violence, mention it neutrally without any joke, or skip it. Answer with JSON only: {\"de\":\"\",\"en\":\"\",\"it\":\"\"}\\n\\nFACTS:\\n'\n  + JSON.stringify(facts);\nreturn [{ json: { started, by, sources: s, body: { model: 'openai/gpt-oss-120b', temperature: 0.7, max_tokens: 1500, response_format: { type: 'json_object' },\n  messages: [{ role: 'user', content: prompt }] } } }];"
+   },
+   "id": "c1",
+   "name": "Daten bündeln",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    760,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://openai.inference.de-txl.ionos.com/v1/chat/completions",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.body) }}",
+    "options": {
+     "timeout": 90000
+    }
+   },
+   "id": "a1",
+   "name": "KI-Bulletin (IONOS)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    980,
+    0
+   ],
+   "onError": "continueRegularOutput",
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "",
+     "name": "YOUR OpenAI-compatible API key (Header Auth: Authorization = Bearer …)"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "// Reads the AI answer; if the model failed, a plain bulletin is built from the data so the page never stays empty.\nconst data = $('Daten bündeln').first().json;\nlet b = null;\ntry {\n  const raw = $input.first().json.choices[0].message.content;\n  const m = String(raw).match(/\\{[\\s\\S]*\\}/);\n  b = JSON.parse(m[0]);\n  if (!b.de || !b.en || !b.it) b = null;\n} catch (e) { b = null; }\nif (!b) {\n  const s = data.sources;\n  const p = s.status.ok ? `${s.status.up}/${s.status.total}` : '?';\n  b = { de: `Puls gemessen: ${p} Dienste erreichbar` + (s.iss.ok ? `, die ISS rast mit ${Math.round(s.iss.vel)} km/h.` : '.'),\n        en: `Pulse taken: ${p} services reachable` + (s.iss.ok ? `, the ISS is racing along at ${Math.round(s.iss.vel)} km/h.` : '.'),\n        it: `Polso misurato: ${p} servizi raggiungibili` + (s.iss.ok ? `, la ISS corre a ${Math.round(s.iss.vel)} km/h.` : '.') };\n}\nreturn [{ json: { by: data.by, sources: data.sources, bulletin: b, ms: Date.now() - data.started } }];"
+   },
+   "id": "c2",
+   "name": "Antwort prüfen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1200,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://YOUR-SITE.example/pulse-ingest.php",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-Pulse-Token",
+       "value": "YOUR-SECRET-TOKEN"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json) }}",
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "p1",
+   "name": "An die Live-Seite senden",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1420,
+    0
+   ]
+  }
+ ],
+ "connections": {
+  "ISS-Position": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Erdbeben (USGS)": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Hacker News": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 2
+     }
+    ]
+   ]
+  },
+  "Wikipedia meistgelesen": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 3
+     }
+    ]
+   ]
+  },
+  "Wetter am Server (Berlin)": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 4
+     }
+    ]
+   ]
+  },
+  "Status-Monitor (eigene Seite)": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 5
+     }
+    ]
+   ]
+  },
+  "GitHub: n8n": {
+   "main": [
+    [
+     {
+      "node": "Zusammenführen",
+      "type": "main",
+      "index": 6
+     }
+    ]
+   ]
+  },
+  "Zusammenführen": {
+   "main": [
+    [
+     {
+      "node": "Daten bündeln",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Daten bündeln": {
+   "main": [
+    [
+     {
+      "node": "KI-Bulletin (IONOS)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "KI-Bulletin (IONOS)": {
+   "main": [
+    [
+     {
+      "node": "Antwort prüfen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Antwort prüfen": {
+   "main": [
+    [
+     {
+      "node": "An die Live-Seite senden",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Manuell / per CLI starten": {
+   "main": [
+    [
+     {
+      "node": "ISS-Position",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Erdbeben (USGS)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Hacker News",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wikipedia meistgelesen",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wetter am Server (Berlin)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Status-Monitor (eigene Seite)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "GitHub: n8n",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Alle 6 Stunden": {
+   "main": [
+    [
+     {
+      "node": "ISS-Position",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Erdbeben (USGS)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Hacker News",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wikipedia meistgelesen",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wetter am Server (Berlin)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Status-Monitor (eigene Seite)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "GitHub: n8n",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Besucher-Knopf (Webhook)": {
+   "main": [
+    [
+     {
+      "node": "ISS-Position",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Erdbeben (USGS)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Hacker News",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wikipedia meistgelesen",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wetter am Server (Berlin)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Status-Monitor (eigene Seite)",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "GitHub: n8n",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Europe/Berlin",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "all"
+ },
+ "pinData": {}
+}

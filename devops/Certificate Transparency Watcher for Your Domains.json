@@ -1,0 +1,152 @@
+{
+ "name": "n8n of the week #11: n8n workflow #11: who is issuing certificates for my domain? Certificate Transparency as an early warning",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "15 8 * * *"
+      }
+     ]
+    }
+   },
+   "id": "306c4fb6-dd1f-59a8-90ed-051756b020fe",
+   "name": "Every morning",
+   "position": [
+    0,
+    0
+   ],
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "return ['example.com']                                    // ← your domains (subdomains are included)\n  .map(domain => ({ json: { domain } }));"
+   },
+   "id": "f47af6ae-c946-5473-ae70-e411f596e4a0",
+   "name": "My domains",
+   "position": [
+    240,
+    0
+   ],
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.certspotter.com/v1/issuances?domain=' + $json.domain + '&include_subdomains=true&expand=dns_names&expand=issuer' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "n8n workflow (+https://daniele-michelin.com/n8n-workflows/)"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "51e8147b-04bd-54f4-8231-e32e445c2565",
+   "name": "Cert Spotter",
+   "position": [
+    480,
+    0
+   ],
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const mem = $getWorkflowStaticData('global');\nconst first = !mem.seen; mem.seen = mem.seen || [];\nconst out = [];\nfor (const i of $input.all()) {                           // one item per certificate\n  const c = i.json;\n  if (!c.id || mem.seen.includes(c.id)) continue;\n  mem.seen.push(c.id);\n  if (!first) out.push(`${(c.dns_names || []).join(', ')} | ${c.issuer?.friendly_name || c.issuer?.name || 'unknown issuer'} | ${(c.not_before || '').slice(0, 10)}`);\n}\nmem.seen = mem.seen.slice(-1000);\nif (!out.length) return [];                               // first run only learns\nreturn [{ json: { title: `${out.length} new certificate(s) for your domains`,\n  message: out.join('\\n') + '\\n\\nExpected? Fine. Unknown name or issuer? Check it now.', tags: ['mag'] } }];"
+   },
+   "id": "8c71f731-3771-52cb-a65d-f0f6d6143939",
+   "name": "New certificates?",
+   "position": [
+    720,
+    0
+   ],
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://ntfy.sh",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ topic: 'your-secret-topic', title: $json.title, message: $json.message, click: $json.click, tags: $json.tags, attach: $json.attach }) }}",
+    "options": {
+     "timeout": 15000
+    }
+   },
+   "id": "570dd53f-5317-503e-9d3c-ac15b7734a8a",
+   "name": "Push to phone",
+   "position": [
+    960,
+    0
+   ],
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2
+  }
+ ],
+ "connections": {
+  "Every morning": {
+   "main": [
+    [
+     {
+      "node": "My domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "My domains": {
+   "main": [
+    [
+     {
+      "node": "Cert Spotter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Cert Spotter": {
+   "main": [
+    [
+     {
+      "node": "New certificates?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "New certificates?": {
+   "main": [
+    [
+     {
+      "node": "Push to phone",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "meta": {
+  "source": "https://daniele-michelin.com/n8n-workflows/"
+ }
+}

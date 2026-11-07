@@ -1,0 +1,127 @@
+{
+ "name": "n8n of the week #2: n8n workflow #2: a push notification when the ISS flies over my town",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 5
+      }
+     ]
+    }
+   },
+   "id": "f9d7e47c-96ca-591c-8eac-f3d075a27313",
+   "name": "Every 5 minutes",
+   "position": [
+    0,
+    0
+   ],
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2
+  },
+  {
+   "parameters": {
+    "url": "https://api.wheretheiss.at/v1/satellites/25544",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "n8n workflow (+https://daniele-michelin.com/n8n-workflows/)"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "479a59df-42af-5f50-8107-eda5a2b30e08",
+   "name": "Where is the ISS?",
+   "position": [
+    240,
+    0
+   ],
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const home = { name: 'Berlin', lat: 52.52, lon: 13.41 };   // ← your town\nconst maxKm = 1500;                                       // ← how close is \"close\"\nconst iss = $input.first().json;\nconst R = 6371, rad = d => d * Math.PI / 180;             // great-circle distance (haversine)\nconst a = Math.sin(rad(iss.latitude - home.lat) / 2) ** 2\n        + Math.cos(rad(home.lat)) * Math.cos(rad(iss.latitude)) * Math.sin(rad(iss.longitude - home.lon) / 2) ** 2;\nconst km = Math.round(2 * R * Math.asin(Math.sqrt(a)));\nconst mem = $getWorkflowStaticData('global');\nif (km > maxKm || (mem.last && Date.now() - mem.last < 80 * 60000)) return [];  // once per pass\nmem.last = Date.now();\nreturn [{ json: {\n  title: `ISS ${km} km from ${home.name}`,\n  message: `It flies at ${Math.round(iss.velocity)} km/h, ${Math.round(iss.altitude)} km high, `\n         + (iss.visibility === 'daylight' ? 'in sunlight right now.' : \"in the earth's shadow right now.\"),\n  click: `https://www.openstreetmap.org/?mlat=${iss.latitude}&mlon=${iss.longitude}#map=4/${iss.latitude}/${iss.longitude}`,\n  tags: ['satellite'] } }];"
+   },
+   "id": "f1b40136-c192-50b4-a294-51fb372abe80",
+   "name": "Close to me?",
+   "position": [
+    480,
+    0
+   ],
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://ntfy.sh",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ topic: 'your-secret-topic', title: $json.title, message: $json.message, click: $json.click, tags: $json.tags, attach: $json.attach }) }}",
+    "options": {
+     "timeout": 15000
+    }
+   },
+   "id": "080fef1c-c6a0-5a83-85ea-7fcbc32a5cab",
+   "name": "Push to phone",
+   "position": [
+    720,
+    0
+   ],
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2
+  }
+ ],
+ "connections": {
+  "Every 5 minutes": {
+   "main": [
+    [
+     {
+      "node": "Where is the ISS?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Where is the ISS?": {
+   "main": [
+    [
+     {
+      "node": "Close to me?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Close to me?": {
+   "main": [
+    [
+     {
+      "node": "Push to phone",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "meta": {
+  "source": "https://daniele-michelin.com/n8n-workflows/"
+ }
+}
