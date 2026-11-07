@@ -1,0 +1,87 @@
+{
+  "name": "Crypto Price Alert to Telegram (CoinGecko → Threshold → Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 5 }]
+        }
+      },
+      "id": "schedule-1",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/simple/price",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "ids", "value": "bitcoin,ethereum,solana" },
+            { "name": "vs_currencies", "value": "usd" },
+            { "name": "include_24hr_change", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-1",
+      "name": "Fetch Prices (CoinGecko)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ Math.abs($json.bitcoin.usd_24h_change) }}",
+              "rightValue": "={{ $workflow.staticData.alertThreshold || 3 }}",
+              "operator": { "type": "number", "operation": "gt" }
+            },
+            {
+              "leftValue": "={{ Math.abs($json.ethereum.usd_24h_change) }}",
+              "rightValue": "={{ $workflow.staticData.alertThreshold || 3 }}",
+              "operator": { "type": "number", "operation": "gt" }
+            },
+            {
+              "leftValue": "={{ Math.abs($json.solana.usd_24h_change) }}",
+              "rightValue": "={{ $workflow.staticData.alertThreshold || 3 }}",
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "if-1",
+      "name": "24h Change > 3%?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $telegramChatId || 'YOUR_CHAT_ID' }}",
+        "text": "=🚨 Crypto Alert\n\nBTC: ${{$json.bitcoin.usd}} ({{ $json.bitcoin.usd_24h_change > 0 ? '+' : '' }}{{ $json.bitcoin.usd_24h_change.toFixed(2) }}% / 24h)\nETH: ${{ $json.ethereum.usd }} ({{ $json.ethereum.usd_24h_change > 0 ? '+' : '' }}{{ $json.ethereum.usd_24h_change.toFixed(2) }}% / 24h)\nSOL: ${{ $json.solana.usd }} ({{ $json.solana.usd_24h_change > 0 ? '+' : '' }}{{ $json.solana.usd_24h_change.toFixed(2) }}% / 24h)\n\nSource: CoinGecko",
+        "additionalFields": { "parse_mode": "HTML" }
+      },
+      "id": "tg-1",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, 0],
+      "webhookId": "placeholder"
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": { "main": [[{ "node": "Fetch Prices (CoinGecko)", "type": "main", "index": 0 }]] },
+    "Fetch Prices (CoinGecko)": { "main": [[{ "node": "24h Change > 3%?", "type": "main", "index": 0 }]] },
+    "24h Change > 3%?": { "main": [[{ "node": "Send Telegram Alert", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
