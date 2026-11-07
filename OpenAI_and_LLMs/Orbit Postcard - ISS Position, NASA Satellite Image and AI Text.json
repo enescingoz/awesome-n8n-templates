@@ -1,0 +1,235 @@
+{
+ "name": "Orbit postcard (daniele-michelin.com)",
+ "active": false,
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "your-secret-path",
+    "responseMode": "onReceived",
+    "options": {}
+   },
+   "id": "w1",
+   "name": "Besucher-Knopf (Webhook)",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    0
+   ],
+   "webhookId": "fcf24f35-34c1-5966-85dc-f3f801399b28"
+  },
+  {
+   "parameters": {
+    "url": "https://api.wheretheiss.at/v1/satellites/25544",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com orbit postcard (+https://daniele-michelin.com/orbit-postkarte/)"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 15000
+    }
+   },
+   "id": "h1",
+   "name": "Wo ist die ISS?",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    220,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=5&lat=' + $json.latitude + '&lon=' + $json.longitude + '&accept-language=' + (['de','en','it'].includes($('Besucher-Knopf (Webhook)').first().json.body.lang) ? $('Besucher-Knopf (Webhook)').first().json.body.lang : 'en') }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "daniele-michelin.com orbit postcard (+https://daniele-michelin.com/orbit-postkarte/)"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 15000
+    }
+   },
+   "id": "h2",
+   "name": "Was liegt darunter?",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    440,
+    0
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "// Builds the facts and the prompt. Over the sea Nominatim finds nothing, so the ocean is named from rough coordinate boxes.\nconst req = $('Besucher-Knopf (Webhook)').first().json.body || {};\nconst lang = ['de', 'en', 'it'].includes(req.lang) ? req.lang : 'en';\nconst iss = $('Wo ist die ISS?').first().json;\nlet geo = null; try { geo = $('Was liegt darunter?').first().json; } catch (e) {}\nconst lat = iss.latitude, lon = iss.longitude;\nconst OCEAN = {\n  de: { arc: 'Nordpolarmeer', sou: 'Südlicher Ozean', atl: 'Atlantik', ind: 'Indischer Ozean', pac: 'Pazifik' },\n  en: { arc: 'Arctic Ocean', sou: 'Southern Ocean', atl: 'Atlantic Ocean', ind: 'Indian Ocean', pac: 'Pacific Ocean' },\n  it: { arc: 'Mar Glaciale Artico', sou: 'Oceano Australe', atl: 'Oceano Atlantico', ind: 'Oceano Indiano', pac: 'Oceano Pacifico' } }[lang];\nconst ocean = lat > 66 ? OCEAN.arc : lat < -55 ? OCEAN.sou\n  : (lat >= 0 ? (lon > -82 && lon < -5) : (lon > -68 && lon < 20)) ? OCEAN.atl\n  : (lon >= 20 && lon < 120 && lat < 25) ? OCEAN.ind : OCEAN.pac;\nconst a = geo && !geo.error && geo.address ? geo.address : null;\nconst land = a ? [a.state || a.region || a.county || '', a.country || ''].filter(Boolean).join(', ') : '';\nconst place = land || ocean;\n// local solar time under the ISS: UTC + longitude / 15 hours\nconst solar = new Date(Date.now() + lon / 15 * 3600000);\nconst local = solar.toISOString().slice(11, 16);\nconst facts = { place, over_land: !!land, altitude_km: Math.round(iss.altitude), speed_kmh: Math.round(iss.velocity),\n                local_time_below: local, iss_in_sunlight: iss.visibility === 'daylight' };\nconst LANG = { de: 'German, informal \"du\"', en: 'English', it: 'Italian, informal \"tu\"' }[lang];\nconst prompt = 'You are an astronaut on the International Space Station writing a short, funny postcard to a curious stranger on Earth. '\n  + `Write in ${LANG}. Facts: ${JSON.stringify(facts)}. `\n  + 'Rules: a greeting of max 6 words, then 2-4 sentences (max 330 characters) mentioning the place below and 1-2 of the numbers exactly as given; '\n  + 'only general, well-known facts about the place; if the place is linked to war, disaster or tragedy, stay neutral and kind, no jokes about it; '\n  + 'no hashtags, no emojis. Answer with JSON only: {\"greeting\":\"\",\"text\":\"\"}';\nreturn [{ json: { id: req.id, lang, lat, lon, alt: iss.altitude, vel: iss.velocity, day: iss.visibility === 'daylight',\n  place, cc: a && a.country_code ? a.country_code : '', local,\n  body: { model: 'openai/gpt-oss-120b', temperature: 0.8, max_tokens: 1200, response_format: { type: 'json_object' },\n          messages: [{ role: 'user', content: prompt }] } } }];"
+   },
+   "id": "c1",
+   "name": "Postkarte schreiben",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    660,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://openai.inference.de-txl.ionos.com/v1/chat/completions",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.body) }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "a1",
+   "name": "KI schreibt (IONOS)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    0
+   ],
+   "onError": "continueRegularOutput",
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "",
+     "name": "YOUR OpenAI-compatible API key (Header Auth: Authorization = Bearer …)"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "// Reads the AI answer; if it fails, a template card is used so the visitor always gets a postcard.\nconst d = $('Postkarte schreiben').first().json;\nlet c = null;\ntry { const m = String($input.first().json.choices[0].message.content).match(/\\{[\\s\\S]*\\}/); c = JSON.parse(m[0]); } catch (e) {}\nif (!c || !c.greeting || !c.text) {\n  const T = { de: [`Grüße aus ${Math.round(d.alt)} km Höhe!`, `Gerade fliege ich mit ${Math.round(d.vel)} km/h über ${d.place}. Unten ist es ${d.local} Uhr. Schöne Grüße von der ISS!`],\n              en: [`Greetings from ${Math.round(d.alt)} km up!`, `Right now I am flying over ${d.place} at ${Math.round(d.vel)} km/h. Down there it is ${d.local}. Best wishes from the ISS!`],\n              it: [`Saluti da ${Math.round(d.alt)} km di quota!`, `In questo momento sorvolo ${d.place} a ${Math.round(d.vel)} km/h. Laggiù sono le ${d.local}. Un saluto dalla ISS!`] }[d.lang];\n  c = { greeting: T[0], text: T[1] };\n}\nconst { body, ...card } = d;\nreturn [{ json: { ...card, greeting: String(c.greeting).slice(0, 90), text: String(c.text).slice(0, 700) } }];"
+   },
+   "id": "c2",
+   "name": "Antwort prüfen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1100,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://YOUR-SITE.example/postcard-ingest.php",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-Postcard-Token",
+       "value": "YOUR-SECRET-TOKEN"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json) }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "p1",
+   "name": "An die Seite senden",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1320,
+    0
+   ]
+  }
+ ],
+ "connections": {
+  "Besucher-Knopf (Webhook)": {
+   "main": [
+    [
+     {
+      "node": "Wo ist die ISS?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wo ist die ISS?": {
+   "main": [
+    [
+     {
+      "node": "Was liegt darunter?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Was liegt darunter?": {
+   "main": [
+    [
+     {
+      "node": "Postkarte schreiben",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Postkarte schreiben": {
+   "main": [
+    [
+     {
+      "node": "KI schreibt (IONOS)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "KI schreibt (IONOS)": {
+   "main": [
+    [
+     {
+      "node": "Antwort prüfen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Antwort prüfen": {
+   "main": [
+    [
+     {
+      "node": "An die Seite senden",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Europe/Berlin",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "all"
+ },
+ "pinData": {}
+}
