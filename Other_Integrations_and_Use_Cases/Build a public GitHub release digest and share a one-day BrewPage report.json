@@ -1,0 +1,428 @@
+{
+  "name": "Build a public GitHub release digest and share a one-day BrewPage report",
+  "nodes": [
+    {
+      "id": "manual-trigger",
+      "name": "Manual trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "report-inputs",
+      "name": "Report inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Edit sources and filters; keep dryRun true to preview without publishing.\nreturn [{json: {\n  dryRun: true,\n  visibility: 'CHOOSE',\n  acknowledgeWriteOnce: false,\n  title: 'Dependency release digest',\n  repositories: ['n8n-io/n8n', 'nodejs/node'],\n  lookbackDays: 7,\n  includePrereleases: false,\n  maxReleasesPerRepository: 3,\n  ttlDays: 1\n}}];"
+      }
+    },
+    {
+      "id": "validate-sources",
+      "name": "Validate sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $json;\nif (typeof c.dryRun !== 'boolean') throw new Error('dryRun must be boolean');\nif (typeof c.title !== 'string' || !c.title.trim() || c.title.length > 180) throw new Error('Title is required (1-180 characters)');\nif (c.ttlDays !== 1) throw new Error('Write-once reports must expire after exactly 1 day');\nif (!c.dryRun && !['public','unlisted'].includes(c.visibility)) throw new Error('Explicitly choose public or unlisted before publishing');\nif (!c.dryRun && c.acknowledgeWriteOnce !== true) throw new Error('Acknowledge write-once publishing: owner capability is not retained; cannot update/delete via this workflow');\nif (!Array.isArray(c.repositories) || c.repositories.length < 1 || c.repositories.length > 5) throw new Error('Choose 1-5 public repositories');\nif (c.repositories.some(r => typeof r !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]{0,38}\\/[A-Za-z0-9_.-]{1,100}$/.test(r) || ['.','..'].includes(r.split('/')[1]))) throw new Error('Repository must be owner/repo, not a URL');\nif (new Set(c.repositories.map(r => r.toLowerCase())).size !== c.repositories.length) throw new Error('Repositories must be unique');\nif (!Number.isInteger(c.lookbackDays) || c.lookbackDays < 1 || c.lookbackDays > 30) throw new Error('lookbackDays must be 1-30');\nif (typeof c.includePrereleases !== 'boolean') throw new Error('includePrereleases must be boolean');\nif (!Number.isInteger(c.maxReleasesPerRepository) || c.maxReleasesPerRepository < 1 || c.maxReleasesPerRepository > 5) throw new Error('maxReleasesPerRepository must be 1-5');\nreturn c.repositories.map(repository => ({json: {repository, endpoint: 'https://api.github.com/repos/' + repository + '/releases?per_page=20'}}));"
+      }
+    },
+    {
+      "id": "fetch-github-releases",
+      "name": "Fetch GitHub releases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "url": "={{ $json.endpoint }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "BrewPage-n8n-release-digest"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "build-release-digest",
+      "name": "Build release digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Report inputs').first().json;\nconst sources = $('Validate sources').all();\nconst responses = $input.all();\nif (responses.length !== sources.length) throw new Error('Expected one response per repository');\nconst now = new Date();\nconst cutoff = now.getTime() - c.lookbackDays * 86400000;\nconst escape = value => String(value).replace(/[&<>\"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[char]));\nconst excerpt = body => String(body || '').replace(/```[\\s\\S]*?```/g, ' [code omitted] ').replace(/!\\[([^\\]]*)\\]\\([^)]*\\)/g, '$1').replace(/\\[([^\\]]+)\\]\\([^)]*\\)/g, '$1').replace(/<[^>]*>/g, ' ').replace(/[#*_`~]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 400);\nconst seen = new Set();\nlet releaseCount = 0;\nconst groups = responses.map((item, index) => {\n  const repository = sources[index].json.repository;\n  const response = item.json;\n  if (response.statusCode !== 200 || !Array.isArray(response.body)) throw new Error('Invalid GitHub release response for ' + repository);\n  const prefix = 'https://github.com/' + repository + '/releases/tag/';\n  const releases = response.body.filter(release => {\n    if (!release || release.draft !== false || typeof release.prerelease !== 'boolean') return false;\n    if (!c.includePrereleases && release.prerelease) return false;\n    const date = Date.parse(release.published_at);\n    if (!Number.isFinite(date) || date < cutoff || date > now.getTime()) return false;\n    if (typeof release.html_url !== 'string' || !release.html_url.toLowerCase().startsWith(prefix.toLowerCase()) || !/^https:\\/\\/github\\.com\\/[^\\s?#\"'<>]+$/.test(release.html_url)) throw new Error('Unexpected GitHub release source URL');\n    return true;\n  }).sort((a,b) => Date.parse(b.published_at) - Date.parse(a.published_at)).filter(release => {\n    const key = release.html_url.toLowerCase();\n    if (seen.has(key)) return false;\n    seen.add(key);\n    return true;\n  }).slice(0, c.maxReleasesPerRepository);\n  releaseCount += releases.length;\n  const rows = releases.map(release => '<article><h3><a href=\"' + escape(release.html_url) + '\">' + escape(String(release.name || release.tag_name || 'Release').slice(0,180)) + '</a></h3><p>' + escape(release.tag_name || '') + ' \u00b7 ' + escape(new Date(release.published_at).toISOString().slice(0,10)) + (release.prerelease ? ' \u00b7 prerelease' : '') + '</p><p>' + escape(excerpt(release.body) || 'No release notes supplied.') + '</p></article>').join('');\n  return '<section><h2><a href=\"https://github.com/' + escape(repository) + '/releases\">' + escape(repository) + '</a></h2>' + (rows || '<p>No matching releases in the fetched window.</p>') + (response.body.length >= 20 ? '<p>Fetch limit reached: only the first 20 releases were checked; the requested date window may be incomplete.</p>' : '') + '</section>';\n});\nconst content = '<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>' + escape(c.title) + '</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:860px;margin:40px auto;padding:0 20px;color:#1f2937;background:#fff}a{color:#0757a6}section{margin:28px 0;border-top:1px solid #d1d5db}article{margin:20px 0}h3{margin-bottom:0}p{overflow-wrap:anywhere}</style><h1>' + escape(c.title) + '</h1><p>' + releaseCount + ' matching releases from ' + sources.length + ' repositories. Last ' + c.lookbackDays + ' days; generated ' + now.toISOString() + '.</p><p>Release-note excerpts are shortened plain text, not AI summaries. Read each linked source before upgrading.</p>' + groups.join('') + '<footer>Public GitHub releases; first 20 per repository, up to ' + c.maxReleasesPerRepository + ' matches each. This shared report expires after one day.</footer></html>';\nreturn [{json: {...c, content, format: 'html', releaseCount, sourceCount: sources.length}}];"
+      }
+    },
+    {
+      "id": "validate-access-and-prepare",
+      "name": "Validate access and prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const c = $json;\nif (typeof c.dryRun !== 'boolean') throw new Error('dryRun must be boolean');\nif (typeof c.title !== 'string' || !c.title.trim() || c.title.length > 180) throw new Error('Title is required (1-180 characters)');\nif (c.ttlDays !== 1) throw new Error('Write-once reports must expire after exactly 1 day');\nif (!c.dryRun && !['public','unlisted'].includes(c.visibility)) throw new Error('Explicitly choose public or unlisted before publishing');\nif (!c.dryRun && c.acknowledgeWriteOnce !== true) throw new Error('Acknowledge write-once publishing: owner capability is not retained; cannot update/delete via this workflow');\nif (typeof c.content !== 'string' || !c.content.trim()) throw new Error('Content is required');\nconst endpoint = 'https://brewpage.app/api/html';\nconst query = {ttl: String(c.ttlDays)};\nif (c.visibility === 'public') query.ns = 'public';\nconst filename = 'report-' + c.title.replace(/[\\/\\\\\\x00-\\x1f\\x7f]/g, '-').trim() + '.html';\nreturn [{json: {dryRun: c.dryRun, endpoint, query, body: {content: c.content, format: 'html', filename}, releaseCount: c.releaseCount, sourceCount: c.sourceCount}}];"
+      }
+    },
+    {
+      "id": "live-publish-approved",
+      "name": "Live publish approved",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "live",
+              "leftValue": "={{ $json.dryRun }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "publish-report",
+      "name": "Publish report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.endpoint }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "brewpage-n8n/1.0 (+https://brewpage.app)"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={{ JSON.stringify($json.query) }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "reader-url-only",
+      "name": "Reader URL only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const link = $json.link;\nif (typeof link !== 'string') throw new Error('Publish response has no reader link');\nconst publicPath = /^https:\\/\\/brewpage\\.app\\/public\\/[A-Za-z0-9]{10}$/.test(link);\nconst match = /^https:\\/\\/((?:[a-z0-9]{10}|[a-z0-9][a-z0-9-]{0,32}-[a-z0-9]{10}))\\.brewpage\\.app\\/$/.exec(link);\nconst reserved = new Set(['unlock','www','api','admin','assets','static','cdn','status','health','metrics','grafana','prometheus','monitoring','autoconfig','autodiscover','fe-bounces','account']);\nif (!publicPath && (!match || reserved.has(match[1]))) throw new Error('Unexpected reader URL');\nreturn [{json: {url: link}}];"
+      }
+    },
+    {
+      "id": "dry-run-preview",
+      "name": "Dry run preview",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        540
+      ],
+      "parameters": {
+        "jsCode": "return [{json: {dryRun: true, message: 'Public GitHub reads completed; no BrewPage publish request sent. Review content, choose visibility, acknowledge write-once publishing, then disable dryRun. Expiry: 1 day.', releaseCount: $json.releaseCount, sourceCount: $json.sourceCount, content: $json.body.content, format: 'html'}}];"
+      }
+    },
+    {
+      "id": "start-here",
+      "name": "Start here",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -400
+      ],
+      "parameters": {
+        "content": "## GitHub release digest \u2192 one-day report\n### How it works\nCollect public releases from up to five repositories, filter by date and prerelease preference, remove duplicate links and build a readable HTML digest with source links and shortened release-note excerpts. Preview before sharing a one-day BrewPage link. No AI model, signup or API key is needed.\n### Setup\n1. Open **Report inputs**; set repositories as `owner/repo`, title and filters.\n2. Execute with `dryRun: true`. Public GitHub GETs run; no report is published. Read **Dry run preview \u2192 content**.\n3. Choose `public` or `unlisted`; anyone with an unlisted link can read it. Set `acknowledgeWriteOnce: true`, then `dryRun: false` and execute once.\n4. Copy only **Reader URL only \u2192 url**.\n### Customize\nChange the 1\u201330 day lookback and up to five matches per repository. Keep TTL at one day. This template is manual; execute again to create a new digest.",
+        "width": 720,
+        "height": 550,
+        "color": 1
+      }
+    },
+    {
+      "id": "1-sources-and-filters",
+      "name": "1 Sources and filters",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        160
+      ],
+      "parameters": {
+        "content": "## 1 \u00b7 Choose public sources\nInputs are checked before network reads. One GET per repository fetches its first 20 releases. No authentication or arbitrary URL input. Private, renamed or missing repositories stop execution; use their current public names.",
+        "width": 440,
+        "height": 310,
+        "color": 7
+      }
+    },
+    {
+      "id": "2-readable-digest",
+      "name": "2 Readable digest",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        850,
+        140
+      ],
+      "parameters": {
+        "content": "## 2 \u00b7 Turn releases into a report\nFilter drafts, old releases and optional prereleases; sort newest first and deduplicate source links. Remote text is escaped, never rendered as supplied HTML. Empty sources and fetch-limit warnings remain visible.",
+        "width": 440,
+        "height": 340,
+        "color": 7
+      }
+    },
+    {
+      "id": "3-preview-and-publish",
+      "name": "3 Preview and publish",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        140
+      ],
+      "parameters": {
+        "content": "## 3 \u00b7 Inspect, then share\nDry run returns HTML plus source/release counts. Live execution requires both access choice and write-once acknowledgement. GitHub reads can occur during preview; only the approved branch sends a BrewPage POST.",
+        "width": 700,
+        "height": 340,
+        "color": 7
+      }
+    },
+    {
+      "id": "write-once-warning",
+      "name": "Write-once warning",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        500
+      ],
+      "parameters": {
+        "content": "## Write-once \u00b7 expires in one day\nOwner capability is not retained. This workflow cannot update or delete the report early. Never share the Publish report response or raw execution output; share only the final reader URL.",
+        "width": 370,
+        "height": 260,
+        "color": 3
+      }
+    },
+    {
+      "id": "troubleshooting",
+      "name": "Troubleshooting",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        650,
+        640
+      ],
+      "parameters": {
+        "content": "## Troubleshooting\nGitHub 403/429: wait for its rate limit to reset. 404: check the public repository name. Other failed reads stop publishing. Zero matches produces an explicit empty digest. Only 20 releases per source are checked; this is not a complete release archive.",
+        "width": 700,
+        "height": 260,
+        "color": 7
+      }
+    },
+    {
+      "id": "note-beginner-tutorial",
+      "name": "Beginner video tutorial",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -1340
+      ],
+      "parameters": {
+        "content": "## Publishing basics \u2014 earlier simpler workflow\nIllustrated beginner tutorial for importing a report workflow, choosing visibility, acknowledging write-once publishing and sharing only the reader URL. It shows the earlier static-report workflow, not this GitHub digest or live n8n execution. Follow Start here for the new source/filter/preview steps.\n\n@[youtube](SNJxD4Rm0nw)",
+        "width": 780,
+        "height": 800,
+        "color": 1
+      }
+    }
+  ],
+  "connections": {
+    "Manual trigger": {
+      "main": [
+        [
+          {
+            "node": "Report inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report inputs": {
+      "main": [
+        [
+          {
+            "node": "Validate sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate sources": {
+      "main": [
+        [
+          {
+            "node": "Fetch GitHub releases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GitHub releases": {
+      "main": [
+        [
+          {
+            "node": "Build release digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build release digest": {
+      "main": [
+        [
+          {
+            "node": "Validate access and prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate access and prepare": {
+      "main": [
+        [
+          {
+            "node": "Live publish approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish report": {
+      "main": [
+        [
+          {
+            "node": "Reader URL only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Live publish approved": {
+      "main": [
+        [
+          {
+            "node": "Publish report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dry run preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}
