@@ -1,0 +1,521 @@
+{
+  "name": "LeadMerlin: Google Maps leads → verified emails → Google Sheets",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "d5cabf61-a250-49bf-9171-5aeaa0eb70d0",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"api_base\": \"https://api.leadmerlin.com/api/v2/demo\",\n  \"keyword\": \"dentist\",\n  \"location_codes\": [\n    1013883\n  ],\n  \"strictness\": \"moderate\"\n}",
+        "options": {}
+      },
+      "id": "e952c273-47dd-4d75-b728-e8bec0d9c9fa",
+      "name": "Inputs",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "notes": "api_base: keep /v2/demo while building (free, no credits). Switch to https://api.leadmerlin.com/api/v2 for real data. Find location codes with GET /v2/locations?q=city."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.api_base }}/searches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ keyword: $json.keyword, location_codes: $json.location_codes, strictness: $json.strictness }) }}",
+        "options": {}
+      },
+      "id": "c4177d8c-4f58-4824-bad1-9f9eeeb0c4e8",
+      "name": "Start search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "LeadMerlin x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "id": "d3c0a66b-1ddb-4452-b5c0-7af732775e60",
+      "name": "Wait 20s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        0
+      ],
+      "webhookId": "4d1bc908-9d95-48be-902a-f1532ccd1171"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Inputs').item.json.api_base }}/jobs/{{ $('Start search').item.json.job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a0979934-089b-457e-803a-af185fe5b8cc",
+      "name": "Get job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "LeadMerlin x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "still running"
+        }
+      },
+      "id": "343093db-b40f-4c89-9706-3a54e678287f",
+      "name": "Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ 'LeadMerlin job failed: ' + ($json.error || 'unknown error') }}"
+      },
+      "id": "f622e6d2-7f49-48df-99ad-4d61d1ffd29b",
+      "name": "Job failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Inputs').item.json.api_base }}/jobs/{{ $('Start search').item.json.job_id }}/results",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "cursor",
+                    "value": "={{ $response.body.next_cursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.has_more }}",
+              "limitPagesFetched": true,
+              "maxRequests": 50
+            }
+          }
+        }
+      },
+      "id": "10107b7b-5cfa-4189-a1f1-2e3f8ca2faf9",
+      "name": "Get results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "LeadMerlin x-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "businesses",
+        "options": {}
+      },
+      "id": "f161b060-09de-4e91-a1ba-1c896ce54753",
+      "name": "Split businesses",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "81c9d079-59d9-4fc7-bf14-f2b1fa26890d",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e5685588-4bd6-40d3-9998-7f7793cc660e",
+              "name": "owner",
+              "value": "={{ $json.owner ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "66fe80e0-b995-4920-a625-b653d74120b7",
+              "name": "email",
+              "value": "={{ $json.email ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "9f27ec9f-98b2-4c76-8431-628d997ad327",
+              "name": "email_status",
+              "value": "={{ ($json.contact?.all_emails ?? []).find(e => e.email === $json.email)?.status ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "0a65e919-1a02-46c7-a1c2-125a5ae24999",
+              "name": "phone",
+              "value": "={{ $json.phone ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "e470f805-13ab-40bf-aad7-0b4612cf97fa",
+              "name": "phone_type",
+              "value": "={{ $json.phone_type ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "abd57655-bf20-4bf1-b545-1d8361a42810",
+              "name": "website",
+              "value": "={{ $json.website ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "447c5c46-8606-4269-9040-556d119ffb3d",
+              "name": "city",
+              "value": "={{ $json.contact?.city ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "b31a1fb6-e7d8-41b2-9ebd-17379780b627",
+              "name": "rating",
+              "value": "={{ $json.reputation?.rating ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "583de1b5-59d5-4d32-a10d-df9d2bdc90d5",
+              "name": "reviews",
+              "value": "={{ $json.reputation?.reviews ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "d4817c74-5195-4982-8925-da309f2ca283",
+              "name": "cms",
+              "value": "={{ $json.web?.tech?.cms ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "567be261-269d-4144-a3fc-818db22e59c3",
+              "name": "gbp_url",
+              "value": "={{ $json.gbp_url ?? '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9981e7a7-1c57-41cc-ad20-1159b5e2b0ce",
+      "name": "To sheet row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.email_status }}",
+              "rightValue": "verified",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "810b2ee8-eeff-4089-8747-46853c4600e7",
+      "name": "Verified email only",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1980,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "website"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "72365417-c69f-40d3-9126-e49ec8f041b0",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2200,
+        -160
+      ],
+      "notes": "Pick your Google Sheets credential and sheet. Header row: name, owner, email, email_status, phone, phone_type, website, city, rating, reviews, cms, gbp_url"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inputs": {
+      "main": [
+        [
+          {
+            "node": "Start search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start search": {
+      "main": [
+        [
+          {
+            "node": "Wait 20s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 20s": {
+      "main": [
+        [
+          {
+            "node": "Get job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get job": {
+      "main": [
+        [
+          {
+            "node": "Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status": {
+      "main": [
+        [
+          {
+            "node": "Get results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Job failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 20s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get results": {
+      "main": [
+        [
+          {
+            "node": "Split businesses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split businesses": {
+      "main": [
+        [
+          {
+            "node": "To sheet row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To sheet row": {
+      "main": [
+        [
+          {
+            "node": "Verified email only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verified email only": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
