@@ -1,0 +1,493 @@
+{
+ "id": "cccc0000-0000-4000-8000-0000000000e3",
+ "name": "Collect and validate booking requests from a webhook form",
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "booking-intake",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "c1000000-0000-4000-8000-000000000001",
+   "name": "Webhook: booking form",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -800,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Validate the booking payload, normalize every field, and precompute the\n// lead time both policy gates read. Broken requests never reach the\n// calendar: they are logged with the exact reason and answered 422.\n// Phone accepts digits and the pack's masked demo format (+316****5678).\n// Expected body fields: name, phone, email (optional), treatment,\n// preferred_slot (ISO date-time), notes (optional).\nconst b = $input.first().json.body || $input.first().json;\nconst errors = [];\nif (!b.name || String(b.name).trim().length < 2) errors.push('name too short');\nif (!b.phone || !/^\\+?[0-9* \\-()]{8,20}$/.test(String(b.phone))) errors.push('phone invalid');\nif (b.email && !/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(String(b.email))) errors.push('email invalid');\nif (!b.treatment) errors.push('treatment missing');\nif (!b.preferred_slot || isNaN(new Date(b.preferred_slot).getTime())) errors.push('preferred_slot invalid');\nelse if (new Date(b.preferred_slot).getTime() < Date.now()) errors.push('preferred_slot in the past');\n\nif (errors.length) {\n  return [{ json: { ok: false, errors: errors, received_at: new Date().toISOString() } }];\n}\nconst slot = new Date(b.preferred_slot);\nconst hoursUntil = (slot.getTime() - Date.now()) / 3600000;\nreturn [{\n  json: {\n    ok: true,\n    name: String(b.name).trim(),\n    phone: String(b.phone).trim(),\n    email: b.email ? String(b.email).trim().toLowerCase() : '',\n    treatment: String(b.treatment).trim(),\n    preferred_slot: slot.toISOString(),\n    preferred_slot_local: slot.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),\n    hours_until: Math.round(hoursUntil),\n    days_until: Math.round(hoursUntil / 24),\n    notes: b.notes ? String(b.notes).slice(0, 500) : '',\n    received_at: new Date().toISOString()\n  }\n}];"
+   },
+   "id": "c1000000-0000-4000-8000-000000000002",
+   "name": "Normalize + validate fields",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -580,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "c1",
+       "leftValue": "={{ $json.ok }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "c1000000-0000-4000-8000-000000000003",
+   "name": "Valid?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -360,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Placeholder for the calendar/booking-system write.\n// After import: replace with a Google Calendar 'Create Event' node (or your\n// booking tool's API node). Keep the booking_status until the shop confirms.\nconst item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    booking_status: 'pending_confirmation',\n    calendar_event_id: 'DEMO-' + Date.now().toString(36).toUpperCase()\n  }\n}];"
+   },
+   "id": "c1000000-0000-4000-8000-000000000004",
+   "name": "Create booking (replace me)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    700,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Confirmation copy. Your send node (WhatsApp/SMS/email) goes after this.\nconst item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    to: item.phone,\n    channel: 'whatsapp',\n    message: 'Thank you ' + item.name + '! We received your request for ' + item.treatment + ' on ' + item.preferred_slot_local + '. You will get a confirmation from us within 15 minutes.'\n  }\n}];"
+   },
+   "id": "c1000000-0000-4000-8000-000000000005",
+   "name": "Build confirmation",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    960,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ { \"ok\": true, \"booking_status\": $json.booking_status, \"slot\": $json.preferred_slot_local } }}",
+    "options": {}
+   },
+   "id": "c1000000-0000-4000-8000-000000000006",
+   "name": "Respond OK",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    1400,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseCode": 422,
+    "responseBody": "={{ { \"ok\": false, \"errors\": $json.errors, \"logged\": $json.logged_at } }}",
+    "options": {}
+   },
+   "id": "c1000000-0000-4000-8000-000000000007",
+   "name": "Respond invalid",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    80,
+    340
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Error path: invalid requests land here with every reason before the 422\n// response leaves. In production, write to a 'booking_errors' sheet so a\n// human can see which form fields keep failing and fix the form.\nconst items = $input.all();\nreturn items.map((item) => ({\n  json: {\n    error: 'invalid booking request',\n    errors: item.json.errors || [],\n    name: item.json.name || null,\n    treatment: item.json.treatment || null,\n    logged_at: new Date().toISOString()\n  }\n}));"
+   },
+   "id": "0493e9ce-92b8-433b-ba9e-09777461c90f",
+   "name": "Log rejected request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -140,
+    340
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "sb1",
+       "leftValue": "={{ $json.hours_until }}",
+       "rightValue": 2,
+       "operator": {
+        "type": "number",
+        "operation": "gte"
+       }
+      },
+      {
+       "id": "sb2",
+       "leftValue": "={{ $json.days_until }}",
+       "rightValue": 60,
+       "operator": {
+        "type": "number",
+        "operation": "lte"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "68b41048-3ce1-4dbc-8c1d-17ca3cb93457",
+   "name": "Slot bookable?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -140,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseCode": 422,
+    "responseBody": "={{ { \"ok\": false, \"reason\": \"slot_outside_policy\", \"hours_until\": $json.hours_until, \"days_until\": $json.days_until } }}",
+    "options": {}
+   },
+   "id": "bea1e06d-f1ae-45b4-adc5-55bbf25f1921",
+   "name": "Respond decline",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    80,
+    -180
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Double-submit guard: the same phone number inside 30 minutes is a\n// duplicate (double-clicked submit, retried POST). Fresh requests are\n// remembered; duplicates are flagged and answered as if they succeeded,\n// so the customer never sees an error for the same booking twice.\nconst staticData = $getWorkflowStaticData('global');\nstaticData.seen_phones = staticData.seen_phones || {};\nconst out = [];\nfor (const item of $input.all()) {\n  const r = item.json;\n  const key = String(r.phone || '').replace(/[^0-9]/g, '');\n  const last = staticData.seen_phones[key];\n  const isDup = Boolean(last && Date.now() - last < 30 * 60 * 1000);\n  if (!isDup) staticData.seen_phones[key] = Date.now();\n  out.push({ json: { ...r, duplicate: isDup } });\n}\nreturn out;"
+   },
+   "id": "6e1ce865-f100-4317-ae93-00316dd50fa2",
+   "name": "Duplicate request?",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    260,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "fr1",
+       "leftValue": "={{ $json.duplicate }}",
+       "operator": {
+        "type": "boolean",
+        "operation": "false"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "806fdd61-de20-455f-8e8d-67b79b1fbf79",
+   "name": "Fresh request?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    480,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Duplicates end here with the same 200 shape as a fresh booking, but\n// booking_status tells your dashboard this request was ignored on purpose,\n// not booked twice.\nconst items = $input.all();\nreturn items.map((item) => ({\n  json: { ...item.json, booking_status: 'duplicate_ignored', handled_at: new Date().toISOString() }\n}));"
+   },
+   "id": "ca4b9277-9985-4430-a830-00eee8902f46",
+   "name": "Skip duplicate",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    700,
+    180
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Placeholder for your real send node (WhatsApp Business Cloud, SMS or\n// email). The item already carries to, channel and message. After import:\n// put your send node here and delete this one.\nconst items = $input.all();\nreturn items.map((item) => ({\n    json: { ...item.json, sent_at: new Date().toISOString(), transport: 'demo' }\n}));"
+   },
+   "id": "778b8aa9-37bb-4962-9d48-0cedcaa9cec4",
+   "name": "Send confirmation (replace me)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1180,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## Collect and validate booking requests from a webhook form\n\n### How it works\n1. A webhook receives a booking request; fields are validated and the lead time is computed.\n2. Invalid requests are logged with the exact reason and answered with a 422 your form can show inline.\n3. Slots outside the 2-hour to 60-day booking policy get a structured decline.\n4. A 30-minute duplicate guard answers repeated submissions as success without booking twice.\n5. Fresh requests are booked, a WhatsApp confirmation is prepared and sent, and the form gets a 200.\n\n### Setup steps\n- Import into n8n, open the webhook node and use its test or production URL in your form action.\n- Replace the two replace-me nodes with your calendar write and your WhatsApp, SMS or email send node.\n- Point the error log at a sheet if you want to monitor failing form fields.\n\n### Requirements\nn8n on any plan. The demo run needs no credentials; production needs a calendar credential plus a messaging credential.\n\n### Customization\nThe booking policy (2 hours to 60 days), the duplicate window (30 minutes) and all copy are plain settings in the named nodes. The pinned webhook data uses a far-future slot so the policy decline path runs on execute.\n\nBuilt by Vlotstroom. Free no-show and waitlist calculators: https://vlotstroom.github.io/noshow-calculator/\n",
+    "width": 560,
+    "height": 900
+   },
+   "id": "cccc0000-0000-4000-8000-0000000000f1",
+   "name": "Sticky Note 00f1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -1560,
+    -300
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 1. Receive + validate\nWebhook accepts POST from any form. Every field is validated and the lead time computed; rejected requests are logged, then answered 422. Out-of-policy slots get a structured decline.",
+    "color": 7,
+    "width": 1160,
+    "height": 700
+   },
+   "id": "cccc0000-0000-4000-8000-0000000000f2",
+   "name": "Sticky Note 00f2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -940,
+    -240
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 2. Dedup + book\nA static-data guard flags repeat submissions from the same phone within 30 minutes. Duplicates get an idempotent response; fresh requests go to your calendar node.",
+    "color": 7,
+    "width": 680,
+    "height": 700
+   },
+   "id": "cccc0000-0000-4000-8000-0000000000f3",
+   "name": "Sticky Note 00f3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    240,
+    -240
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 3. Confirm + respond\nConfirmation copy is built, sent through your channel, and the form receives a 200 with the booking status.",
+    "color": 7,
+    "width": 660,
+    "height": 700
+   },
+   "id": "cccc0000-0000-4000-8000-0000000000f4",
+   "name": "Sticky Note 00f4",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    960,
+    -240
+   ]
+  }
+ ],
+ "connections": {
+  "Webhook: booking form": {
+   "main": [
+    [
+     {
+      "node": "Normalize + validate fields",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Normalize + validate fields": {
+   "main": [
+    [
+     {
+      "node": "Valid?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Valid?": {
+   "main": [
+    [
+     {
+      "node": "Slot bookable?",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Log rejected request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Log rejected request": {
+   "main": [
+    [
+     {
+      "node": "Respond invalid",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Slot bookable?": {
+   "main": [
+    [
+     {
+      "node": "Duplicate request?",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Respond decline",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Duplicate request?": {
+   "main": [
+    [
+     {
+      "node": "Fresh request?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Fresh request?": {
+   "main": [
+    [
+     {
+      "node": "Create booking (replace me)",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Skip duplicate",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Skip duplicate": {
+   "main": [
+    [
+     {
+      "node": "Respond OK",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create booking (replace me)": {
+   "main": [
+    [
+     {
+      "node": "Build confirmation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build confirmation": {
+   "main": [
+    [
+     {
+      "node": "Send confirmation (replace me)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send confirmation (replace me)": {
+   "main": [
+    [
+     {
+      "node": "Respond OK",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {
+  "Webhook: booking form": [
+   {
+    "json": {
+     "body": {
+      "name": "Anna Voorbeeld",
+      "phone": "+316****5678",
+      "email": "anna@example.com",
+      "treatment": "Hair treatment",
+      "preferred_slot": "2099-01-15T10:00:00.000Z",
+      "notes": "First visit"
+     }
+    }
+   }
+  ]
+ }
+}
