@@ -1,0 +1,404 @@
+{
+  "name": "Build a podcast transcript library in Google Sheets from RSS feeds with Apify",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Build a podcast transcript library in Google Sheets from RSS feeds\n\n### How it works\nThis workflow collects the transcripts that podcast publishers already attach to their RSS feeds (the Podcasting 2.0 `<podcast:transcript>` tag) and saves each new episode as one row in Google Sheets: title, date, speakers, word count, transcript link and the full text. It never transcribes audio, so it is fast and cheap, but episodes whose show does not publish a transcript are skipped. Buzzsprout, Omny Studio and many Podcasting 2.0 hosts publish them; many large shows do not.\n\nEach run reads the episode GUIDs already in your sheet and appends only new episodes, so you can schedule it daily. Long transcripts are cut at 45,000 characters to fit a Sheets cell (`textTruncated` = true; the full file stays at `transcriptUrl`).\n\nThe Apify step runs the paid Apify Actor \"Podcast Transcripts from RSS\", published by this template's author (Apify Store: ahmed.fouaad82/podcast-published-transcripts). The first 25 saved transcripts of every run are free; beyond that it is pay-per-transcript (see the Actor's Pricing tab). `maxCostPerRunUsd` caps what one run can charge.\n\n### Setup\n1. Apify: create a free account, copy your API token, then create an n8n **Header Auth** credential: Name `Authorization`, Value `Bearer {{APIFY_TOKEN}}` (replace the placeholder with your token). Select it in **Fetch published transcripts**.\n2. Google Sheets: connect your credential in both Sheets nodes. Create a tab named `Transcripts` whose first row is: `guid, publishedAt, podcastTitle, episodeTitle, episodeNumber, durationMinutes, wordCount, speakers, language, transcriptUrl, audioUrl, feedUrl, textTruncated, text, savedAt`.\n3. In **Podcast settings** paste your feed URLs and spreadsheet ID, then click **Run now** and check the sheet.\n\n### Customization\nRaise `maxEpisodesPerFeed` to backfill older episodes, set `publishedSince` (e.g. 2026-01-01), or send the new rows on to a vector store for RAG.",
+        "height": 1000,
+        "width": 540
+      },
+      "id": "2ea84c5f-4525-4408-814d-1792aa19677a",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Settings and checks\nEdit only **Podcast settings**. The check node stops the run before any paid work if feeds or the sheet ID are missing.",
+        "height": 520,
+        "width": 560,
+        "color": 7
+      },
+      "id": "fddf5455-b110-402a-8a5b-c7876557dc2c",
+      "name": "Section: settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fetch published transcripts\nOne synchronous Apify run returns all new episodes as JSON. A failed run stops the workflow with the reason and writes nothing.",
+        "height": 520,
+        "width": 460,
+        "color": 7
+      },
+      "id": "f12e5716-ab54-4971-bcd3-6ef6728201b7",
+      "name": "Section: fetch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Skip known episodes and save\nEpisodes are matched on their RSS GUID, so repeated runs never duplicate rows.",
+        "height": 520,
+        "width": 700,
+        "color": 7
+      },
+      "id": "b6b6cef0-4840-4b92-b7b0-9336f0de30c4",
+      "name": "Section: dedupe and save",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Cost cap\n`maxCostPerRunUsd` is sent to Apify as the run's charge limit. Keep `maxTranscriptsPerRun` at 25 to stay inside the free slice.",
+        "height": 180,
+        "width": 300,
+        "color": 3
+      },
+      "id": "78db2686-10a2-48c3-8bfc-01d1492a8ac2",
+      "name": "Warning: cost cap",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        600,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "0e075ba9-e267-4d17-b90e-e23da7d81be7",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "e6078190-b736-4fe6-9fbd-2727492e1f86",
+      "name": "Every morning at 7",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64079f7f-3893-4f77-abaf-85b1d4633ca5",
+              "name": "feedUrls",
+              "value": "https://feeds.buzzsprout.com/231452.rss",
+              "type": "string"
+            },
+            {
+              "id": "0fe655df-eb5c-4e6a-b0ae-b3f49a653e5f",
+              "name": "maxEpisodesPerFeed",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "415824b8-4b32-4180-a3e1-08cf0b39b69a",
+              "name": "maxTranscriptsPerRun",
+              "value": 25,
+              "type": "number"
+            },
+            {
+              "id": "5680d3b8-4c8a-4990-801d-3c6da428445a",
+              "name": "publishedSince",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "ec40dd5a-2ce0-44ef-9c7f-09e07a6e2fb1",
+              "name": "spreadsheetId",
+              "value": "YOUR_SPREADSHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "fe75621f-adff-4981-a5a3-d21663c33f3e",
+              "name": "sheetName",
+              "value": "Transcripts",
+              "type": "string"
+            },
+            {
+              "id": "dede312a-8618-44dc-ab99-f3457f0133ec",
+              "name": "maxCostPerRunUsd",
+              "value": 0.1,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "377dc8ff-39f3-488d-be91-3ca739f8b2c1",
+      "name": "Podcast settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate settings and build the Actor input. Fails early (before any paid work) on bad settings.\nconst s = $('Podcast settings').first().json;\nconst feeds = String(s.feedUrls || '')\n  .split(/[\\n,]+/).map(x => x.trim()).filter(Boolean);\nif (!feeds.length) throw new Error('Add at least one podcast RSS feed URL in \"Podcast settings\".');\nconst bad = feeds.filter(f => !/^https?:\\/\\//i.test(f));\nif (bad.length) throw new Error('These feed entries are not http(s) URLs: ' + bad.join(', '));\nif (!s.spreadsheetId || /YOUR_/i.test(s.spreadsheetId)) {\n  throw new Error('Set spreadsheetId in \"Podcast settings\" (the long ID in your Google Sheet URL).');\n}\nconst max = Math.max(1, Math.min(Number(s.maxTranscriptsPerRun) || 25, 500));\nconst actorInput = {\n  feedUrls: feeds.slice(0, 100),\n  maxEpisodesPerFeed: Math.max(1, Math.min(Number(s.maxEpisodesPerFeed) || 3, 50)),\n  maxResults: max,\n  onlyWithTranscripts: true,\n  includeSegments: false,          // plain text only: keeps rows small enough for Sheets\n  includeSpeakerLabels: true,\n};\nif (s.publishedSince) actorInput.publishedSince = String(s.publishedSince);\nreturn [{ json: {\n  actorInput,\n  spreadsheetId: String(s.spreadsheetId).trim(),\n  sheetName: String(s.sheetName || 'Transcripts'),\n  maxCostPerRunUsd: Number(s.maxCostPerRunUsd) || 0.1,\n} }];\n"
+      },
+      "id": "13f13669-bc61-49b8-80c0-0d48e2575124",
+      "name": "Check settings and build input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/ahmed.fouaad82~podcast-published-transcripts/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeout",
+              "value": "240"
+            },
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "={{ $('Check settings and build input').first().json.maxCostPerRunUsd }}"
+            },
+            {
+              "name": "clean",
+              "value": "true"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Check settings and build input').first().json.actorInput) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "e3b1737e-397c-4c26-a3e2-e8c3de1f15c4",
+      "name": "Fetch published transcripts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        100
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Apify run failed - nothing was written. {{ String(($json.error && ($json.error.message || $json.error.description)) || JSON.stringify($json)).slice(0, 300) }}"
+      },
+      "id": "077a13df-87fd-483a-8e99-54a555b83bf8",
+      "name": "Stop: Apify run failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.sheetName }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "4bc325dd-b9dc-4b7b-92e8-5d2101fc18e0",
+      "name": "Read saved episodes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        80
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compare fetched episodes with the GUIDs already in the sheet; keep only new ones.\nconst saved = new Set($input.all().map(i => String(i.json.guid || '').trim()).filter(Boolean));\nconst fetched = $('Fetch published transcripts').all().map(i => i.json)\n  .filter(r => r && r.guid && r.hasTranscript && r.text);\nconst CELL_LIMIT = 45000; // Google Sheets allows 50,000 characters per cell\nconst now = new Date().toISOString();\nconst out = [];\nfor (const r of fetched) {\n  const key = String(r.guid).trim();\n  if (saved.has(key)) continue;\n  saved.add(key); // also removes duplicates inside one run\n  const text = String(r.text);\n  out.push({ json: {\n    guid: key,\n    publishedAt: r.publishedAt || '',\n    podcastTitle: r.podcastTitle || '',\n    episodeTitle: r.episodeTitle || '',\n    episodeNumber: r.episodeNumber ?? '',\n    durationMinutes: r.durationSeconds ? Math.round(r.durationSeconds / 60) : '',\n    wordCount: r.wordCount ?? '',\n    speakers: Array.isArray(r.speakers) ? r.speakers.join(', ') : '',\n    language: r.language || '',\n    transcriptUrl: r.transcriptUrl || '',\n    audioUrl: r.audioUrl || '',\n    feedUrl: r.feedUrl || '',\n    textTruncated: text.length > CELL_LIMIT,\n    text: text.slice(0, CELL_LIMIT),\n    savedAt: now,\n  } });\n}\n// No new transcripts -> return nothing, so the workflow ends here without writing.\nreturn out;\n"
+      },
+      "id": "9401ff33-39f9-446a-a4d1-91e196272e79",
+      "name": "Keep only new episodes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.sheetName }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "523fb683-8424-4ebb-81ba-57667540f144",
+      "name": "Append new transcripts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Podcast settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every morning at 7": {
+      "main": [
+        [
+          {
+            "node": "Podcast settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Podcast settings": {
+      "main": [
+        [
+          {
+            "node": "Check settings and build input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check settings and build input": {
+      "main": [
+        [
+          {
+            "node": "Fetch published transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch published transcripts": {
+      "main": [
+        [
+          {
+            "node": "Read saved episodes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: Apify run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read saved episodes": {
+      "main": [
+        [
+          {
+            "node": "Keep only new episodes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only new episodes": {
+      "main": [
+        [
+          {
+            "node": "Append new transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

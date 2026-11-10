@@ -1,0 +1,474 @@
+{
+  "name": "Track salary ranges on Lever job boards in Google Sheets and Slack with Apify",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Track salary ranges on Lever job boards in Google Sheets and Slack\n\n### How it works\nPay-transparency laws mean many companies now publish salary ranges on their Lever job boards. This workflow watches the boards you list (yours or competitors'), keeps only postings with a numeric salary, and builds a salary register in Google Sheets: title, team, location, remote/hybrid, min, max, currency and pay interval. New postings since the last run are posted to Slack as one digest, highest paying first. Use it for compensation benchmarking, recruiting research or a job alert.\n\nPostings are matched by Lever posting ID, so repeated runs add only new jobs. On the first run every matching posting counts as new.\n\nThe Apify step runs the paid Apify Actor \"Lever Jobs Scraper - Salary Ranges & Remote Filters\", published by this template's author (Apify Store: ahmed.fouaad82/lever-salary-jobs). It reads Lever's public postings API. The first 25 saved jobs of every run are free; beyond that it is pay-per-job (see the Actor's Pricing tab). `maxCostPerRunUsd` caps one run's charges.\n\n### Setup\n1. Apify: create a free account and an n8n **Header Auth** credential: Name `Authorization`, Value `Bearer {{APIFY_TOKEN}}` (your token). Select it in **Fetch Lever jobs with salaries**.\n2. Google Sheets: connect your credential in both Sheets nodes and create a tab `Salary watch` with header row: `jobId, board, title, team, department, location, workplaceType, commitment, salaryMin, salaryMax, salaryCurrency, salaryInterval, salaryRange, postedAt, jobUrl, firstSeenAt`.\n3. Slack: connect your credential and set `slackChannel`.\n4. In **Job watch settings** enter Lever board slugs (the `acme` in jobs.lever.co/acme), then click **Run now**.\n\n### Customization\nSet `minSalary` with an exact currency and interval (no currency conversion), or `remoteOnly` = true. Global Lever boards only; jobs.eu.lever.co boards are not supported.",
+        "height": 1040,
+        "width": 540
+      },
+      "id": "9426b83f-fa7f-4ff0-8114-fecd911bf690",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Settings and checks\nEdit only **Job watch settings**. Board URLs are converted to slugs; invalid settings stop the run before any paid work.",
+        "height": 520,
+        "width": 560,
+        "color": 7
+      },
+      "id": "dba1d63b-5c19-4965-b177-85a36cfbe67a",
+      "name": "Section: settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fetch salaried postings\nOne synchronous Apify run returns postings that publish a salary. A failed run stops with the reason and changes nothing.",
+        "height": 520,
+        "width": 460,
+        "color": 7
+      },
+      "id": "a4951638-1add-4dd3-bb4b-c22c0ac6e300",
+      "name": "Section: fetch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. New postings to Sheets and Slack\nKnown posting IDs are skipped. New ones are appended to the sheet and summarised in one Slack message.",
+        "height": 560,
+        "width": 920,
+        "color": 7
+      },
+      "id": "7aa1ee31-6157-4da6-8f6f-2c0a7adc4cd4",
+      "name": "Section: register and alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Cost cap\n`maxCostPerRunUsd` is sent to Apify as the run's charge limit. Keep `maxJobsPerRun` at 25 to stay inside the free slice.",
+        "height": 180,
+        "width": 300,
+        "color": 3
+      },
+      "id": "74ecc8f1-479f-45f6-9cb1-9fe591c429e7",
+      "name": "Warning: cost cap",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        600,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ea1a8000-97e4-43d7-bcf3-9e43c0942f5c",
+      "name": "Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "d881a9eb-2848-4df4-ab9c-f625b1279df7",
+      "name": "Weekdays at 8",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "38efe6af-c4aa-46bf-840e-bd7fe0cc6acd",
+              "name": "leverBoards",
+              "value": "leverdemo",
+              "type": "string"
+            },
+            {
+              "id": "7064943a-45e9-4b65-a97f-7c4906c8871d",
+              "name": "minSalary",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "8c779bad-5ea6-44ae-acd9-e7a125d00cdc",
+              "name": "salaryCurrency",
+              "value": "USD",
+              "type": "string"
+            },
+            {
+              "id": "5b9ce36f-e334-4f4a-9842-051597d6e551",
+              "name": "salaryInterval",
+              "value": "per-year-salary",
+              "type": "string"
+            },
+            {
+              "id": "b9664252-42ae-435b-b1d8-0dbc158c6e17",
+              "name": "remoteOnly",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "dab46a35-6f59-4b14-9da4-4565a09d1490",
+              "name": "maxJobsPerRun",
+              "value": 25,
+              "type": "number"
+            },
+            {
+              "id": "af82125e-c96c-4ec6-a671-bc82446f352f",
+              "name": "spreadsheetId",
+              "value": "YOUR_SPREADSHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "37e0fd43-b3b4-4093-9e6b-8f8822baf9c6",
+              "name": "sheetName",
+              "value": "Salary watch",
+              "type": "string"
+            },
+            {
+              "id": "fe2b00a7-ba2e-4d79-be3c-d62ebc561617",
+              "name": "slackChannel",
+              "value": "#jobs",
+              "type": "string"
+            },
+            {
+              "id": "efb803a4-666c-483f-a9d2-c6520c9f7867",
+              "name": "maxCostPerRunUsd",
+              "value": 0.1,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c08d89b6-c9bd-4de5-8d1d-2a049a1a67ad",
+      "name": "Job watch settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate settings and build the Actor input. Fails early (before any paid work) on bad settings.\nconst s = $('Job watch settings').first().json;\nconst boards = String(s.leverBoards || '')\n  .split(/[\\n,]+/).map(x => x.trim()).filter(Boolean)\n  .map(x => { const m = x.match(/jobs\\.lever\\.co\\/([^\\/?#\\s]+)/i); return (m ? m[1] : x).toLowerCase(); });\nif (!boards.length) throw new Error('Add at least one Lever board slug (e.g. the \"acme\" in jobs.lever.co/acme).');\nconst badSlug = boards.filter(b => !/^[a-z0-9][a-z0-9._-]*$/.test(b));\nif (badSlug.length) throw new Error('Not valid Lever board slugs: ' + badSlug.join(', '));\nif (/eu\\.lever\\.co/i.test(String(s.leverBoards))) throw new Error('EU-hosted Lever boards (jobs.eu.lever.co) are not supported.');\nif (!s.spreadsheetId || /YOUR_/i.test(s.spreadsheetId)) {\n  throw new Error('Set spreadsheetId in \"Job watch settings\" (the long ID in your Google Sheet URL).');\n}\nconst minSalary = Math.max(0, Number(s.minSalary) || 0);\nconst currency = String(s.salaryCurrency || 'USD').toUpperCase();\nconst intervals = ['per-year-salary', 'per-month-salary', 'per-week-salary', 'per-day-wage', 'per-hour-wage'];\nconst interval = String(s.salaryInterval || 'per-year-salary');\nif (!intervals.includes(interval)) throw new Error('salaryInterval must be one of: ' + intervals.join(', '));\nconst actorInput = {\n  boards: [...new Set(boards)].slice(0, 20),\n  salaryOnly: true,                 // only postings that publish a numeric salary\n  maxResults: Math.max(1, Math.min(Number(s.maxJobsPerRun) || 25, 1000)),\n  remoteOnly: Boolean(s.remoteOnly),\n  minSalary,\n  salaryCurrency: currency,\n  salaryInterval: interval,\n};\nreturn [{ json: {\n  actorInput,\n  spreadsheetId: String(s.spreadsheetId).trim(),\n  sheetName: String(s.sheetName || 'Salary watch'),\n  slackChannel: String(s.slackChannel || '#jobs'),\n  maxCostPerRunUsd: Number(s.maxCostPerRunUsd) || 0.1,\n} }];\n"
+      },
+      "id": "fd4c7087-6c92-4ecb-8601-bc1dd8893d0f",
+      "name": "Check settings and build input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/ahmed.fouaad82~lever-salary-jobs/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeout",
+              "value": "240"
+            },
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "={{ $('Check settings and build input').first().json.maxCostPerRunUsd }}"
+            },
+            {
+              "name": "clean",
+              "value": "true"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Check settings and build input').first().json.actorInput) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "e24048ec-115a-41bc-a38c-1402afe272cc",
+      "name": "Fetch Lever jobs with salaries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        100
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Apify run failed - nothing was written. {{ String(($json.error && ($json.error.message || $json.error.description)) || JSON.stringify($json)).slice(0, 300) }}"
+      },
+      "id": "3cc3df9b-4663-4a2d-9eca-2d50fe6fb08c",
+      "name": "Stop: Apify run failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.sheetName }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "ec37aa54-4ada-479f-90a7-8f7602d2b625",
+      "name": "Read known postings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        80
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep postings not yet in the sheet and format their salary range.\nconst seen = new Set($input.all().map(i => String(i.json.jobId || '').trim()).filter(Boolean));\nconst jobs = $('Fetch Lever jobs with salaries').all().map(i => i.json)\n  .filter(j => j && j.id && j.salaryMin != null);\nconst per = { 'per-year-salary': 'year', 'per-month-salary': 'month', 'per-week-salary': 'week', 'per-day-wage': 'day', 'per-hour-wage': 'hour' };\nconst fmt = n => (n == null || n === '') ? '' : Number(n).toLocaleString('en-US');\nconst now = new Date().toISOString();\nconst out = [];\nfor (const j of jobs) {\n  const key = String(j.id);\n  if (seen.has(key)) continue;\n  seen.add(key);\n  const range = j.salaryMax != null && j.salaryMax !== j.salaryMin\n    ? `${j.salaryCurrency || ''} ${fmt(j.salaryMin)}-${fmt(j.salaryMax)}` : `${j.salaryCurrency || ''} ${fmt(j.salaryMin)}`;\n  out.push({ json: {\n    jobId: key,\n    board: j.board || '',\n    title: j.title || '',\n    team: j.team || '',\n    department: j.department || '',\n    location: j.location || '',\n    workplaceType: j.workplaceType || '',\n    commitment: j.commitment || '',\n    salaryMin: j.salaryMin,\n    salaryMax: j.salaryMax ?? '',\n    salaryCurrency: j.salaryCurrency || '',\n    salaryInterval: j.salaryInterval || '',\n    salaryRange: `${range.trim()} per ${per[j.salaryInterval] || j.salaryInterval || '?'}`,\n    postedAt: j.createdAt || '',\n    jobUrl: j.url || '',\n    firstSeenAt: now,\n  } });\n}\n// Highest paying first, so the Slack digest leads with them.\nout.sort((a, b) => (Number(b.json.salaryMax || b.json.salaryMin) || 0) - (Number(a.json.salaryMax || a.json.salaryMin) || 0));\nreturn out; // empty -> nothing is written or posted\n"
+      },
+      "id": "f0216d9e-dd58-49fb-916c-dd7955c19c9e",
+      "name": "Keep new postings and format salary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.sheetName }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "446ed597-d47e-4ca6-b6bb-a5b4c4a6d8d4",
+      "name": "Append to salary register",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1580,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One Slack message per run, not one per job.\nconst rows = $input.all().map(i => i.json);\nconst top = rows.slice(0, 15).map(r =>\n  `- <${r.jobUrl}|${r.title}> (${r.board}, ${r.location || 'location n/a'}${r.workplaceType ? ', ' + r.workplaceType : ''}): ${r.salaryRange}`);\nconst more = rows.length > 15 ? `\\n...and ${rows.length - 15} more in the sheet.` : '';\nreturn [{ json: { text: `*${rows.length} new Lever job${rows.length === 1 ? '' : 's'} with published salary*\\n${top.join('\\n')}${more}` } }];\n"
+      },
+      "id": "5b09d72c-af23-4719-beb1-eb8a936e20fa",
+      "name": "Build Slack digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Check settings and build input').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "75712a53-0288-4678-be2e-1e76a374d08f",
+      "name": "Post digest to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1800,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Run now": {
+      "main": [
+        [
+          {
+            "node": "Job watch settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekdays at 8": {
+      "main": [
+        [
+          {
+            "node": "Job watch settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job watch settings": {
+      "main": [
+        [
+          {
+            "node": "Check settings and build input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check settings and build input": {
+      "main": [
+        [
+          {
+            "node": "Fetch Lever jobs with salaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Lever jobs with salaries": {
+      "main": [
+        [
+          {
+            "node": "Read known postings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: Apify run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read known postings": {
+      "main": [
+        [
+          {
+            "node": "Keep new postings and format salary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep new postings and format salary": {
+      "main": [
+        [
+          {
+            "node": "Append to salary register",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Slack digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Slack digest": {
+      "main": [
+        [
+          {
+            "node": "Post digest to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
