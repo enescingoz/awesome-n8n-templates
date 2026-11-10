@@ -1,0 +1,1012 @@
+{
+  "name": "Write and schedule a week of LinkedIn posts in your own voice with ContentIn MCP and Slack approval",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## LinkedIn week in your voice with ContentIn\n\n### How it works\nEvery Monday the workflow takes three short notes about your week, asks ContentIn for your voice profile and material (get_voice_context), turns each note into a brief, has ContentIn write the post in your voice (write_post_in_my_voice) and asks for a schedule preview (schedule_post). The exact text lands in Slack. Only after you click Approve does the workflow send the confirmation token back, so nothing is ever queued without you. Declined posts stay as drafts in your ContentIn account.\n\n### Setup\n1. Create a ContentIn account (free, no card) at https://app.contentin.io/signup?product=agent&ref=n8n_template and paste your LinkedIn URL. The voice profile is free; the tools need the Agent plan (29 USD per LinkedIn profile per month, 7-day trial, card required) or the web Growth plan or higher.\n2. In ContentIn open Profiles, then Connections, then Connect AI clients, and create an API key (it starts with cimcp_).\n3. In n8n create a Header Auth credential: Name X-MCP-Key, Value your key. Select it on every ContentIn node (MCP Client and MCP Client Tool).\n4. Connect LinkedIn inside ContentIn (scheduling needs it). Add your OpenAI credential on the chat model node and a Slack credential on the Slack nodes.\n5. Replace the three sample notes in Your notes and slots, or swap that node for a Google Sheets read.\n\n### Customization\nChange post_days and post_hour for your slots. Replace Slack with Gmail or Send Email (both have Send and Wait). Docs: https://contentin.io/linkedin-mcp-server/setup/ Support: support@contentin.io",
+        "height": 560,
+        "width": 640,
+        "color": 1
+      },
+      "id": "1f3308d0-2ab5-48e5-bae3-647c08639add",
+      "name": "Sticky Note 69c9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Nothing posts without you\n\n`schedule_post` is two-step by design. The first call returns the exact text plus a one-time `confirm_token` (valid 5 minutes, bound to that text). This workflow:\n1. shows you the exact text in Slack and waits for **Approve** or **Decline**;\n2. after Approve, requests a fresh preview, checks the text is byte-identical to what you approved, and only then sends the token back.\n\nIf the text changed in between, nothing is scheduled and Slack tells you. Declined posts stay as drafts in ContentIn.\n\nFair use on agent plans: at most **3 scheduled or published posts per profile per day**. The three slots below are on three different days.\n\nWriting caps: Agent 30 posts + 50 ideas / month, Agent Pro 100 + 200.",
+        "height": 430,
+        "width": 520,
+        "color": 7
+      },
+      "id": "988eab16-76fb-4c17-b1df-0566e08c324c",
+      "name": "Sticky Note e469",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Unverified when this template was written (2026-11-09):** typeVersions (AI Agent 2.2, OpenAI Chat Model 1.2, MCP Client Tool 1.2, MCP Client 1.1, Slack 2.3) were taken from published n8n templates and the n8n source on GitHub; your n8n may show a newer version. If a node imports with a warning, open it and re-select the same settings. Slack **Send and wait for approval** needs a public n8n URL (n8n Cloud or a reachable webhook URL).",
+        "height": 220,
+        "width": 520,
+        "color": 3
+      },
+      "id": "610066af-7cb8-4774-885c-83b41a82c52f",
+      "name": "Sticky Note d4a1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "b4bbd633-d7e9-4ae0-a7a4-e7f10b1100a1",
+      "name": "Every Monday 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1400,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "977cd85e-53cc-4242-8f63-d79ec8e984da",
+              "name": "note_1",
+              "type": "string",
+              "value": "Last week a client asked me to cut our onboarding from 14 days to 5. We did it by removing two approval steps nobody could explain. Their first invoice went out on day 6."
+            },
+            {
+              "id": "70047ac3-bf35-4b4b-9437-3839f16a5825",
+              "name": "note_2",
+              "type": "string",
+              "value": "I still think most founders post about the wrong thing: lessons they read, not things they did. My own posts about actual client work get three times the replies."
+            },
+            {
+              "id": "494ef8b2-e279-4c9c-94b5-da102a59107b",
+              "name": "note_3",
+              "type": "string",
+              "value": "Numbers from October: 11 discovery calls, 4 proposals, 2 signed. Both wins came from people who had commented on my posts before, not from cold outreach."
+            },
+            {
+              "id": "492d6933-a163-43c7-878e-d9677e87148f",
+              "name": "utc_offset",
+              "type": "string",
+              "value": "+01:00"
+            },
+            {
+              "id": "70d8905a-4e94-4e92-8c1f-d99d4af55659",
+              "name": "post_days",
+              "type": "string",
+              "value": "2,4,6"
+            },
+            {
+              "id": "e52160d1-4b8d-4295-9182-1c34cc0307b5",
+              "name": "post_hour",
+              "type": "number",
+              "value": 9
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "986853ab-a4b0-4baf-bed2-141282fc1b46",
+      "name": "Your notes and slots",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1180,
+        -100
+      ],
+      "notes": "Replace the three notes with yours, or swap this node for Google Sheets (one row = one note). utc_offset = your LinkedIn audience's offset. post_days: 1=Mon … 7=Sun."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Three notes -> three items, each with an ISO-8601 post_time WITH an explicit offset\n// (schedule_post rejects naive datetimes; see the sticky note).\nconst s = $input.first().json;\nconst notes = [s.note_1, s.note_2, s.note_3].filter(n => n && String(n).trim());\nconst days = String(s.post_days || '2,4,6').split(',').map(d => parseInt(d.trim(), 10));\nconst hour = Number(s.post_hour ?? 9);\nconst offset = String(s.utc_offset || '+00:00');\nconst pad = n => String(n).padStart(2, '0');\nconst now = new Date();\nfunction nextWeekday(isoDay, fromDate) {\n  const d = new Date(fromDate);\n  const current = ((d.getUTCDay() + 6) % 7) + 1; // 1=Mon..7=Sun\n  let diff = isoDay - current; if (diff <= 0) diff += 7;\n  d.setUTCDate(d.getUTCDate() + diff);\n  return d;\n}\nreturn notes.map((note, i) => {\n  const d = nextWeekday(days[i % days.length], now);\n  const post_time = `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}T${pad(hour)}:00:00${offset}`;\n  return { json: { note, post_time, index: i + 1 } };\n});\n"
+      },
+      "id": "df4f9d46-da3a-41c2-ad9e-f873c8f5210b",
+      "name": "One item per note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5d7497e7-685d-468b-b9f6-7351d08bebb5",
+      "name": "Loop Over Notes",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -740,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.note }}",
+        "options": {
+          "systemMessage": "You turn one rough note from a founder into a brief for ContentIn's write_post_in_my_voice tool. Step 1: call get_voice_context with topic = a one-sentence summary of the note. Step 2: read voice.writing_guide, rules, strategy and the material it returns. Step 3: answer with ONE JSON object and nothing else: {\"user_idea\": string, \"style\": \"authority\"|\"proof\"|\"growth\", \"user_constraints\": string}. user_idea must keep the note's own words, numbers and names verbatim and may add only facts that appear in the returned material (cite none you did not see). Never invent details. style: results or client wins = proof, educational or frameworks = authority, broad resonance = growth. user_constraints: the user's rules from get_voice_context that matter for this post (language, no hashtags, length), in one sentence."
+        }
+      },
+      "id": "60a83f51-a1c1-4ae9-9449-1935c21b8fe1",
+      "name": "Brief from note (uses your voice)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -500,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "01bfb155-d588-46ad-a541-4c8493274097",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        120
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://mcp.contentin.io/mcp-server",
+        "serverTransport": "httpStreamable",
+        "authentication": "headerAuth",
+        "include": "selected",
+        "includeTools": [
+          "get_voice_context"
+        ],
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "d299d069-afa3-457b-9cc5-97164924b157",
+      "name": "ContentIn MCP (voice only)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        -380,
+        120
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "ContentIn MCP key (X-MCP-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// The agent answers with one JSON object; strip code fences if the model added them.\nconst raw = String($json.output ?? $json.text ?? '').trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\nlet brief;\ntry { brief = JSON.parse(raw); } catch (e) { throw new Error('Agent did not return JSON: ' + raw.slice(0, 300)); }\nconst style = ['authority', 'proof', 'growth'].includes(brief.style) ? brief.style : 'proof';\nconst src = $('Loop Over Notes').item.json;\nreturn [{ json: {\n  user_idea: String(brief.user_idea || src.note),\n  style,\n  user_constraints: brief.user_constraints ? String(brief.user_constraints) : undefined,\n  post_time: src.post_time,\n  note: src.note,\n}}];\n"
+      },
+      "id": "23d5e886-be1a-4391-9515-dbf04eece8c5",
+      "name": "Parse brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "serverTransport": "httpStreamable",
+        "endpointUrl": "https://mcp.contentin.io/mcp-server",
+        "authentication": "headerAuth",
+        "tool": {
+          "__rl": true,
+          "mode": "id",
+          "value": "write_post_in_my_voice"
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ JSON.stringify({ user_idea: $json.user_idea, style: $json.style, ...( $json.user_constraints ? { user_constraints: $json.user_constraints } : {} ) }) }}",
+        "options": {
+          "timeout": 180000,
+          "convertToBinary": false
+        }
+      },
+      "id": "0157b182-fe03-48f7-93cb-e476e9fbb8e8",
+      "name": "write_post_in_my_voice",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "typeVersion": 1.1,
+      "position": [
+        -40,
+        -100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "ContentIn MCP key (X-MCP-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// MCP Client node output -> flat item (structuredContent is the tool's result).\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  let data = j.structuredContent;\n  if (data === undefined) {\n    const first = Array.isArray(j.content) ? j.content[0] : undefined;\n    data = (first && typeof first === 'object' && !('type' in first)) ? first : (first?.text ?? j);\n    if (typeof data === 'string') { try { data = JSON.parse(data); } catch { data = { text: data }; } }\n  }\n  if (data?.status === 'error') throw new Error(`ContentIn refused the call (${data.code}): ${JSON.stringify(data)}`);\n  out.push({ json: data });\n}\nreturn out;\n"
+      },
+      "id": "c0baf73b-4617-4aa1-a79c-2c46f1c6f586",
+      "name": "Parse draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f93e21ca-d9f2-493d-9067-6533f16406c1",
+              "leftValue": "={{ $json.needs_input === true || !$json.post_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e170d8d3-dd8f-46fa-a614-037741ca8438",
+      "name": "Draft saved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#linkedin-approvals"
+        },
+        "text": "=ContentIn did not write post {{ $('Loop Over Notes').item.json.index }} yet. It asked: {{ $json.question || $json.note || 'see n8n execution' }}\n\nAnswer it in your ContentIn content bank (or refine the note) and re-run.",
+        "otherOptions": {}
+      },
+      "id": "2705ad27-f035-4289-b7f2-fb802a62d773",
+      "name": "Slack: ContentIn needs an answer",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        620,
+        120
+      ],
+      "webhookId": "62793be3-eade-4d72-9770-32dce1ccbead",
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "serverTransport": "httpStreamable",
+        "endpointUrl": "https://mcp.contentin.io/mcp-server",
+        "authentication": "headerAuth",
+        "tool": {
+          "__rl": true,
+          "mode": "id",
+          "value": "schedule_post"
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ JSON.stringify({ post_id: $json.post_id, post_time: $('Parse brief').item.json.post_time }) }}",
+        "options": {
+          "timeout": 60000,
+          "convertToBinary": false
+        }
+      },
+      "id": "7bae5a30-d12d-45ed-aef3-d6ef04503419",
+      "name": "schedule_post (preview)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        -200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "ContentIn MCP key (X-MCP-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// MCP Client node output -> flat item (structuredContent is the tool's result).\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  let data = j.structuredContent;\n  if (data === undefined) {\n    const first = Array.isArray(j.content) ? j.content[0] : undefined;\n    data = (first && typeof first === 'object' && !('type' in first)) ? first : (first?.text ?? j);\n    if (typeof data === 'string') { try { data = JSON.parse(data); } catch { data = { text: data }; } }\n  }\n  if (data?.status === 'error') throw new Error(`ContentIn refused the call (${data.code}): ${JSON.stringify(data)}`);\n  out.push({ json: data });\n}\nreturn out;\n"
+      },
+      "id": "412c62ae-5224-4bae-8d7a-a514a48e17f2",
+      "name": "Parse preview",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#linkedin-approvals"
+        },
+        "operation": "sendAndWait",
+        "message": "=*Post {{ $('Loop Over Notes').item.json.index }} of 3, scheduled for {{ $json.scheduled_for_utc }} (UTC)* {{ $json.images_attached ? 'with ' + $json.images_attached + ' image(s)' : '' }}\n\n{{ $json.exact_text }}\n\n_{{ $json.characters }} characters. Approve = ContentIn schedules exactly this text via LinkedIn's official API. Decline = it stays a draft in ContentIn (post id {{ $json.post_id }})._",
+        "responseType": "approval",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "Approve and schedule",
+            "disapproveLabel": "Decline"
+          }
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "limitType": "afterTimeInterval",
+              "resumeAmount": 2,
+              "resumeUnit": "days"
+            }
+          }
+        }
+      },
+      "id": "32684bea-7d06-4c03-997e-5a5e04c84308",
+      "name": "Approve in Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1060,
+        -200
+      ],
+      "webhookId": "842a766f-f508-4a2f-b52e-70f877e5112e",
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "12c459f6-e993-4428-a828-fb882494b582",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2a31b490-22b4-41de-9b76-2d03dcfb4284",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "serverTransport": "httpStreamable",
+        "endpointUrl": "https://mcp.contentin.io/mcp-server",
+        "authentication": "headerAuth",
+        "tool": {
+          "__rl": true,
+          "mode": "id",
+          "value": "schedule_post"
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ JSON.stringify({ post_id: $('Parse preview').item.json.post_id, post_time: $('Parse brief').item.json.post_time }) }}",
+        "options": {
+          "timeout": 60000,
+          "convertToBinary": false
+        }
+      },
+      "id": "a35f0280-0488-4fb3-8a68-07bbe0cf86f5",
+      "name": "schedule_post (fresh preview)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        -300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "ContentIn MCP key (X-MCP-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// MCP Client node output -> flat item (structuredContent is the tool's result).\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  let data = j.structuredContent;\n  if (data === undefined) {\n    const first = Array.isArray(j.content) ? j.content[0] : undefined;\n    data = (first && typeof first === 'object' && !('type' in first)) ? first : (first?.text ?? j);\n    if (typeof data === 'string') { try { data = JSON.parse(data); } catch { data = { text: data }; } }\n  }\n  if (data?.status === 'error') throw new Error(`ContentIn refused the call (${data.code}): ${JSON.stringify(data)}`);\n  out.push({ json: data });\n}\nreturn out;\n"
+      },
+      "id": "add93c36-cb37-4514-9f7b-ed69718a7d2b",
+      "name": "Parse fresh preview",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The confirm token lives 5 minutes; Slack approval can take longer. So we fetch a\n// fresh token and only use it if the text is byte-identical to what the human approved.\nconst approved = $('Parse preview').item.json;\nconst fresh = $json;\nconst same = String(approved.exact_text) === String(fresh.exact_text) && approved.post_id === fresh.post_id;\nreturn [{ json: { same, post_id: fresh.post_id, confirm_token: fresh.confirm_token, post_time: $('Parse brief').item.json.post_time, exact_text: fresh.exact_text } }];\n"
+      },
+      "id": "0c35bbe3-de42-4250-9e0e-cbd407905a1b",
+      "name": "Same text as approved?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1940,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d66b8b0c-5c05-45a6-a862-21b55627d934",
+              "leftValue": "={{ $json.same }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "903e4537-daf7-4945-80d0-3fee36926a10",
+      "name": "Unchanged?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "serverTransport": "httpStreamable",
+        "endpointUrl": "https://mcp.contentin.io/mcp-server",
+        "authentication": "headerAuth",
+        "tool": {
+          "__rl": true,
+          "mode": "id",
+          "value": "schedule_post"
+        },
+        "inputMode": "json",
+        "jsonInput": "={{ JSON.stringify({ post_id: $json.post_id, post_time: $json.post_time, confirm_token: $json.confirm_token }) }}",
+        "options": {
+          "timeout": 60000,
+          "convertToBinary": false
+        }
+      },
+      "id": "ccae7402-2fae-4196-ac19-bc7745df4c4e",
+      "name": "schedule_post (confirm)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClient",
+      "typeVersion": 1.1,
+      "position": [
+        2380,
+        -400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "ContentIn MCP key (X-MCP-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// MCP Client node output -> flat item (structuredContent is the tool's result).\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  let data = j.structuredContent;\n  if (data === undefined) {\n    const first = Array.isArray(j.content) ? j.content[0] : undefined;\n    data = (first && typeof first === 'object' && !('type' in first)) ? first : (first?.text ?? j);\n    if (typeof data === 'string') { try { data = JSON.parse(data); } catch { data = { text: data }; } }\n  }\n  if (data?.status === 'error') throw new Error(`ContentIn refused the call (${data.code}): ${JSON.stringify(data)}`);\n  out.push({ json: data });\n}\nreturn out;\n"
+      },
+      "id": "9923a76d-8bd7-43ad-bfc1-247704343240",
+      "name": "Parse confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#linkedin-approvals"
+        },
+        "text": "=Scheduled: post {{ $('Loop Over Notes').item.json.index }} goes out {{ $json.scheduled_for_utc }} (UTC) via LinkedIn's official API. You can still edit or cancel it in ContentIn (post id {{ $json.post_id }}).",
+        "otherOptions": {}
+      },
+      "id": "ff17a941-eb3f-4274-9bb5-85854bf45060",
+      "name": "Slack: scheduled",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2820,
+        -400
+      ],
+      "webhookId": "113df340-0996-40fe-a69a-9661d89f8738",
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#linkedin-approvals"
+        },
+        "text": "=Not scheduled: the text of post {{ $('Loop Over Notes').item.json.index }} changed in ContentIn after you approved it, so I did not send the token. Check the draft (post id {{ $json.post_id }}) and re-run.",
+        "otherOptions": {}
+      },
+      "id": "0004acd7-7126-48e6-a4d5-e6f59e16294c",
+      "name": "Slack: text changed, not scheduled",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2380,
+        -200
+      ],
+      "webhookId": "da5a6b8b-4696-44e3-9ac9-d5c61acd5db3",
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#linkedin-approvals"
+        },
+        "text": "=Declined: post {{ $('Loop Over Notes').item.json.index }} stays a draft in ContentIn (post id {{ $('Parse preview').item.json.post_id }}). Nothing was scheduled.",
+        "otherOptions": {}
+      },
+      "id": "8642cf0b-8795-4148-9516-0fd111dc9f4f",
+      "name": "Slack: declined",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1500,
+        -80
+      ],
+      "webhookId": "72f8c29a-a071-4e59-ade1-4315ff29963c",
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every Monday 08:00": {
+      "main": [
+        [
+          {
+            "node": "Your notes and slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Your notes and slots": {
+      "main": [
+        [
+          {
+            "node": "One item per note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per note": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Notes": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Brief from note (uses your voice)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Brief from note (uses your voice)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ContentIn MCP (voice only)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Brief from note (uses your voice)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief from note (uses your voice)": {
+      "main": [
+        [
+          {
+            "node": "Parse brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse brief": {
+      "main": [
+        [
+          {
+            "node": "write_post_in_my_voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write_post_in_my_voice": {
+      "main": [
+        [
+          {
+            "node": "Parse draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse draft": {
+      "main": [
+        [
+          {
+            "node": "Draft saved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft saved?": {
+      "main": [
+        [
+          {
+            "node": "schedule_post (preview)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: ContentIn needs an answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: ContentIn needs an answer": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schedule_post (preview)": {
+      "main": [
+        [
+          {
+            "node": "Parse preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse preview": {
+      "main": [
+        [
+          {
+            "node": "Approve in Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approve in Slack": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "schedule_post (fresh preview)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: declined",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: declined": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schedule_post (fresh preview)": {
+      "main": [
+        [
+          {
+            "node": "Parse fresh preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse fresh preview": {
+      "main": [
+        [
+          {
+            "node": "Same text as approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Same text as approved?": {
+      "main": [
+        [
+          {
+            "node": "Unchanged?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unchanged?": {
+      "main": [
+        [
+          {
+            "node": "schedule_post (confirm)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: text changed, not scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: text changed, not scheduled": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schedule_post (confirm)": {
+      "main": [
+        [
+          {
+            "node": "Parse confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse confirmation": {
+      "main": [
+        [
+          {
+            "node": "Slack: scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: scheduled": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "pinData": {},
+  "versionId": "e4c97e8d-e77e-4b58-b650-7d116754f53e",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "contentin-template"
+  },
+  "tags": [
+    {
+      "name": "LinkedIn"
+    },
+    {
+      "name": "MCP"
+    },
+    {
+      "name": "Content creation"
+    },
+    {
+      "name": "Approval"
+    }
+  ]
+}
