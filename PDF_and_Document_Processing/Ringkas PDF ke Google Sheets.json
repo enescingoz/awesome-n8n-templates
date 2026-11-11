@@ -1,0 +1,278 @@
+{
+  "name": "Ringkas PDF ke Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Ringkas PDF ke Google Sheets\n1. Buat Google Sheet dengan header baris 1: `Tanggal | File | Halaman | Ringkasan`.\n2. Buat credential **Google Sheets OAuth2** dan **OpenAI** (Base URL penyedia + API key).\n3. Di node **Simpan ke Google Sheets**, tempel URL sheet-mu.\n4. Buka URL form dari node **Form unggah PDF**, unggah PDF.\n\nTeks dipotong 40.000 karakter (±20 halaman) supaya biaya tetap kecil. PDF hasil scan (gambar) tidak punya teks dan perlu OCR dulu.",
+        "height": 340,
+        "width": 420
+      },
+      "id": "3b0d826b-95d9-5eef-b134-37d054e80533",
+      "name": "Catatan",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Ringkas dokumen",
+        "formDescription": "Unggah PDF. Ringkasannya akan masuk ke Google Sheets.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Dokumen",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2d298496-75c1-54d1-a015-98eaad129439",
+      "name": "Form unggah PDF",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b49f055b-9ebe-5785-aa87-03c858baebce"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Dokumen",
+        "options": {}
+      },
+      "id": "4007e4fc-f0a3-5cdd-b1f1-979add76bb80",
+      "name": "Ambil teks PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b8b2b64e-cc0e-5f56-b4a0-2989927da6d2",
+              "name": "teks",
+              "value": "={{ ($json.text || '').slice(0, 40000) }}",
+              "type": "string"
+            },
+            {
+              "id": "6386bad9-fe51-5d53-bee6-671715519af6",
+              "name": "halaman",
+              "value": "={{ $json.numpages }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "88b22134-5562-5613-8560-4e0086983c0e",
+      "name": "Potong teks",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ringkas dokumen berikut.\n\n{{ $json.teks }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Kamu meringkas dokumen kerja dalam Bahasa Indonesia. Tulis maksimal 5 poin singkat (diawali \"- \"), lalu satu baris \"Tindak lanjut:\" berisi hal yang perlu dikerjakan, atau \"Tindak lanjut: -\" kalau tidak ada. Jangan menambah informasi yang tidak ada di dokumen."
+            }
+          ]
+        }
+      },
+      "id": "b53ee54d-c8e1-5ead-8e1d-21d93836a9a6",
+      "name": "Ringkas",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "deepseek-v4.1-flash",
+          "mode": "id"
+        },
+        "options": {
+          "maxTokens": 600,
+          "temperature": 0.2
+        }
+      },
+      "id": "a8a95437-8795-588c-93bd-e044a3351fb6",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "name": "AI API (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Tanggal": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}",
+            "File": "={{ $('Form unggah PDF').item.binary.Dokumen.fileName }}",
+            "Halaman": "={{ $('Potong teks').item.json.halaman }}",
+            "Ringkasan": "={{ $json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Tanggal",
+              "displayName": "Tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "File",
+              "displayName": "File",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Halaman",
+              "displayName": "Halaman",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ringkasan",
+              "displayName": "Ringkasan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c6820775-f021-533b-ac33-dbb8988f8c29",
+      "name": "Simpan ke Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        920,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Form unggah PDF": {
+      "main": [
+        [
+          {
+            "node": "Ambil teks PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil teks PDF": {
+      "main": [
+        [
+          {
+            "node": "Potong teks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Potong teks": {
+      "main": [
+        [
+          {
+            "node": "Ringkas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ringkas": {
+      "main": [
+        [
+          {
+            "node": "Simpan ke Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ringkas",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

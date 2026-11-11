@@ -1,0 +1,176 @@
+{
+  "name": "CS toko AI di Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## CS toko AI di Telegram\n1. Buat bot di @BotFather, buat credential **Telegram** dengan tokennya.\n2. Buat credential **OpenAI**: isi API key dan **Base URL** penyedia (contoh `https://api.ezkielyna.store/v1`).\n3. Ganti DATA TOKO di node **AI Agent** (Options → System Message).\n4. Aktifkan workflow. n8n harus bisa diakses lewat HTTPS agar Telegram bisa mengirim pesan.",
+        "height": 320,
+        "width": 400
+      },
+      "id": "c461f5f3-85ac-51f2-bbb0-75bc20754ff2",
+      "name": "Catatan",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "3c164b25-2a87-5f4a-91d0-add7e9c29118",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "81cb3240-6304-559c-94a5-b919791b4950",
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram bot toko"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text || '(pembeli mengirim pesan selain teks)' }}",
+        "options": {
+          "systemMessage": "Kamu adalah admin CS Toko Contoh. Jawab pertanyaan pembeli tentang produk, harga, ongkir, dan jam buka.\n\nAturan:\n- Bahasa Indonesia santai dan sopan, maksimal 3 kalimat.\n- Hanya pakai informasi di DATA TOKO. Kalau tidak ada, jawab: \"Sebentar ya kak, saya tanyakan ke admin dulu.\"\n- Jangan menjanjikan diskon, stok, atau waktu kirim yang tidak tertulis.\n- Kalau pembeli mengirim selain teks, minta dia menulis pertanyaannya.\n\nDATA TOKO (ganti dengan data tokomu):\n- Jam buka: Senin-Sabtu 08.00-20.00 WIB\n- Kopi susu 1 liter: Rp55.000\n- Ongkir dalam kota: Rp10.000, gratis di atas Rp150.000\n- Pembayaran: transfer bank, QRIS, COD dalam kota"
+        }
+      },
+      "id": "78a72433-be51-58b9-a6d9-b22ae6788ee0",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "deepseek-v4.1-flash",
+          "mode": "id"
+        },
+        "options": {
+          "maxTokens": 400,
+          "temperature": 0.4
+        }
+      },
+      "id": "b6c2e108-b7d3-5e20-a7c7-e55012b79833",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "name": "AI API (OpenAI-compatible)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 6
+      },
+      "id": "a1da91a2-86e7-53a3-b5f3-d65d42b7f9eb",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a92f2184-eac6-59fe-8b00-9f185f77066d",
+      "name": "Kirim balasan",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        600,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram bot toko"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Kirim balasan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
