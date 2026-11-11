@@ -572,6 +572,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 | DataForge Lite - AI URL Data Extractor | POST any URL and extract structured data using OpenAI. Returns clean JSON output for easy integration with other workflows. | Data Extraction, AI Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/DataForge%20Lite%20-%20AI%20URL%20Data%20Extractor.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Transforms Perplexity AI research into HTML content for AI-powered content creation. | Content Creation, AI Research | [Link to Template](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 | Live Web Research Agent with Superhighway | Search the live web, get AI-ready results (title, URL, snippet) using Superhighway's free search API. No browser required — pure HTTP. | Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/Live%20Web%20Research%20Agent%20with%20Superhighway.json) |
+| Split Markdown into heading chunks for RAG | Splits Markdown by headings, keeps fences and tables together when they fit, and writes a downloadable chunks.jsonl file with heading path and line numbers. Uses only built-in n8n nodes. No API key. | Engineering, AI Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/Split%20Markdown%20into%20heading%20chunks%20for%20RAG.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
@@ -590,7 +591,6 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
   <br />
   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
-
 ## FAQ
 
 ### How do I import an n8n template from this repository?

@@ -1,0 +1,152 @@
+{
+  "name": "Split Markdown into heading chunks for RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nThis workflow helps anyone who has a Markdown file and needs heading-aware chunks for RAG, a notes vault, or a vector database. Click Test workflow to run the sample, or paste your own Markdown into the configuration node. A Code node splits the text by headings first, keeps fenced code blocks and tables together when they fit, and writes one item per chunk. Each chunk includes a heading path, line numbers, a character count, and the text. A last node turns the chunks into a JSONL file you can download from the execution.\n\nThis is a simplified built-in splitter. It does not call any paid API. For large files, or for a local CLI and MCP server, use the free tool md-chunk-lite: https://github.com/tidybytetools/md-chunk-lite\n\n### Setup\nNo accounts or credentials are required. Open the node named \"Chunk settings and sample Markdown\". Set MAX_CHARS (default 1500) and, if you want, replace SAMPLE_MARKDOWN with your own text. Click Test workflow. Open the output of \"Build JSONL file\" and download `chunks.jsonl`.\n\n### Customization\nChange MAX_CHARS to match your embedding model. Add a node after the chunks if you want to send them to a vector store (that will need credentials, which this template does not include on purpose).",
+        "height": 640,
+        "width": 520,
+        "color": 1
+      },
+      "id": "524dc1d6-f02b-4ab6-b072-97b23777749c",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Set MAX_CHARS and paste your Markdown here. The sample is enough for a first run.",
+        "height": 160,
+        "width": 360,
+        "color": 7
+      },
+      "id": "9341b1ff-a16c-4534-91af-ebf01e8219a1",
+      "name": "## Prepare the Markdown",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "One item per chunk, then a JSONL file to download from the execution.",
+        "height": 160,
+        "width": 360,
+        "color": 7
+      },
+      "id": "881bba26-b129-4c98-b2c6-a2600306a43c",
+      "name": "## Chunk and export",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        760,
+        40
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "07ba69b7-260e-4acd-9d50-020ad2d2d27b",
+      "name": "Test workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        160,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  {\n    json: {\n      MAX_CHARS: 1500,\n      SAMPLE_MARKDOWN: [\n        \"# Guide\",\n        \"\",\n        \"Hello.\",\n        \"\",\n        \"## Install\",\n        \"\",\n        \"```bash\",\n        \"pip install tool\",\n        \"```\",\n        \"\",\n        \"## Use\",\n        \"\",\n        \"| a | b |\",\n        \"|---|---|\",\n        \"| 1 | 2 |\",\n        \"\",\n        \"More text after the table.\",\n        \"\",\n      ].join(\"\\n\"),\n    },\n  },\n];\n"
+      },
+      "id": "8798c7ce-fce8-4dce-bed2-2b034caccac0",
+      "name": "Chunk settings and sample Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { splitMarkdownIntoChunks } = (function(){\nfunction isFence(line) {\n  return /^\\s*```/.test(line);\n}\n\nfunction headingLevel(line) {\n  const m = /^(#{1,6})\\s+\\S/.exec(line);\n  return m ? m[1].length : 0;\n}\n\nfunction isTableRow(line) {\n  return /^\\s*\\|.*\\|\\s*$/.test(line);\n}\n\nfunction splitMarkdownIntoChunks(markdown, maxChars) {\n  const max = Math.max(200, Number(maxChars) || 1500);\n  const lines = String(markdown || \"\").replace(/\\r\\n/g, \"\\n\").split(\"\\n\");\n  const sections = [];\n  let path = [];\n  let buf = [];\n  let startLine = 1;\n  let inFence = false;\n\n  function pathForLevel(level, title) {\n    const next = path.filter((p) => p.level < level);\n    next.push({ level, title });\n    return next;\n  }\n\n  function flush() {\n    const text = buf.join(\"\\n\").trim();\n    if (!text) {\n      buf = [];\n      return;\n    }\n    sections.push({\n      heading_path: path.map((p) => p.title),\n      start_line: startLine,\n      end_line: startLine + buf.length - 1,\n      text,\n    });\n    buf = [];\n  }\n\n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i];\n    if (isFence(line)) inFence = !inFence;\n    const level = !inFence ? headingLevel(line) : 0;\n    if (level) {\n      flush();\n      const title = line.replace(/^#{1,6}\\s+/, \"\").trim();\n      path = pathForLevel(level, title);\n      startLine = i + 1;\n      buf.push(line);\n    } else {\n      if (buf.length === 0) startLine = i + 1;\n      buf.push(line);\n    }\n  }\n  flush();\n\n  const chunks = [];\n  function pushChunk(section, text, start, end, part, of) {\n    const chars = text.length;\n    chunks.push({\n      id: (section.heading_path.join(\" > \") || \"intro\") + \"#\" + start,\n      heading_path: section.heading_path,\n      start_line: start,\n      end_line: end,\n      part,\n      of,\n      chars,\n      approx_tokens: Math.round(chars / 4),\n      text,\n    });\n  }\n\n  for (const section of sections) {\n    if (section.text.length <= max) {\n      pushChunk(section, section.text, section.start_line, section.end_line, 1, 1);\n      continue;\n    }\n    // Split on blank lines, but keep fenced blocks and tables together when they fit.\n    const parts = [];\n    const slines = section.text.split(\"\\n\");\n    let acc = [];\n    let fence = false;\n    let table = [];\n    function emitAcc() {\n      const t = acc.join(\"\\n\").trim();\n      if (t) parts.push(t);\n      acc = [];\n    }\n    for (const line of slines) {\n      if (isFence(line)) fence = !fence;\n      if (!fence && isTableRow(line)) {\n        table.push(line);\n        continue;\n      }\n      if (table.length) {\n        acc.push(table.join(\"\\n\"));\n        table = [];\n      }\n      acc.push(line);\n      if (!fence && line.trim() === \"\") emitAcc();\n    }\n    if (table.length) acc.push(table.join(\"\\n\"));\n    emitAcc();\n\n    let current = \"\";\n    const packed = [];\n    for (const p of parts) {\n      if (!current) {\n        current = p;\n        continue;\n      }\n      if ((current + \"\\n\\n\" + p).length <= max) current = current + \"\\n\\n\" + p;\n      else {\n        packed.push(current);\n        current = p;\n      }\n    }\n    if (current) packed.push(current);\n    packed.forEach((text, i) => {\n      pushChunk(section, text, section.start_line, section.end_line, i + 1, packed.length);\n    });\n  }\n  return chunks;\n}\nreturn { splitMarkdownIntoChunks };\n})();\n\nconst cfg = $input.first().json;\nconst markdown = cfg.SAMPLE_MARKDOWN || cfg.markdown || \"\";\nconst maxChars = cfg.MAX_CHARS || 1500;\nif (!String(markdown).trim()) {\n  throw new Error(\"Paste Markdown into SAMPLE_MARKDOWN in the configuration node.\");\n}\nconst chunks = splitMarkdownIntoChunks(markdown, maxChars);\nif (!chunks.length) {\n  throw new Error(\"No chunks were created. Check that the Markdown is not empty.\");\n}\nreturn chunks.map((chunk) => ({ json: chunk }));\n"
+      },
+      "id": "711843b6-219b-4845-9902-09579a4ef734",
+      "name": "Split Markdown into chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst text = items.map((i) => JSON.stringify(i.json)).join(\"\\n\");\nreturn [\n  {\n    json: { rows: items.length, fileName: \"chunks.jsonl\" },\n    binary: {\n      data: {\n        data: Buffer.from(text, \"utf8\").toString(\"base64\"),\n        mimeType: \"application/x-ndjson\",\n        fileName: \"chunks.jsonl\",\n        fileExtension: \"jsonl\",\n      },\n    },\n  },\n];\n"
+      },
+      "id": "7f42d0ce-a385-45a8-85e2-69257ac6b63c",
+      "name": "Build JSONL file",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Test workflow": {
+      "main": [
+        [
+          {
+            "node": "Chunk settings and sample Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk settings and sample Markdown": {
+      "main": [
+        [
+          {
+            "node": "Split Markdown into chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Markdown into chunks": {
+      "main": [
+        [
+          {
+            "node": "Build JSONL file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "createdBy": "Tidy Byte Tools",
+    "templateNotes": "Free n8n Creator Hub candidate. Built-in nodes only. No credentials."
+  }
+}
