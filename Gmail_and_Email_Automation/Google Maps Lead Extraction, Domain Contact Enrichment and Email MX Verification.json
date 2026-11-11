@@ -1,0 +1,187 @@
+{
+  "name": "Google Maps Lead Extraction, Domain Contact Enrichment and Email MX Verification",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Google Maps Lead Gen, Domain Enrichment & MX Verification\n\n**Setup:**\n1. Set your `APIFY_API_TOKEN` environment variable in n8n (or configure Header Auth).\n2. Edit the search queries in Node 1 (e.g. `dentists in Austin TX`).\n3. Runs daily or manually: extracts local business leads from Google Maps, enriches company domains with decision-maker emails & tech stack signatures, verifies live DNS MX deliverability, and outputs clean cold-email-ready leads.",
+        "height": 240,
+        "width": 520
+      },
+      "id": "c1a00001-0001-4000-8000-000000000001",
+      "name": "Workflow Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "c1a00001-0002-4000-8000-000000000002",
+      "name": "Daily Lead Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/lucacelli~google-maps-scraper-places-emails-contacts-reviews/run-sync-get-dataset-items?token={{ $env.APIFY_API_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"queries\": [\"dental clinics Austin TX\"],\n  \"maxResultsPerQuery\": 25\n}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "c1a00001-0003-4000-8000-000000000003",
+      "name": "1. Extract Google Maps Business Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const domains = [...new Set($input.all().map(i => i.json.website || i.json.domain).filter(Boolean).map(u => String(u).replace(/^https?:\\/\\/(www\\.)?/, \"\").split(\"/\")[0]))];\nreturn [{ json: { domains: domains.slice(0, 25) } }];"
+      },
+      "id": "c1a00001-0004-4000-8000-000000000004",
+      "name": "Normalize Unique Company Domains",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/lucacelli~b2b-domain-contact-tech-enricher/run-sync-get-dataset-items?token={{ $env.APIFY_API_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domains: $json.domains }) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "c1a00001-0005-4000-8000-000000000005",
+      "name": "2. Enrich Company Emails, Socials & Tech Stack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = [...new Set($input.all().flatMap(i => i.json.emails || (i.json.email ? [i.json.email] : [])).filter(Boolean))];\nreturn [{ json: { emails: emails.slice(0, 100) } }];"
+      },
+      "id": "c1a00001-0006-4000-8000-000000000006",
+      "name": "Collect Candidate Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/lucacelli~bulk-email-verifier-mx-syntax/run-sync-get-dataset-items?token={{ $env.APIFY_API_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ emails: $json.emails }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "c1a00001-0007-4000-8000-000000000007",
+      "name": "3. Verify Bulk Email Syntax & Live DNS MX",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "Daily Lead Schedule": {
+      "main": [
+        [
+          {
+            "node": "1. Extract Google Maps Business Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Extract Google Maps Business Leads": {
+      "main": [
+        [
+          {
+            "node": "Normalize Unique Company Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Unique Company Domains": {
+      "main": [
+        [
+          {
+            "node": "2. Enrich Company Emails, Socials & Tech Stack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Enrich Company Emails, Socials & Tech Stack": {
+      "main": [
+        [
+          {
+            "node": "Collect Candidate Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Candidate Emails": {
+      "main": [
+        [
+          {
+            "node": "3. Verify Bulk Email Syntax & Live DNS MX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
