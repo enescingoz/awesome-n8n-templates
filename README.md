@@ -591,6 +591,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
   <br />
   <small>* Referral link — this project receives a commission on eligible purchases.</small>
 </p>
+
 ## FAQ
 
 ### How do I import an n8n template from this repository?
