@@ -1,0 +1,330 @@
+{
+ "name": "Power planner (example)",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "10 * * * *"
+      }
+     ]
+    }
+   },
+   "id": "s1",
+   "name": "Stündlich (Schedule)",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "GET",
+    "path": "your-secret-path",
+    "responseMode": "onReceived",
+    "options": {}
+   },
+   "id": "w1",
+   "name": "Manuell starten (Webhook)",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    360
+   ],
+   "webhookId": "3a8d7300-c402-4afe-9000-000000000001"
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.awattar.de/v1/marketdata?start=' + (() => { const d=new Date(); d.setDate(d.getDate()-6); d.setHours(0,0,0,0); return d.getTime(); })() + '&end=' + (Date.now()+48*60*60*1000) }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "YOUR-SITE.example Power planner workflow"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "h1",
+   "name": "aWATTar Preise",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    280,
+    20
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://api.energy-charts.info/signal?country=de",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "YOUR-SITE.example Power planner workflow"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "h2",
+   "name": "Grünstrom-Signal",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    280,
+    160
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://api.energy-charts.info/co2eq?country=de",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "YOUR-SITE.example Power planner workflow"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "h3",
+   "name": "CO2-Intensität",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    280,
+    300
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "url": "https://api.energy-charts.info/public_power?country=de",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "User-Agent",
+       "value": "YOUR-SITE.example Power planner workflow"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "id": "h4",
+   "name": "Strommix",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    280,
+    440
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "numberInputs": 4
+   },
+   "id": "m1",
+   "name": "Daten einsammeln",
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3,
+   "position": [
+    560,
+    230
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "/* Pure ES2017 data engine for the Strom-Fahrplan n8n Code node. */\nfunction fahrplanBerechnen(input) {\n  input = input || {};\n  var now = Number(input.nowMs) || Date.now(), tz = input.tz || 'Europe/Berlin';\n  var pad = function (n) { return String(n).padStart(2, '0'); };\n  function parts(ms) {\n    try {\n      var a = new Intl.DateTimeFormat('en-CA', {timeZone:tz, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date(ms));\n      var o={}; a.forEach(function(x){o[x.type]=x.value;});\n      return {d:o.year+'-'+o.month+'-'+o.day,h:+o.hour};\n    } catch(e) {\n      var d=new Date(ms), y=d.getUTCFullYear(), mar=new Date(Date.UTC(y,2,31)), oct=new Date(Date.UTC(y,9,31));\n      mar.setUTCDate(31-mar.getUTCDay()); oct.setUTCDate(31-oct.getUTCDay());\n      var off=(ms>=mar.getTime()+3600000 && ms<oct.getTime()+3600000)?2:1, z=new Date(ms+off*3600000);\n      return {d:z.getUTCFullYear()+'-'+pad(z.getUTCMonth()+1)+'-'+pad(z.getUTCDate()),h:z.getUTCHours()};\n    }\n  }\n  var today=parts(now).d;\n  function finite(v){if(v===null||v===undefined||v===''||typeof v==='boolean')return null;v=Number(v);return isFinite(v)?v:null;}\n  function arr(j,n){return j&&Array.isArray(j[n])?j[n]:[];}\n  var aw=(input.awattar&&Array.isArray(input.awattar.data)?input.awattar.data:[]).map(function(x){\n    return {t:finite(x.start_timestamp),e:finite(x.end_timestamp),p:finite(x.marketprice)==null?null:+(Number(x.marketprice)/10).toFixed(3)};\n  }).filter(function(x){return x.t!=null&&x.p!=null;}).sort(function(a,b){return a.t-b.t;});\n  function indexed(j, value, forecast) {\n    var ts=arr(j,'unix_seconds'), vs=arr(j,value), fs=forecast?arr(j,forecast):[] , out={};\n    ts.forEach(function(t,i){var v=finite(vs[i]); if(v==null&&forecast)v=finite(fs[i]); if(v!=null)out[Math.floor(Number(t)*1000/900000)*900000]=v;}); return out;\n  }\n  var sigT=arr(input.signal,'unix_seconds'), shares=arr(input.signal,'share'), signals=arr(input.signal,'signal'), sig={};\n  sigT.forEach(function(t,i){sig[Math.floor(Number(t)*1000/900000)*900000]={ren:finite(shares[i]),sig:finite(signals[i])};});\n  var co2=indexed(input.co2,'co2eq','co2eq_forecast');\n  function avgMap(map, field) { var buckets={}; Object.keys(map).forEach(function(k){var h=Math.floor(+k/3600000)*3600000,v=field?map[k][field]:map[k]; if(v!=null)(buckets[h]||(buckets[h]=[])).push(v);}); var out={};Object.keys(buckets).forEach(function(k){out[k]=buckets[k].reduce(function(a,b){return a+b;},0)/buckets[k].length;});return out; }\n  var renH=avgMap(sig,'ren'), signalH=avgMap(sig,'sig'), co2H=avgMap(co2);\n  var hours=aw.filter(function(x){return parts(x.t).d>=today;}).map(function(x){var h=Math.floor(x.t/3600000)*3600000;return {t:x.t,p:x.p,co2:co2H[h]==null?null:+co2H[h].toFixed(1),ren:renH[h]==null?null:+renH[h].toFixed(1),sig:signalH[h]==null?null:Math.round(signalH[h])};});\n  var cur=hours.filter(function(x){return x.t<=now;}).slice(-1)[0]||hours[0]||null;\n  var todayHours=hours.filter(function(x){return parts(x.t).d===today;}), prices=todayHours.map(function(x){return x.p;});\n  var sorted=prices.slice().sort(function(a,b){return a-b;}), rank=cur&&parts(cur.t).d===today?sorted.indexOf(cur.p)+1:null;\n  function point(which){if(!todayHours.length)return null;return todayHours.reduce(function(a,b){return which==='min'?(b.p<a.p?b:a):(b.p>a.p?b:a);});}\n  var mn=point('min'),mx=point('max');\n  var day={min:mn?{t:mn.t,p:mn.p}:null,max:mx?{t:mx.t,p:mx.p}:null,avg:prices.length?+(prices.reduce(function(a,b){return a+b;},0)/prices.length).toFixed(2):null,neg_hours:prices.filter(function(p){return p<0;}).length};\n  var future=hours.filter(function(x){return x.t+3600000>now;});\n  function windows(field, extra){var out={};for(var n=1;n<=4;n++){var best=null;for(var i=0;i+n<=future.length;i++){var s=future.slice(i,i+n);if(s.some(function(x,j){return j&&x.t-s[j-1].t>5400000;}))continue;var vals=s.map(function(x){return x[field];});if(vals.some(function(v){return v==null;}))continue;var av=vals.reduce(function(a,b){return a+b;},0)/n;if(!best||av<best.v)best={v:av,s:s[0].t,e:s[n-1].t+3600000};}out[n]=best?{s:best.s,e:best.e,avg:+best.v.toFixed(2)}:null;if(best&&extra)out[n][extra]=+best.v.toFixed(1);}return out;}\n  var cheapest=windows('p'), greenest=windows('co2','co2');\n  var defs=[['washer',1,2],['dryer',2.5,2],['dishwasher',1,2],['ev',30,6],['heatpump',8,4]];\n  var devices=defs.map(function(d){var n=d[2], candidates=[];for(var i=0;i+n<=future.length;i++){var s=future.slice(i,i+n);if(s.some(function(x,j){return j&&x.t-s[j-1].t>5400000;}))continue;var av=s.reduce(function(a,x){return a+x.p;},0)/n;candidates.push({s:s[0].t,e:s[n-1].t+3600000,avg:av});}candidates.sort(function(a,b){return a.avg-b.avg;});var b=candidates[0],w=candidates[candidates.length-1];return {k:d[0],kwh:d[1],hours:n,best:b?{s:b.s,e:b.e,cost_ct:+(b.avg*d[1]).toFixed(1)}:null,worst:w?{s:w.s,e:w.e,cost_ct:+(w.avg*d[1]).toFixed(1)}:null,saving_ct:b&&w?+((w.avg-b.avg)*d[1]).toFixed(1):null};});\n  var days=[];for(var di=6;di>=0;di--)days.push(parts(now-di*86400000).d);var week=days.map(function(d){var row=new Array(24).fill(null);aw.forEach(function(x){var q=parts(x.t);if(q.d===d)row[q.h]=x.p;});return row;});\n  var mixNames={solar:'solar','wind onshore':'wind','wind offshore':'wind','fossil brown coal / lignite':'lignite','fossil hard coal':'coal','fossil gas':'gas','biomass':'biomass','hydro run-of-river':'hydro','hydro water reservoir':'hydro','load':'load'};\n  var mix={t0:null,step_s:3600,series:{solar:[],wind:[],lignite:[],coal:[],gas:[],biomass:[],hydro:[],other:[],load:[]}}, mt=arr(input.power,'unix_seconds'), types=arr(input.power,'production_types');\n  if(mt.length&&types.length){var hs=[];mt.forEach(function(t,i){var ms=Number(t)*1000;if(parts(ms).d===today){var hk=Math.floor(ms/3600000)*3600000;if(hs.indexOf(hk)<0)hs.push(hk);}});hs.sort();mix.t0=hs[0]||null;Object.keys(mix.series).forEach(function(k){mix.series[k]=hs.map(function(){return 0;});});types.forEach(function(s){var name=String(s.name||'').toLowerCase();if(/share|residual|import|export|pumped storage consumption/.test(name))return;var key=mixNames[name]||'other', data=arr(s,'data');hs.forEach(function(h,hi){var vals=[];mt.forEach(function(t,i){var ms=Number(t)*1000;if(Math.floor(ms/3600000)*3600000===h){var v=finite(data[i]);if(v!=null)vals.push(v);}});if(vals.length)mix.series[key][hi]+=vals.reduce(function(a,b){return a+b;},0)/vals.length;});});Object.keys(mix.series).forEach(function(k){mix.series[k]=mix.series[k].map(function(v){return +v.toFixed(1);});});}\n  return {zone:'DE-LU',tz:tz,now:cur?{t:cur.t,price_ct:cur.p,co2_g:cur.co2,ren_share:cur.ren,signal:cur.sig,rank_today:rank}:null,hours:hours,tomorrow_available:hours.some(function(x){return parts(x.t).d>today;}),day:day,week:{days:days,p:week},mix:mix,windows:{cheapest:cheapest,greenest:greenest},devices:devices,attribution:'Daten: aWATTar, Energy-Charts.info (Fraunhofer ISE), Bundesnetzagentur | SMARD.de (CC BY 4.0)'};\n}\n\n\nconst pick=n=>{try{return $(n).first().json}catch(e){return null}};\nconst data=fahrplanBerechnen({awattar:pick('aWATTar Preise'),signal:pick('Grünstrom-Signal'),co2:pick('CO2-Intensität'),power:pick('Strommix'),nowMs:Date.now(),tz:'Europe/Berlin'});\nconst now=new Date(); data.ts=now.toISOString();\ndata.updated=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(now).replace(' ','T');\nreturn [{json:data}];"
+   },
+   "id": "c1",
+   "name": "Fahrplan berechnen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    790,
+    230
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://YOUR-SITE.example/strom-ingest.php",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-Strom-Token",
+       "value": "YOUR-SECRET-TOKEN"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json) }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "p1",
+   "name": "Fahrplan veröffentlichen",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1030,
+    230
+   ]
+  }
+ ],
+ "connections": {
+  "Stündlich (Schedule)": {
+   "main": [
+    [
+     {
+      "node": "aWATTar Preise",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Grünstrom-Signal",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "CO2-Intensität",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Strommix",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Manuell starten (Webhook)": {
+   "main": [
+    [
+     {
+      "node": "aWATTar Preise",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Grünstrom-Signal",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "CO2-Intensität",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Strommix",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "aWATTar Preise": {
+   "main": [
+    [
+     {
+      "node": "Daten einsammeln",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Grünstrom-Signal": {
+   "main": [
+    [
+     {
+      "node": "Daten einsammeln",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "CO2-Intensität": {
+   "main": [
+    [
+     {
+      "node": "Daten einsammeln",
+      "type": "main",
+      "index": 2
+     }
+    ]
+   ]
+  },
+  "Strommix": {
+   "main": [
+    [
+     {
+      "node": "Daten einsammeln",
+      "type": "main",
+      "index": 3
+     }
+    ]
+   ]
+  },
+  "Daten einsammeln": {
+   "main": [
+    [
+     {
+      "node": "Fahrplan berechnen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Fahrplan berechnen": {
+   "main": [
+    [
+     {
+      "node": "Fahrplan veröffentlichen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "active": false,
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Europe/Berlin",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "all"
+ },
+ "pinData": {}
+}
