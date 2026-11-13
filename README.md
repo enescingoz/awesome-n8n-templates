@@ -267,7 +267,7 @@ This section contains 4 Discord automation templates for n8n. Build an AI-powere
 
 ### What are the best n8n database and storage automation templates?
 
-Find 5 database and storage automation templates for n8n. Chat with PostgreSQL using natural language, generate SQL queries from schema with AI, get intelligent movie recommendations from MongoDB, manage Supabase vector embeddings, or query SQLite databases through a LangChain AI agent.
+Find 6 database and storage automation templates for n8n. Chat with PostgreSQL using natural language, generate SQL queries from schema with AI, get intelligent movie recommendations from MongoDB, manage Supabase vector embeddings, or query SQLite databases through a LangChain AI agent.
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
@@ -276,6 +276,7 @@ Find 5 database and storage automation templates for n8n. Chat with PostgreSQL u
 | MongoDB AI Agent - Intelligent Movie Recommendations | This workflow creates an AI agent that provides intelligent movie recommendations by interacting with a MongoDB database, using aggregation pipelines to fetch relevant movie data. | Data Analytics | [Link to Template](Database_and_Storage/MongoDB%20AI%20Agent%20-%20Intelligent%20Movie%20Recommendations.json) |
 | Supabase Insertion & Upsertion & Retrieval | This workflow demonstrates how to perform insertion, upsertion, and retrieval operations with Supabase, specifically for handling vector embeddings and associated metadata. | Engineering | [Link to Template](Database_and_Storage/Supabase%20Insertion%20&%20Upsertion%20&%20Retrieval.json) |
 | Talk to your SQLite database with a LangChain AI Agent | This workflow allows users to interact with a SQLite database using a LangChain AI agent, enabling natural language queries and data retrieval from the database. | Data Analytics | [Link to Template](Database_and_Storage/Talk%20to%20your%20SQLite%20database%20with%20a%20LangChain%20AI%20Agent.json) |
+| Clean a messy lead CSV export into importable rows | Cleans a messy lead export before it reaches a CRM: maps any header names onto first_name, last_name, email, company, domain and phone, handles quoted commas, trims values, lowercases and validates addresses, and returns the rows that could not be fixed with a reason plus row counts. Runs with no credentials, no HTTP requests and no external services. | Data Analytics | [Link to Template](Database_and_Storage/Clean%20a%20messy%20lead%20CSV%20export%20into%20importable%20rows.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
