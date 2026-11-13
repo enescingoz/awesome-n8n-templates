@@ -1,0 +1,27 @@
+name: validate workflow JSON
+
+on:
+  push:
+    paths:
+      - "**/*.json"
+      - "scripts/validate_workflow_json.py"
+      - ".github/workflows/validate-workflow-json.yml"
+  pull_request:
+    paths:
+      - "**/*.json"
+      - "scripts/validate_workflow_json.py"
+      - ".github/workflows/validate-workflow-json.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Every template must be one importable JSON document
+        run: python scripts/validate_workflow_json.py
