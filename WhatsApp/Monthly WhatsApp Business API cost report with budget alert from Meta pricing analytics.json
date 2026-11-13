@@ -1,0 +1,595 @@
+{
+  "name": "Monthly WhatsApp Business API cost report with budget alert from Meta pricing analytics",
+  "nodes": [
+    {
+      "id": "77a255bc-79e2-5a6c-8f55-4744b08e10e6",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1180,
+        -420
+      ],
+      "parameters": {
+        "color": 1,
+        "width": 620,
+        "height": 820,
+        "content": "## Monthly WhatsApp Business API cost report\n\n### How it works\nFor businesses on the WhatsApp Business Platform (Cloud API) who want to know what last month's messages cost before the invoice arrives. On the 1st of each month the workflow asks Meta's pricing analytics how many messages your WhatsApp Business Account (WABA) sent last month and the month before, per country, category, pricing type and volume tier. It prices every paid line with Meta's list rates in your account currency, volume tier discounts included, and emails you the total, the change on the month before, the cost per category, the top countries and the number of free service messages. Above your budget, you get an over-budget alert instead.\n\nMeta only shows cost figures to businesses it bills directly. If you pay through a partner (BSP), the API gives volumes only. This workflow works for both.\n\n### Setup (about 5 minutes)\n1. Create a **Header Auth** credential: name `Authorization`, value `Bearer <your token>`. Use a System User token with the `whatsapp_business_management` permission.\n2. Connect **Gmail** in both email nodes and the error email node.\n3. Fill in **Settings (edit me)**: WABA ID, monthly budget, report email.\n4. Click **Execute workflow** once to test, then activate it.\n\n### Limitations\nList prices excluding VAT and partner fees, so this is an estimate: Meta's invoice is leading. Rates come from an open dataset (CC BY 4.0) that is compared with Meta's rate card files every week."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f7a335de-c4bb-5b0a-ab73-ad92786cbed9",
+      "name": "Warning: token",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1180,
+        420
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 620,
+        "height": 200,
+        "content": "## Use a permanent token\nThe temporary token from the App Dashboard expires after 24 hours, and next month's run would fail. Create a System User token in Business Settings (System users, Generate token) and give it access to your WABA."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "39f9c9d0-ee29-5ba3-aa45-9808664cd25d",
+      "name": "Section: settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -500,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 660,
+        "height": 380,
+        "content": "## 1. Settings and dates\nRuns on the 1st at 08:00. Checks your settings and stops with a clear message if one is wrong. Works out last month and the month before in the workflow timezone."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9171f770-0ae0-580a-812a-8267f4124b4e",
+      "name": "Section: Meta",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        180,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 300,
+        "height": 380,
+        "content": "## 2. Volumes from Meta\nOne Graph API call returns your account currency and message volumes per country, category, pricing type and tier. Read access is enough."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "860a754f-6aed-5793-9da4-0046700f0865",
+      "name": "Section: price",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        500,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 900,
+        "height": 380,
+        "content": "## 3. Price with the open rate card\nDownloads Meta's list rates and volume tiers in your currency from github.com/tobachat/whatsapp-api-rates, checked weekly against Meta. Free messages cost 0."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "2385c7dd-8661-5b68-8c4f-38eb6cbea832",
+      "name": "Section: report",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1420,
+        -200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 520,
+        "content": "## 4. Report or alert\nBuilds the HTML report, compares the total with your budget and emails an over-budget alert or the normal monthly report."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f3d87a90-5462-56c5-acac-31dad2d912be",
+      "name": "Section: errors",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        500,
+        200
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 300,
+        "content": "## If something fails\nWhen Meta or the rate download returns an error, you get an email with the likely cause (expired token, wrong WABA ID, missing permission) and the fix."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "1e7e6eb0-ea38-5d71-b7eb-69cc6edf2eb6",
+      "name": "Monthly on the 1st",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -440,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 8,
+              "triggerAtDayOfMonth": 1
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "ac8f7890-3305-5479-91ab-3da56aab7dae",
+      "name": "Settings (edit me)",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e47fb9d-763a-53ed-b1e2-fae4832d6d6d",
+              "name": "waba_id",
+              "type": "string",
+              "value": "YOUR_WABA_ID"
+            },
+            {
+              "id": "f5f73b42-93be-5d41-b7f1-67745ecf5e4d",
+              "name": "monthly_budget",
+              "type": "number",
+              "value": 50
+            },
+            {
+              "id": "f0202662-2d47-5b21-99c5-ec8ed6bfb6f4",
+              "name": "report_email",
+              "type": "string",
+              "value": "you@example.com"
+            },
+            {
+              "id": "98e8245a-5de0-5835-81f9-862eb99962dd",
+              "name": "graph_api_version",
+              "type": "string",
+              "value": "v24.0"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "533a22a4-fde9-5973-b8fc-5a111632e9e5",
+      "name": "Check settings and dates",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Validate the settings, then work out last month and the month before.\nconst s = $input.first().json;\nconst problems = [];\nconst wabaId = String(s.waba_id ?? '').trim();\nif (!/^\\d{6,20}$/.test(wabaId)) problems.push('waba_id must be the numeric WhatsApp Business Account ID (Meta Business Suite > Settings > Accounts > WhatsApp accounts), not the phone number ID.');\nconst budget = Number(s.monthly_budget);\nif (!Number.isFinite(budget) || budget < 0) problems.push('monthly_budget must be a number in your account currency (0 = no budget check).');\nif (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(String(s.report_email ?? '').trim())) problems.push('report_email must be an email address.');\nif (!/^v\\d+\\.\\d+$/.test(String(s.graph_api_version ?? ''))) problems.push('graph_api_version should look like v24.0.');\nif (problems.length) throw new Error('Fix the Settings node: ' + problems.join(' '));\n\n// Calendar months in the workflow timezone (Workflow settings > Timezone).\nconst thisMonth = $now.startOf('month');\nconst lastMonth = thisMonth.minus({ months: 1 });\nconst monthBefore = thisMonth.minus({ months: 2 });\n\nreturn [{\n  json: {\n    waba_id: wabaId,\n    monthly_budget: budget,\n    report_email: String(s.report_email).trim(),\n    graph_api_version: s.graph_api_version,\n    start: Math.floor(monthBefore.toSeconds()),\n    end: Math.floor(thisMonth.toSeconds()),\n    last_month_start: Math.floor(lastMonth.toSeconds()),\n    last_month: lastMonth.toFormat('LLLL yyyy'),\n    month_before: monthBefore.toFormat('LLLL yyyy'),\n  },\n}];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "9f4c52f8-9461-5918-b9b5-33325175c36b",
+      "name": "Get message volumes from Meta",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "url": "=https://graph.facebook.com/{{ $json.graph_api_version }}/{{ $json.waba_id }}",
+        "options": {},
+        "sendQuery": true,
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "=currency,pricing_analytics.start({{ $json.start }}).end({{ $json.end }}).granularity(MONTHLY).dimensions(COUNTRY,PRICING_CATEGORY,PRICING_TYPE,TIER)"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "523e93df-8ae9-588a-a54f-b6646a23d38e",
+      "name": "Download list rates",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        560,
+        -40
+      ],
+      "parameters": {
+        "url": "=https://raw.githubusercontent.com/tobachat/whatsapp-api-rates/main/data/latest/{{ $json.currency }}.csv",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "d2b4d5c5-c568-50ab-8415-46046a5df1fb",
+      "name": "Read list rates",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        780,
+        -60
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "csv"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "e44ce4d5-8355-560c-afc5-30da8d750f63",
+      "name": "Download volume tiers",
+      "type": "n8n-nodes-base.httpRequest",
+      "onError": "continueErrorOutput",
+      "position": [
+        1000,
+        -60
+      ],
+      "parameters": {
+        "url": "=https://raw.githubusercontent.com/tobachat/whatsapp-api-rates/main/data/tiers/{{ $('Read list rates').first().json.effective_date }}.csv",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "executeOnce": true,
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "7f4707e1-0908-508b-945f-bbfee20fb66f",
+      "name": "Read volume tiers",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1220,
+        -60
+      ],
+      "parameters": {
+        "options": {},
+        "operation": "csv"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f9a93b5f-4b9a-56c2-b729-c7af41caee41",
+      "name": "Price every line",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1480,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Price every line Meta returned with the list rate (or volume tier rate) of its market.\nconst meta = $('Get message volumes from Meta').first().json;\nconst cfg = $('Check settings and dates').first().json;\nconst currency = meta.currency;\nconst rates = $('Read list rates').all().map((i) => i.json);\nconst tiers = $input.all().map((i) => i.json).filter((t) => t.currency === currency);\n\n// Country (ISO code) -> rate market. Countries without their own market fall under \"Other\".\nconst marketOf = {};\nfor (const r of rates) for (const iso of String(r.iso_codes || '').split(' ').filter(Boolean)) marketOf[iso] = r;\nconst other = rates.find((r) => r.type === 'other');\n\n// Meta's pricing categories -> rate card columns. Marketing Lite is billed at the marketing rate.\nconst column = {\n  MARKETING: 'marketing', MARKETING_LITE: 'marketing', UTILITY: 'utility',\n  AUTHENTICATION: 'authentication', AUTHENTICATION_INTERNATIONAL: 'authentication_international', SERVICE: 'service',\n};\nconst num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));\n\nconst points = (meta.pricing_analytics?.data ?? []).flatMap((d) => d.data_points ?? []);\nconst lines = points.map((p) => {\n  const market = marketOf[p.country] ?? other;\n  const col = column[p.pricing_category];\n  const paid = p.pricing_type === 'REGULAR';\n  let rate = paid ? null : 0;\n  let note = paid ? '' : 'free';\n  if (paid && !col) note = 'category not on the rate card';\n  if (paid && col) {\n    rate = num(market[col]);\n    // Authentication-international only exists in some markets; elsewhere the authentication rate applies.\n    if (rate === null && col === 'authentication_international') rate = num(market.authentication);\n    // Meta reports the volume tier as \"from:to\". Above the first tier a lower tier rate applies.\n    const tierStart = p.tier ? Number(String(p.tier).split(':')[0]) : 0;\n    if (tierStart > 0) {\n      const t = tiers.find((x) => x.market === market.market && x.category === col\n        && Number(x.tier_from) <= tierStart + 1 && (x.tier_to === '' || Number(x.tier_to) >= tierStart + 1));\n      if (t) { rate = Number(t.rate); note = `tier ${p.tier}`; }\n    }\n    if (rate === null) note = 'no list rate published';\n  }\n  return {\n    month: p.start >= cfg.last_month_start - 3 * 86400 ? 'last' : 'before',\n    country: p.country, market: market.market, category: p.pricing_category, pricing_type: p.pricing_type,\n    volume: p.volume ?? 0, rate, cost: rate === null ? 0 : rate * (p.volume ?? 0),\n    meta_cost: p.cost ?? null, note,\n  };\n});\n\nreturn [{ json: {\n  currency, effective_date: rates[0]?.effective_date, checked_on: rates[0]?.checked_on,\n  more_pages: Boolean(meta.pricing_analytics?.paging?.next), lines,\n} }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "8945808a-8636-50d5-9ce0-261b4d86de55",
+      "name": "Build the report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1700,
+        -60
+      ],
+      "parameters": {
+        "jsCode": "// Summarise last month, compare it with the month before and build the email.\nconst { currency, effective_date, checked_on, more_pages, lines } = $input.first().json;\nconst cfg = $('Check settings and dates').first().json;\nconst money = (n) => `${currency} ${n.toFixed(2)}`;\nconst sum = (arr, f) => arr.reduce((a, x) => a + f(x), 0);\n\nconst last = lines.filter((l) => l.month === 'last');\nconst before = lines.filter((l) => l.month === 'before');\nconst total = sum(last, (l) => l.cost);\nconst totalBefore = sum(before, (l) => l.cost);\nconst paid = last.filter((l) => l.pricing_type === 'REGULAR');\nconst free = last.filter((l) => l.pricing_type !== 'REGULAR');\nconst metaCost = last.some((l) => l.meta_cost !== null) ? sum(last, (l) => l.meta_cost ?? 0) : null;\nconst unpriced = paid.filter((l) => l.rate === null);\n\nconst group = (arr, key) => Object.values(arr.reduce((acc, l) => {\n  const k = l[key];\n  acc[k] ??= { name: k, volume: 0, cost: 0 };\n  acc[k].volume += l.volume;\n  acc[k].cost += l.cost;\n  return acc;\n}, {})).sort((a, b) => b.cost - a.cost || b.volume - a.volume);\nconst label = {\n  MARKETING: 'Marketing', MARKETING_LITE: 'Marketing (Lite API)', UTILITY: 'Utility', AUTHENTICATION: 'Authentication',\n  AUTHENTICATION_INTERNATIONAL: 'Authentication (international)', SERVICE: 'Service',\n};\nconst byCategory = group(paid, 'category').map((r) => ({ ...r, name: label[r.name] ?? r.name }));\nconst byCountry = group(paid, 'country').slice(0, 5);\n\nconst change = totalBefore > 0 ? ((total - totalBefore) / totalBefore) * 100 : null;\nconst budget = cfg.monthly_budget;\nconst overBudget = budget > 0 && total > budget;\nconst budgetLine = budget > 0\n  ? `${money(total)} of your ${money(budget)} budget (${Math.round((total / budget) * 100)}%)`\n  : 'No budget set';\n\nconst table = (rows) => `<table cellpadding=\"6\" style=\"border-collapse:collapse\">\n<tr style=\"background:#f2f2f2\"><th align=\"left\">Name</th><th align=\"right\">Messages</th><th align=\"right\">Cost</th></tr>\n${rows.map((r) => `<tr><td>${r.name}</td><td align=\"right\">${r.volume}</td><td align=\"right\">${money(r.cost)}</td></tr>`).join('')}\n</table>`;\n\nconst notes = [];\nif (unpriced.length) notes.push(`${sum(unpriced, (l) => l.volume)} paid messages had no list rate (${[...new Set(unpriced.map((l) => l.category))].join(', ')}) and are not in the total.`);\nif (more_pages) notes.push('Meta returned more than one page of data; only the first page is included.');\nif (metaCost !== null) notes.push(`Meta's own cost figure for ${cfg.last_month}: ${money(metaCost)} (approximate, as reported by the API).`);\n\nconst html = `<h2>WhatsApp Business API cost, ${cfg.last_month}</h2>\n${overBudget ? `<p style=\"color:#b00020\"><b>Over budget:</b> ${budgetLine}.</p>` : `<p>${budgetLine}.</p>`}\n<p><b>Estimated cost: ${money(total)}</b>${change === null ? '' : ` (${change >= 0 ? '+' : ''}${change.toFixed(0)}% on ${cfg.month_before}: ${money(totalBefore)})`}<br>\nPaid messages: ${sum(paid, (l) => l.volume)}. Free messages (customer service window, free entry points): ${sum(free, (l) => l.volume)}.</p>\n${paid.length ? `<h3>Per category</h3>${table(byCategory)}<h3>Top countries</h3>${table(byCountry)}` : '<p>No paid messages last month.</p>'}\n${notes.length ? `<p>${notes.join('<br>')}</p>` : ''}\n<p style=\"color:#666;font-size:12px\">Estimate: message volumes from Meta's pricing analytics for WABA ${cfg.waba_id}, priced at Meta's list rates in ${currency} effective ${effective_date} (rate card checked ${checked_on}), volume tiers included. Excludes VAT and partner fees; Meta's invoice is leading.\nRates: open dataset <a href=\"https://github.com/tobachat/whatsapp-api-rates\">tobachat/whatsapp-api-rates</a> (CC BY 4.0).</p>`;\n\nreturn [{ json: {\n  subject: `${overBudget ? 'Over budget: ' : ''}WhatsApp cost ${cfg.last_month}: ${money(total)}`,\n  html,\n  over_budget: overBudget,\n  total: Number(total.toFixed(4)),\n  total_month_before: Number(totalBefore.toFixed(4)),\n  currency,\n  paid_messages: sum(paid, (l) => l.volume),\n  free_messages: sum(free, (l) => l.volume),\n} }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ad2c7ecf-366e-5079-b59d-4d2638ce0f92",
+      "name": "Over budget?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1920,
+        -60
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "430e4cd8-f68f-5f6e-9d25-82ce1206256b",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.over_budget }}",
+              "rightValue": true
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "789f4b57-2b7f-5ca6-8406-74db26befca0",
+      "name": "Email budget alert",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2160,
+        -140
+      ],
+      "webhookId": "056c749d-93d6-5730-a739-62b1096cf4b1",
+      "parameters": {
+        "sendTo": "={{ $('Settings (edit me)').first().json.report_email }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "emailType": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "68c53fd3-a31b-5d16-9242-10bc3554fbc9",
+      "name": "Email monthly report",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        2160,
+        60
+      ],
+      "webhookId": "56657dcd-88da-5bfc-8709-e9c462060798",
+      "parameters": {
+        "sendTo": "={{ $('Settings (edit me)').first().json.report_email }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "emailType": "html"
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "4c077e51-c60b-5572-b935-e46697fbb120",
+      "name": "Explain the error",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        600,
+        340
+      ],
+      "parameters": {
+        "jsCode": "// Turn a failed call into a short explanation with the fix.\nconst item = $input.first().json;\nconst err = item.error ?? item;\nconst raw = `${err.message ?? ''} ${err.description ?? ''}`.trim() || JSON.stringify(err);\n// Meta puts its error code in the response body, e.g. \"code\":190.\nconst metaCode = Number((raw.match(/code\\\\?\"\\s*:\\s*(\\d+)/) ?? [])[1]);\nlet fix = 'Open the failed execution in n8n to see which node failed.';\nif (metaCode === 190 || /expired/i.test(raw)) fix = 'The Meta access token is invalid or expired. Create a System User token with the whatsapp_business_management permission and update the Header Auth credential.';\nelse if (metaCode === 100) fix = 'Meta cannot load this WhatsApp Business Account. Check waba_id in the Settings node (the WABA ID, not the phone number ID) and that the System User behind the token has been given access to this WABA.';\nelse if (metaCode === 10 || metaCode === 200 || /permission/i.test(raw)) fix = 'The token lacks permission. Give the System User the whatsapp_business_management permission and assign the WABA to it.';\nelse if (/404|githubusercontent/i.test(raw)) fix = 'The rate file could not be downloaded. Check that your account currency is one Meta publishes rates in, or try again later.';\nconst cfg = $('Check settings and dates').first().json;\nreturn [{ json: {\n  subject: `WhatsApp cost report for ${cfg.last_month} failed`,\n  html: `<p>The monthly WhatsApp cost report could not be built.</p><p><b>What to do:</b> ${fix}</p><p style=\"color:#666;font-size:12px\">Error: ${raw.slice(0, 600).replace(/</g, '&lt;')}</p>`,\n} }];\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d9e6008a-324a-5d7e-9264-9ecde47dc312",
+      "name": "Email the error",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        840,
+        340
+      ],
+      "webhookId": "46c31aa7-baa8-5df2-981b-2c7442a5cebd",
+      "parameters": {
+        "sendTo": "={{ $('Settings (edit me)').first().json.report_email }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        },
+        "subject": "={{ $json.subject }}",
+        "emailType": "html"
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "Over budget?": {
+      "main": [
+        [
+          {
+            "node": "Email budget alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email monthly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read list rates": {
+      "main": [
+        [
+          {
+            "node": "Download volume tiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the report": {
+      "main": [
+        [
+          {
+            "node": "Over budget?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Price every line": {
+      "main": [
+        [
+          {
+            "node": "Build the report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain the error": {
+      "main": [
+        [
+          {
+            "node": "Email the error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read volume tiers": {
+      "main": [
+        [
+          {
+            "node": "Price every line",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monthly on the 1st": {
+      "main": [
+        [
+          {
+            "node": "Settings (edit me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings (edit me)": {
+      "main": [
+        [
+          {
+            "node": "Check settings and dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download list rates": {
+      "main": [
+        [
+          {
+            "node": "Read list rates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain the error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download volume tiers": {
+      "main": [
+        [
+          {
+            "node": "Read volume tiers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain the error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check settings and dates": {
+      "main": [
+        [
+          {
+            "node": "Get message volumes from Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get message volumes from Meta": {
+      "main": [
+        [
+          {
+            "node": "Download list rates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain the error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
