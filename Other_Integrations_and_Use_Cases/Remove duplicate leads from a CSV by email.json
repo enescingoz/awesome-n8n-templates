@@ -1,0 +1,136 @@
+{
+  "name": "Remove duplicate leads from a CSV by email",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nThis workflow cleans a lead list so the same person is never contacted twice.\nPress **Execute workflow** and it reads the sample rows from **Sample leads (edit me)**,\nkeeps the first row for each email address (trimmed and lowercased, so\n`MARKO.PETROVIC@example.com` matches `marko.petrovic@example.com`), and returns the\ncleaned list as `unique_leads` with the row count in `unique_leads_out`.\nRows with no email address are kept as they are instead of being dropped, so you can\nsee which records still need fixing. Everything runs inside your own n8n instance:\nno credentials, no HTTP requests, and no data leaves the server.\n\n### Setup\nThere is nothing to connect. Press **Execute workflow**, then open the\n**Summarize unique leads** node to read the result.\nTo use your own leads, replace the array in **Sample leads (edit me)** with your own\nrows while keeping the `email` key, or replace that node with\n*Read/Write Files from Disk* followed by *Extract from File* (CSV) to load a `.csv` file.\nThe sample rows are synthetic.\n\n### Customization\nExtra columns pass through untouched, so add the fields your list already has.\nTo de-duplicate on a different key, change the `email` field used in **Dedupe by email**.\n\nLimitation: matching is on the exact email string after trimming and lowercasing.\n`ana.kovac@example.com` and `a.kovac@example.com` are treated as two different people.\n\nFree workflow from the LeadFlow Automation Pack. The paid pack adds Google Sheets sync,\nwebhook capture and AI email drafts: [get the full 4-workflow pack]({{PAID_PACK_LINK}})",
+        "height": 760,
+        "width": 540
+      },
+      "id": "note1",
+      "name": "Overview - lead dedupe",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Your leads\nReplace the synthetic rows, or swap this node for a CSV reader.",
+        "height": 90,
+        "width": 240
+      },
+      "name": "Section - your leads",
+      "position": [
+        -20,
+        -160
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## 2. Dedupe and summarize\nOne row per email (case-insensitive). Rows without an email are kept.",
+        "height": 90,
+        "width": 600
+      },
+      "name": "Section - dedupe and report",
+      "position": [
+        220,
+        -160
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "trig",
+      "name": "Start - click Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 1: your leads (synthetic sample rows).\n// Quick start: press \"Execute workflow\" and open the Result node.\n// For your own data, replace the rows below, or swap this node for\n// \"Read/Write Files from Disk\" + \"Extract from File\" (CSV) to load a .csv file.\nconst leads = [\n  { first_name: 'Ana', last_name: 'Kovač', email: 'ana.kovac@example.com', company: 'Prima Studio' },\n  { first_name: 'Marko', last_name: 'Petrović', email: 'marko.petrovic@example.com', company: 'Petro Co' },\n  { first_name: 'Ana', last_name: 'Kovač', email: 'ana.kovac@example.com', company: 'Prima Studio' },\n  { first_name: 'Jürgen', last_name: 'Müller', email: 'juergen.mueller@example.com', company: 'Muller GmbH' },\n  { first_name: 'Sara', last_name: 'Alić', email: 'sara.alic@example.com', company: 'Alfa' },\n  { first_name: 'Marko', last_name: 'Petrović', email: 'MARKO.PETROVIC@example.com', company: 'Petro Co' }\n];\nreturn leads.map((lead) => ({ json: lead }));"
+      },
+      "id": "c1",
+      "name": "Sample leads (edit me)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 2: keep one row per email (case-insensitive).\n// The first row wins; a row without an email is kept as-is.\nconst rows = $input.all().map((item) => item.json);\nconst seen = new Map();\nconst withoutEmail = [];\nfor (const row of rows) {\n  const key = String(row.email || '').trim().toLowerCase();\n  if (!key) { withoutEmail.push(row); continue; }\n  if (!seen.has(key)) seen.set(key, { ...row, email: key });\n}\nconst unique = [...seen.values(), ...withoutEmail];\nreturn unique.map((row) => ({ json: row }));"
+      },
+      "id": "c2",
+      "name": "Dedupe by email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 3: honest summary of what this run did.\nconst rows = $input.all().map((item) => item.json);\nreturn [{ json: {\n  unique_leads_out: rows.length,\n  note: 'One row per email, lowercased. No credentials were used in this run.',\n  unique_leads: rows,\n} }];"
+      },
+      "id": "c3",
+      "name": "Summarize unique leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Start - click Execute workflow": {
+      "main": [
+        [
+          {
+            "node": "Sample leads (edit me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample leads (edit me)": {
+      "main": [
+        [
+          {
+            "node": "Dedupe by email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedupe by email": {
+      "main": [
+        [
+          {
+            "node": "Summarize unique leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
