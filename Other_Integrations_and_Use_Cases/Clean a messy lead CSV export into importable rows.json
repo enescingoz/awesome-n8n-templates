@@ -1,0 +1,137 @@
+{
+  "name": "Clean a messy lead CSV export into importable rows",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nLead exports rarely import cleanly: the header says \"E-MAIL\" or \"Last-Name \" (stray space),\nvalues carry leading spaces, one address is \"ANA.KOVAC@PrimaStudio.rs\", the next is\n\"marko.petrovic@ petroco.rs\". This fixes that before the data reaches a CRM or a cold-email tool.\nPress **Execute workflow**. It maps the header row onto \"first_name\", \"last_name\", \"email\",\n\"company\", \"domain\", \"phone\", trims every value, lowercases and space-strips the address,\nvalidates it, derives the domain, and adds \"full_name\". Rows that cannot be fixed come back in\n\"rejected\" with a \"reason\" instead of disappearing.\n\n### Setup\nNothing to connect: no credentials, no HTTP, no file paths, no data leaving your instance.\nReplace the sample rows in **Messy lead CSV (paste yours)** with your own export. A title row\nabove the header is fine - the header is the first row with an email column, searched in the\nfirst 20. To read a file instead, put *Extract from File* (CSV) in front of this node.\n\n### Customization\nAdd a synonym to the header matcher if your column is named differently, loosen the email rule\nfor unusual addresses, or drop the \"phone\" mapping if you do not want phone numbers.\n\n### Limits\nHandled as-is: comma, semicolon and tab exports; quoted fields with commas, semicolons or line\nbreaks; ragged rows (listed, never silently dropped). Not handled: .xlsx must be saved as CSV\nfirst, and a Windows-1250 export (names showing as \"?or?e\") must be re-saved as CSV UTF-8 -\nthe node receives text and cannot undo a decode that lost characters. No mailbox or MX check:\nformatting is cleaned, deliverability is not.\n\nFree workflow from the LeadFlow Automation Pack. The paid pack ($49) bundles four coordinated workflows, webhook intake into Google Sheets and outreach drafts, with a setup guide and a troubleshooting page: https://fejzadenis.github.io/leadflow/",
+        "height": 860,
+        "width": 560
+      },
+      "id": "note1",
+      "name": "Overview - clean a messy lead CSV",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Paste your export\nHeader row required; a title row above it is fine. Columns are matched by name, so the order does not matter.",
+        "height": 110,
+        "width": 300
+      },
+      "name": "Section - paste your export",
+      "position": [
+        -40,
+        -220
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## 2. Clean, validate, report\nTrim + lowercase, validate, derive the domain, list what could not be fixed.",
+        "height": 110,
+        "width": 620
+      },
+      "name": "Section - clean and report",
+      "position": [
+        280,
+        -220
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "trig",
+      "name": "Start - click Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 1: paste a real (messy) lead export here.\n// The header row is required; columns are mapped by name, so the order does not matter.\n// Sample rows are synthetic. Replace them with your own export, or put\n// \"Read/Write Files from Disk\" + \"Extract from File\" (CSV) in front of this node\n// and use the CSV text as the csv field.\nconst csv = [\n  'First Name,Last-Name ,E-MAIL ,Company Name,Phone',\n  '  Ana ,Kovač,ANA.KOVAC@PrimaStudio.rs ,Prima Studio,+381 11 123 4567',\n  'Marko,Petrović,marko.petrovic@ petroco.rs,Petro Co d.o.o.,',\n  'Sara,Alić,sara@alfa.rs,Alfa,\"+381 60 111 2222\"',\n  ',Nikolić,,Beta DOO,060 333 4444',\n  'Jürgen,Müller,j.mueller@muller-gmbh.de,Müller GmbH,+49 30 555',\n].join('\\n');\n\nreturn [{ json: { csv } }];"
+      },
+      "id": "c1",
+      "name": "Messy lead CSV (paste yours)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 2: split records, find the real header row, trim and validate.\n//\n// Three ordinary export shapes used to break this step, all of them measured on 2026-11-13:\n//   1. a title row above the header (\"Kontakti iz Pipedrive\", \"Export 10.11.2026\") pushed every\n//      column one record down, so the whole file came back as rejected rows;\n//   2. a quoted note containing a line break was split at the newline - the note was cut in half\n//      and its second half appeared in the report as an extra row that was never in the file;\n//   3. splitting on \",\" \";\" and tab inside ONE line meant a semicolon export (every European\n//      Excel default) or an unquoted \"Prima, Inc.\" landed in the wrong columns.\n// So this node picks one delimiter for the whole file, reads records that may span lines, and\n// treats the first record that looks like a header (a cell containing \"mail\") as the header,\n// searching the first 20 records. Nothing leaves the n8n instance: no credentials, no HTTP.\n\nvar LF_ALIAS = {\n  email: ['email', 'emailaddress', 'emailaddr', 'mail', 'email1', 'email2', 'workemail', 'businessemail',\n    'primaryemail', 'contactemail', 'emailwork', 'emailoffice', 'emailbusiness', 'emailadresa'],\n  first: ['firstname', 'first', 'givenname', 'forename', 'ime'],\n  last: ['lastname', 'last', 'surname', 'familyname', 'prezime'],\n  name: ['name', 'fullname', 'contactname', 'displayname', 'imeprezime', 'imeiprezime'],\n  company: ['company', 'companyname', 'organization', 'organizationname', 'organisation', 'org', 'firma',\n    'account', 'accountname', 'employer'],\n  phone: ['phone', 'mobile', 'tel', 'telephone', 'phonenumber', 'telefon', 'mobitel']\n};\nvar LF_OUT = { first: 'first_name', last: 'last_name', name: 'full_name' };\n\nfunction lfKey(h) { return String(h === undefined || h === null ? '' : h).toLowerCase().replace(/[^a-z]/g, ''); }\n\n// One record can span several physical lines, because a quoted cell may contain a newline.\nfunction lfRecords(text, delim) {\n  var s = String(text || '').replace(/\\r\\n?/g, '\\n');\n  var out = [], cells = [], cur = '', quoted = false;\n  for (var i = 0; i < s.length; i++) {\n    var c = s.charAt(i);\n    if (quoted) {\n      if (c === '\"') { if (s.charAt(i + 1) === '\"') { cur += '\"'; i++; } else { quoted = false; } }\n      else { cur += c; }\n    } else if (c === '\"') { quoted = true; }\n    else if (c === delim) { cells.push(cur); cur = ''; }\n    else if (c === '\\n') { cells.push(cur); out.push(cells); cells = []; cur = ''; }\n    else { cur += c; }\n  }\n  cells.push(cur);\n  out.push(cells);\n  return out.filter(function (r) {\n    return r.some(function (v) { return String(v).trim() !== ''; });\n  });\n}\n\n// The delimiter is whichever one makes the file look like a table: the same column count on most\n// records. A comma CSV whose note cells contain semicolons wins on \",\" and loses on \";\", and a\n// Serbian/European Excel export wins the other way round. Do not decide per line.\nfunction lfPickDelimiter(text) {\n  var best = ',', bestScore = -1;\n  [',', ';', '\\t'].forEach(function (d) {\n    var recs = lfRecords(text, d);\n    if (!recs.length) return;\n    var counts = {}, modal = 0, modalCount = 0;\n    recs.forEach(function (r) {\n      var n = r.length;\n      counts[n] = (counts[n] || 0) + 1;\n      if (counts[n] > modalCount) { modalCount = counts[n]; modal = n; }\n    });\n    if (modal < 2) return;\n    var score = (modal - 1) * (modalCount / recs.length);\n    if (score > bestScore) { bestScore = score; best = d; }\n  });\n  return best;\n}\n\nfunction lfFind(keys, names) {\n  for (var i = 0; i < names.length; i++) {\n    var at = keys.indexOf(names[i]);\n    if (at > -1) return at;\n  }\n  return -1;\n}\n\nvar EMAIL = /^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i;\n\nvar csv = String($json.csv || '').replace(/^\\uFEFF/, '');\nif (!csv.trim()) return [{ json: { headers: [], rows_in: 0, cleaned: [], rejected: [] } }];\n\nvar delim = lfPickDelimiter(csv);\nvar recs = lfRecords(csv, delim);\nif (recs.length < 2) return [{ json: { headers: [], rows_in: 0, cleaned: [], rejected: [] } }];\n\nvar headerAt = 0;\nfor (var hr = 0; hr < Math.min(recs.length, 20); hr++) {\n  if (recs[hr].length < 2) continue;\n  var probe = recs[hr].map(lfKey);\n  if (probe.some(function (k) { return k.indexOf('mail') > -1; })) { headerAt = hr; break; }\n}\nvar rawHead = recs[headerAt];\nvar headKeys = rawHead.map(lfKey);\nvar idx = {};\nObject.keys(LF_ALIAS).forEach(function (f) { idx[f] = lfFind(headKeys, LF_ALIAS[f]); });\n\nif (idx.email === -1) {\n  throw new Error('No email column found in the first ' + Math.min(recs.length, 20) +\n    ' rows. Headers seen: \"' + rawHead.join('\", \"') + '\". Rename the address column to \"Email\" ' +\n    '(or \"E-mail adresa\", \"Work Email\") and run again. A .xlsx file has to be saved as CSV first.');\n}\n\nvar used = {};\nvar headers = rawHead.map(function (label, i) {\n  var k = lfKey(label), field = '';\n  Object.keys(LF_ALIAS).forEach(function (f) { if (!field && LF_ALIAS[f].indexOf(k) > -1) field = f; });\n  field = LF_OUT[field] || field || ('column_' + (i + 1));\n  if (used[field]) { used[field]++; field = field + '_' + used[field]; } else { used[field] = 1; }\n  return field;\n});\n\nvar cleaned = [];\nvar rejected = [];\n\nfor (var n = headerAt + 1; n < recs.length; n++) {\n  var cells = recs[n];\n  var row = {};\n  headers.forEach(function (field, i) {\n    row[field] = String(cells[i] === undefined ? '' : cells[i]).trim();\n  });\n\n  row.first_name = row.first_name || '';\n  row.last_name = row.last_name || '';\n  if (!row.first_name && !row.last_name && row.full_name) {\n    var words = row.full_name.split(/\\s+/).filter(Boolean);\n    row.first_name = words.shift() || '';\n    row.last_name = words.join(' ');\n  }\n  var rawEmail = row.email || '';\n  row.email = rawEmail.toLowerCase().replace(/\\s+/g, '');\n  row.company = row.company || '';\n\n  if (!row.email) {\n    rejected.push({ name: [row.first_name, row.last_name].join(' ').trim(), reason: 'no email in this row' });\n    continue;\n  }\n  if (!EMAIL.test(row.email)) {\n    rejected.push({ name: [row.first_name, row.last_name].join(' ').trim(), reason: 'email is not usable: \"' + rawEmail + '\"' });\n    continue;\n  }\n  row.domain = row.email.split('@')[1];\n  row.full_name = [row.first_name, row.last_name].join(' ').trim();\n  cleaned.push(row);\n}\n\nreturn [{ json: { headers: headers, rows_in: recs.length - headerAt - 1, cleaned: cleaned, rejected: rejected } }];\n"
+      },
+      "id": "c2",
+      "name": "Clean and validate rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 3: one readable report instead of a wall of items.\nconst input = $input.first().json;\nconst cleaned = input.cleaned || [];\nconst rejected = input.rejected || [];\nconst rowsIn = input.rows_in || 0;\nconst plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);\n\nreturn [{\n  json: {\n    rows_in: rowsIn,\n    valid_rows: cleaned.length,\n    rejected_rows: rejected.length,\n    note: plural(cleaned.length, 'row is', 'rows are') + ' importable out of ' + rowsIn +\n      '; ' + plural(rejected.length, 'row could', 'rows could') + ' not be fixed' +\n      (rejected.length ? ' and ' + (rejected.length === 1 ? 'is' : 'are') + ' listed in rejected with a reason.' : '.'),\n    cleaned_leads: cleaned,\n    rejected,\n  },\n}];"
+      },
+      "id": "c3",
+      "name": "Summarize the report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Start - click Execute workflow": {
+      "main": [
+        [
+          {
+            "node": "Messy lead CSV (paste yours)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Messy lead CSV (paste yours)": {
+      "main": [
+        [
+          {
+            "node": "Clean and validate rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean and validate rows": {
+      "main": [
+        [
+          {
+            "node": "Summarize the report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

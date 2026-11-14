@@ -1,0 +1,136 @@
+{
+  "name": "Generate candidate email addresses from names and company domains",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nGiven a name and a company domain, this workflow writes down the email addresses that\ncompany most likely uses for that person. Press **Execute workflow** and it reads the\nsynthetic rows in **Sample leads (edit me)**, folds accented letters to ASCII\n(`Kovač` becomes `kovac`, `Đorđe` becomes `djordje`, `Müller` becomes `mueller`),\nbuilds up to five common patterns (`first.last`, `firstlast`, `f.last`, `flast`,\n`first`), removes duplicates, and returns every candidate as `patterns` with the\ncount in `patterns_out`. Everything runs inside your own n8n instance: no credentials,\nno HTTP requests, no third-party service, and no data leaves the server.\n\n### Setup\nThere is nothing to connect. Press **Execute workflow**, then open\n**Summarize patterns** to read the result. To use your own leads, replace the array in\n**Sample leads (edit me)** with rows that keep the `first_name`, `last_name` and\n`domain` keys, or swap that node for *Read/Write Files from Disk* followed by\n*Extract from File* (CSV).\n\n### Customization\nAdd or reorder the patterns in **Generate candidate patterns** to match the convention\nyour market actually uses. A lead with no domain is skipped **and listed in `skipped` with a reason**,\nbecause an address without a domain cannot exist.\n\nLimitation: these are **candidate** addresses, not verified ones. Nothing here checks\nwhether a mailbox exists, so verify before you send, and never bulk-send to an unverified\nlist. Matching is per lead only; it cannot know a company's real convention.\n\nFree workflow from the LeadFlow Automation Pack. The paid pack ($49) bundles four coordinated workflows, webhook intake into Google Sheets and outreach drafts, with a setup guide and a troubleshooting page: https://fejzadenis.github.io/leadflow/",
+        "height": 820,
+        "width": 560
+      },
+      "id": "note1",
+      "name": "Overview - candidate email patterns",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Your leads\nReplace the synthetic rows, or swap this node for a CSV reader. `domain` is required.",
+        "height": 100,
+        "width": 260
+      },
+      "name": "Section - your leads",
+      "position": [
+        -40,
+        -180
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fold, generate, dedupe\nAccents first, then five patterns per lead, then duplicates removed. Leads without a domain are listed in `skipped`.",
+        "height": 100,
+        "width": 640
+      },
+      "name": "Section - generate and report",
+      "position": [
+        240,
+        -180
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "trig",
+      "name": "Start - click Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 1: your leads (synthetic sample rows).\n// Quick start: press \"Execute workflow\" and open the \"Summarize patterns\" node.\n// For your own data, replace the rows below (keep first_name, last_name, domain),\n// or swap this node for \"Read/Write Files from Disk\" + \"Extract from File\" (CSV).\nconst leads = [\n  { first_name: 'Ana', last_name: 'Kovač', domain: 'primastudio.rs', company: 'Prima Studio' },\n  { first_name: 'Đorđe', last_name: 'Šišić', domain: 'example.com', company: 'Example' },\n  { first_name: 'Jürgen', last_name: 'Müller', domain: 'muller-gmbh.de', company: 'Muller GmbH' },\n  { first_name: '', last_name: 'Petrović', domain: 'petroco.rs', company: 'Petro Co' },\n  { first_name: 'Sara', last_name: 'Alić', domain: 'www.alfa.rs', company: 'Alfa' }\n];\nreturn leads.map((lead) => ({ json: lead }));"
+      },
+      "id": "c1",
+      "name": "Sample leads (edit me)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 2: candidate patterns per lead, accents folded first.\n// Folding BEFORE stripping means \"Kovač\" becomes \"kovac\", not \"kovac\" + a stray dot.\n// German umlauts expand to two letters (Müller -> mueller), which is how most\n// companies spell those addresses. Every other accent is dropped after decomposing.\n// One item per lead in, one item per lead out: a lead that cannot produce an address\n// is reported in skipped_reason instead of silently disappearing from the run.\nconst fold = { 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'đ': 'dj', 'ø': 'o', 'ł': 'l', 'ß': 'ss', 'æ': 'ae', 'œ': 'oe', 'þ': 'th', 'ð': 'd', 'ı': 'i' };\nfunction normalize(value) {\n  return String(value === undefined || value === null ? '' : value)\n    .toLowerCase()\n    .split('')\n    .map((c) => (fold[c] === undefined ? c : fold[c]))\n    .join('')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z]/g, '');\n}\nconst rows = $input.all().map((item) => item.json);\nconst out = [];\nfor (const row of rows) {\n  const first = normalize(row.first_name);\n  const last = normalize(row.last_name);\n  const domain = String(row.domain === undefined || row.domain === null ? '' : row.domain)\n    .toLowerCase()\n    .replace(/^https?:\\/\\//, '')\n    .replace(/^www\\./, '')\n    .replace(/\\/.*$/, '')\n    .trim();\n  const lead = {\n    first_name: row.first_name || '',\n    last_name: row.last_name || '',\n    company: row.company || '',\n    domain,\n  };\n  if (!domain) {\n    out.push({ json: { lead, patterns: [], skipped_reason: 'no domain: add the company website (e.g. alfa.rs) to this lead' } });\n    continue;\n  }\n  const candidates = [];\n  if (first && last) {\n    candidates.push(first + '.' + last, first + last, first.charAt(0) + '.' + last, first.charAt(0) + last);\n  }\n  if (first) candidates.push(first);\n  if (!first && last) candidates.push(last);\n  const seen = new Set();\n  const patterns = [];\n  for (const pattern of candidates) {\n    if (!pattern || pattern.charAt(0) === '.' || pattern.charAt(pattern.length - 1) === '.' || seen.has(pattern)) continue;\n    seen.add(pattern);\n    patterns.push({\n      email: pattern + '@' + domain,\n      pattern: pattern,\n      first_name: lead.first_name,\n      last_name: lead.last_name,\n      company: lead.company,\n    });\n  }\n  out.push({ json: { lead, patterns } });\n}\nreturn out;"
+      },
+      "id": "c2",
+      "name": "Generate candidate patterns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LeadFlow Free - step 3: one honest summary of the run (no invented match rates).\n// Leads that could not produce an address are listed with a reason, so nothing in the\n// input disappears without explanation.\nconst items = $input.all().map((item) => item.json);\nconst patterns = [];\nconst skipped = [];\nfor (const item of items) {\n  for (const p of item.patterns || []) patterns.push(p);\n  if (item.skipped_reason) skipped.push({ ...(item.lead || {}), reason: item.skipped_reason });\n}\nconst domains = new Set(patterns.map((row) => String(row.email).split('@')[1]));\nreturn [{\n  json: {\n    leads_in: items.length,\n    patterns_out: patterns.length,\n    domains_covered: domains.size,\n    skipped,\n    note: 'Candidate addresses only. Verify before sending. No API, no credentials, no data left this instance.' +\n      (skipped.length ? ' ' + skipped.length + ' lead(s) skipped for a missing domain - see skipped.' : ''),\n    patterns,\n  },\n}];"
+      },
+      "id": "c3",
+      "name": "Summarize patterns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Start - click Execute workflow": {
+      "main": [
+        [
+          {
+            "node": "Sample leads (edit me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample leads (edit me)": {
+      "main": [
+        [
+          {
+            "node": "Generate candidate patterns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate candidate patterns": {
+      "main": [
+        [
+          {
+            "node": "Summarize patterns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
