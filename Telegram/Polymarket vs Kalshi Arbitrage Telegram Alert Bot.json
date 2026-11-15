@@ -1,0 +1,189 @@
+{
+  "name": "Polymarket vs Kalshi Real-Time Arbitrage Scanner (Apify)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Create an n8n **Header Auth** credential named `Apify API Token (Header Auth)`:\n   - Name: `Authorization`\n   - Value: `Bearer <your Apify API token>`\n2. Select it on the **Apify** HTTP Request node.\n3. Select your Telegram credential on **Send Telegram Alert** and set the Chat ID.\n\nEach pushed row is one `market-scanned` event. `includeMarkets: false` keeps the run to spread rows only.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "0",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/A9eUlujZqIIOuwpCf/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"\",\n  \"limit\": 20,\n  \"minSpreadPct\": \"3\",\n  \"includeMarkets\": false\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "2",
+      "name": "Apify: Polymarket & Kalshi Arbitrage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Apify API Token (Header Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-record-type",
+              "leftValue": "={{ $json.recordType }}",
+              "rightValue": "CROSS_VENUE_ARBITRAGE",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-spread",
+              "leftValue": "={{ $json.spreadPct }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "3",
+      "name": "Filter Spreads >= 3pp",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine all qualifying spreads into ONE Telegram message (avoids a burst of separate alerts).\nconst rows = items\n  .map((item) => item.json)\n  .sort((a, b) => (b.spreadPct || 0) - (a.spreadPct || 0))\n  .slice(0, 10);\n\nif (rows.length === 0) return [];\n\nconst lines = rows.map((r, i) =>\n  `${i + 1}. ${r.spreadPct}pp | buy YES on ${r.buyYesVenue} (${r.buyYesProbabilityPct}%) / sell on ${r.sellYesVenue} (${r.sellYesProbabilityPct}%)\\n` +\n  `   ${r.buyYesTitle}\\n   ${r.buyYesMarketUrl || ''}\\n   ${r.sellYesMarketUrl || ''}`\n);\n\nreturn [{\n  json: {\n    text: `Prediction market spreads >= 3pp (${rows.length})\\n\\n${lines.join('\\n\\n')}\\n\\nPairs are keyword-matched: check both contracts' resolution rules before trading.`.slice(0, 4000),\n    count: rows.length\n  }\n}];"
+      },
+      "id": "4",
+      "name": "Format Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_TELEGRAM_CHAT_ID",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "5",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Apify: Polymarket & Kalshi Arbitrage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Polymarket & Kalshi Arbitrage": {
+      "main": [
+        [
+          {
+            "node": "Filter Spreads >= 3pp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Spreads >= 3pp": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
