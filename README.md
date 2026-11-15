@@ -146,6 +146,7 @@ This collection includes 9 email automation templates for n8n covering Gmail, Ou
 
 ### How can I automate Telegram bots with n8n?
 
+| Polymarket vs Kalshi Arbitrage Telegram Alert Bot | Scans Polymarket, Kalshi, and Manifold prediction markets every 15 minutes and sends a Telegram alert whenever cross-venue probability spread exceeds your threshold. | Finance | [Link to Template](Telegram/Polymarket%20vs%20Kalshi%20Arbitrage%20Telegram%20Alert%20Bot.json) |
 Explore 20 Telegram automation templates for n8n, including AI chatbots with LangChain and OpenAI, voice-to-text translation across 55 languages, PDF chat functionality, image analysis bots, and Spotify integration. These templates cover support, marketing, and content moderation use cases for Telegram.
 
 | Title | Description | Department | Link |
@@ -180,6 +181,7 @@ Explore 20 Telegram automation templates for n8n, including AI chatbots with Lan
 
 ### What are the best n8n templates for Google Drive and Google Sheets?
 
+| TikTok Creative Center Top CTR Hooks to Google Sheets | Pulls top-performing TikTok Creative Center ads sorted by CTR and 2s/6s hook rate on a weekly schedule and appends winning creatives and MP4 URLs to Google Sheets. | Marketing | [Link to Template](Google_Drive_and_Google_Sheets/TikTok%20Creative%20Center%20Top%20CTR%20Hooks%20to%20Google%20Sheets.json) |
 Browse 18 Google Drive and Google Sheets automation templates for n8n. Includes RAG chatbots for company documents, OpenAI model fine-tuning pipelines, automated background removal, lead qualification and routing, applicant screening for HR, and document summarization workflows. Perfect for operations, sales, marketing, and engineering teams.
 
 | Title | Description | Department | Link |
@@ -340,6 +342,8 @@ Discover 10 Notion automation templates for n8n. Store positive feedback from Ty
 
 ### How can I automate Slack with n8n?
 
+| Shopify Competitor Churn Leads to Slack (Apify) | Monitors competitor Shopify App Store listings on a schedule and posts newest 1–2 star churned merchant reviews with pain signals and store tenure to Slack. | Sales | [Link to Template](Slack/Shopify%20Competitor%20Churn%20Leads%20to%20Slack%20%28Apify%29.json) |
+| Competitor Google Ads and Unlisted YouTube Spy to Slack | Extracts competitor Google Ads Transparency creatives, decodes unlisted YouTube ad videos, and sends weekly ad-spy summaries to Slack. | Marketing | [Link to Template](Slack/Competitor%20Google%20Ads%20and%20Unlisted%20YouTube%20Spy%20to%20Slack.json) |
 Explore 9 Slack automation templates for n8n. Monitor RSS feeds with AI-powered summaries, build Slack bots using Google Gemini, automate customer support ticketing with Linear, enhance security operations with Qualys integration, enrich Pipedrive CRM data, create IT knowledge base chatbots, track sentiment on support issues, and manage certificates via Venafi Cloud.
 
 | Title | Description | Department | Link |

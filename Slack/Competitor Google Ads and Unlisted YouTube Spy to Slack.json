@@ -1,0 +1,184 @@
+{
+  "name": "Competitor Google Ads & Unlisted YouTube Video Spy (Apify)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Create an n8n **Header Auth** credential named `Apify API Token (Header Auth)`:\n   - Name: `Authorization`\n   - Value: `Bearer <your Apify API token>`\n2. Select it on the **Apify** HTTP Request node.\n3. Select your Slack credential on **Post to Slack** and set the channel.\n\n`analyzeLandingPage: true` is a paid add-on ($0.01 per landing page that loads). Set it to `false` in the request body for ad data only.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "0",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 720
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/tsdhsrhZaEXwJh6uQ/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"domains\": [\n    \"shopify.com\",\n    \"klaviyo.com\"\n  ],\n  \"region\": \"US\",\n  \"maxAdsPerTarget\": 20,\n  \"includeCreativeDetails\": true,\n  \"analyzeLandingPage\": true\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "2",
+      "name": "Apify: Google Ads Transparency Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Apify API Token (Header Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-format",
+              "leftValue": "={{ $json.format }}",
+              "rightValue": "VIDEO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "3",
+      "name": "Filter Video Ads",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine the video ads into ONE Slack digest, longest-running first.\nconst rows = items\n  .map((item) => item.json)\n  .sort((a, b) => (b.daysRunning || 0) - (a.daysRunning || 0))\n  .slice(0, 15);\n\nif (rows.length === 0) return [];\n\nconst lines = rows.map((r) => {\n  const parts = [\n    `*${r.advertiserName || r.domain || 'Unknown advertiser'}* | ${r.daysRunning} days running | ${r.status}`,\n    r.youtubeVideoUrl ? `Video: ${r.youtubeVideoUrl}` : null,\n    r.landingPageUrl ? `Landing page (${r.landingPageSource}): ${r.landingPageUrl}` : null,\n    Array.isArray(r.adCopySnippets) && r.adCopySnippets.length ? `Copy: ${r.adCopySnippets.slice(0, 2).join(' / ')}` : null,\n    `Transparency Center: ${r.transparencyUrl}`\n  ];\n  return parts.filter(Boolean).join('\\n');\n});\n\nreturn [{\n  json: {\n    text: `Competitor video ads (${rows.length})\\n\\n${lines.join('\\n\\n')}`.slice(0, 3500),\n    count: rows.length\n  }\n}];"
+      },
+      "id": "4",
+      "name": "Format Slack Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#competitor-ads",
+          "mode": "name"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "5",
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Apify: Google Ads Transparency Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Google Ads Transparency Scraper": {
+      "main": [
+        [
+          {
+            "node": "Filter Video Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Video Ads": {
+      "main": [
+        [
+          {
+            "node": "Format Slack Digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Slack Digest": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

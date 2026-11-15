@@ -1,0 +1,192 @@
+{
+  "name": "TikTok Creative Center Top CTR Hooks & Funnel Spy (Apify)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Create an n8n **Header Auth** credential named `Apify API Token (Header Auth)`:\n   - Name: `Authorization`\n   - Value: `Bearer <your Apify API token>`\n2. Select it on the **Apify** HTTP Request node.\n3. Select your Google Sheets credential on **Append to Google Sheet**, then set the spreadsheet ID and sheet name. Add a header row matching the columns produced by **Format Sheet Rows**.\n\nWithout a `tiktokCookie`, TikTok serves only the first 20 ads per ranking. `analyzeLandingPage: true` is a paid add-on ($0.01 per landing page that loads).",
+        "height": 340,
+        "width": 420
+      },
+      "id": "0",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 720
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/Oi9mZBilDUzOcKayY/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"countries\": [\n    \"US\"\n  ],\n  \"period\": \"7\",\n  \"sortBy\": \"ctr\",\n  \"maxAdsPerCountry\": 15,\n  \"includeAdDetails\": true,\n  \"analyzeLandingPage\": true\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "2",
+      "name": "Apify: TikTok Creative Center Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Apify API Token (Header Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-objective",
+              "leftValue": "={{ $json.objectiveKey }}",
+              "rightValue": "campaign_objective_conversion",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "3",
+      "name": "Filter Conversion Ads",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten each ad into one spreadsheet row (column names = keys below).\nreturn items.map((item) => {\n  const r = item.json;\n  const intel = r.landingPageIntel || {};\n  return {\n    json: {\n      scrapedAt: r.scrapedAt,\n      adId: r.adId,\n      country: r.country,\n      rankedBy: r.rankedBy,\n      periodDays: r.periodDays,\n      brandName: r.brandName || '',\n      adTitle: r.adTitle || '',\n      ctr: r.ctr,\n      likes: r.likes,\n      comments: r.comments,\n      shares: r.shares,\n      objectiveKey: r.objectiveKey || '',\n      durationSeconds: r.durationSeconds,\n      landingPageUrl: r.landingPageUrl || '',\n      videoUrl: r.videoUrl || '',\n      landingPageTitle: intel.pageTitle || '',\n      offerSignals: (intel.offerSignals || []).join(', '),\n      adPixelsDetected: (intel.adPixelsDetected || []).join(', '),\n      techStackDetected: (intel.techStackDetected || []).join(', '),\n      funnelReadinessScore: intel.funnelReadinessScore ?? ''\n    }\n  };\n});"
+      },
+      "id": "4",
+      "name": "Format Sheet Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "Append to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1280,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Apify: TikTok Creative Center Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: TikTok Creative Center Scraper": {
+      "main": [
+        [
+          {
+            "node": "Filter Conversion Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Conversion Ads": {
+      "main": [
+        [
+          {
+            "node": "Format Sheet Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Sheet Rows": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "name": "Shopify Competitor Churn Leads to Slack (Apify)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Create an n8n **Header Auth** credential named `Apify API Token (Header Auth)`:\n   - Name: `Authorization`\n   - Value: `Bearer <your Apify API token>`\n2. Select it on the **Apify** HTTP Request node.\n3. Replace the app slugs in the request body with your competitors' Shopify App Store slugs.\n4. Select your Slack credential on **Post Churn Lead to Slack** and set the channel.\n\nThe request asks for 1-2 star reviews only (`reviewStarFilter: \"churn_1_to_2\"`), newest first, with app profiles off, so you pay only for `review-scraped` events.\n\nOne Slack message is posted per churn candidate. Each run re-reads the newest reviews, so keep `maxReviewsPerApp` small to limit repeats between runs.",
+        "height": 380,
+        "width": 440
+      },
+      "id": "0",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/K8dbxvC63ovXWi6wk/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"apps\": [\n    \"klaviyo-email-marketing\"\n  ],\n  \"includeAppDetails\": false,\n  \"includeReviews\": true,\n  \"maxReviewsPerApp\": 10,\n  \"reviewStarFilter\": \"churn_1_to_2\",\n  \"reviewSort\": \"newest\",\n  \"enrichDeveloperContacts\": false\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "2",
+      "name": "Apify: Shopify App Store Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Apify API Token (Header Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-churn",
+              "leftValue": "={{ $json.isChurnCandidate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "3",
+      "name": "Is Churn Candidate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#churn-leads",
+          "mode": "name"
+        },
+        "text": "=:rotating_light: *Churn lead on {{ $json.appName || $json.appSlug }}* | {{ $json.rating }} star | {{ $json.reviewDate || 'date unknown' }}\n*Merchant:* {{ $json.merchantName || 'Unknown' }}{{ $json.merchantCountry ? ' (' + $json.merchantCountry + ')' : '' }}{{ $json.tenureText ? ' | ' + $json.tenureText : '' }}\n*Signals:* {{ ($json.churnSignals || []).join(', ') || 'none' }}\n*Developer replied:* {{ $json.hasDeveloperReply ? 'yes' : 'no' }}\n> {{ ($json.reviewBody || '').replace(/\\n+/g, ' ').slice(0, 600) }}\n{{ $json.reviewsPageUrl }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "4",
+      "name": "Post Churn Lead to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1020,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Apify: Shopify App Store Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Shopify App Store Scraper": {
+      "main": [
+        [
+          {
+            "node": "Is Churn Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Churn Candidate": {
+      "main": [
+        [
+          {
+            "node": "Post Churn Lead to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
