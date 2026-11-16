@@ -1,0 +1,642 @@
+{
+  "name": "Clean and deduplicate a lead list from Google Sheets or CSV, flag free-mail and role emails",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Lead list cleaner: names, emails, domains and duplicates\n\n### How it works\nReads a lead list from a **Google Sheet**, a **CSV file** or built-in sample data, and cleans it without any AI or paid API:\n- Maps common column names (`Full Name`, `E-mail`, `Company Website`...) to one schema and keeps your other columns.\n- Fixes name casing (`JOHN SMITH`, `mary o'brien`, `van der Berg`, `McDonald`) and splits full names.\n- Cleans emails (`mailto:`, spaces, `gmial.com` typos), checks syntax and classifies each as business, free-mail, role (info@, sales@) or disposable.\n- Derives the company domain from the website, or from a business email.\n- Merges duplicates matched on canonical email (Gmail dots and +tags ignored), then name + domain or company. Empty fields are filled from the duplicates.\n\nEach row gets `lead_status` (ready/review) and readable `issues` and `fixes`. A summary shows what changed.\n\n### Setup\n1. Run once with `source = sample` to see the output.\n2. **CSV:** set `source = csv` and the input/output paths (the folder must be readable by n8n).\n3. **Google Sheets:** set `source = google_sheets`, paste the sheet URL, set the tab names, create an empty output tab and connect a Google Sheets credential in both Sheets nodes.\n\n### Customization\nAdd domains to `extra_free_mail_domains`, or change matching in **Merge duplicate leads**.\n\nNext step, AI company research and ICP scoring for clean leads: the Relaybrook AI Lead Enrichment Pack at relaybrook.bytesell.app.",
+        "height": 880,
+        "width": 560
+      },
+      "id": "374c2554-ef2a-5156-8ebd-d8ce858dab1a",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -860,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Read leads\nChoose the source in `Cleaner settings`: sample, csv or google_sheets.",
+        "height": 820,
+        "width": 1140,
+        "color": 7
+      },
+      "id": "522c57ff-37b0-56ad-b57e-3a7392930765",
+      "name": "Section: read",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Clean and merge\nNormalize every field, then merge rows that are the same person.",
+        "height": 440,
+        "width": 460,
+        "color": 7
+      },
+      "id": "e88bb267-b352-57e3-a2c2-288a61ec1392",
+      "name": "Section: clean",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        900,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Write results\nCSV is overwritten each run. Google Sheets rows are upserted on `dedupe_key`, so re-runs update instead of duplicating.",
+        "height": 820,
+        "width": 700,
+        "color": 7
+      },
+      "id": "9dda5347-a2b3-5cb9-a332-4adb6d5abe82",
+      "name": "Section: write",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        -80
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e162151a-106e-5b81-9136-1ae4c2bb7e17",
+      "name": "Run cleaner",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9d32d041-fed5-54fc-b749-4460aaa021fc",
+              "name": "source",
+              "value": "sample",
+              "type": "string"
+            },
+            {
+              "id": "c67c4f4d-6ab6-5c1c-96c1-ea8b929e661a",
+              "name": "csv_input_path",
+              "value": "/home/node/.n8n-files/leads.csv",
+              "type": "string"
+            },
+            {
+              "id": "6079807f-380d-5fa7-a7f1-19eb3cbaa1ed",
+              "name": "csv_output_path",
+              "value": "/home/node/.n8n-files/leads-clean.csv",
+              "type": "string"
+            },
+            {
+              "id": "fa269989-71c0-53eb-aa08-80d695267b9d",
+              "name": "google_sheet_url",
+              "value": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit",
+              "type": "string"
+            },
+            {
+              "id": "572eed44-5ad4-5190-a6c0-c2c85b70ebaf",
+              "name": "input_tab",
+              "value": "Leads",
+              "type": "string"
+            },
+            {
+              "id": "17c80f51-ff4c-5d4e-9328-876a10102068",
+              "name": "output_tab",
+              "value": "Cleaned leads",
+              "type": "string"
+            },
+            {
+              "id": "19dd9813-44e4-5671-bc9b-a3b4f7c44f74",
+              "name": "fix_email_typos",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "6e39547b-54a9-5584-88cd-9ae80e2f56b6",
+              "name": "extra_free_mail_domains",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {},
+        "includeOtherFields": false
+      },
+      "id": "3a5832bb-29be-51e1-bca0-f71edc705480",
+      "name": "Cleaner settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        20,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "ee37102b-941e-5056-8f26-6fac72af2ce1",
+              "leftValue": "={{ $json.source === 'csv' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "24636030-2c6b-57a4-8299-38fa189307c3",
+      "name": "Source is CSV?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Cleaner settings').first().json.csv_input_path }}",
+        "options": {}
+      },
+      "id": "f725e9d6-d0ae-5015-b50f-b2e9a71c400c",
+      "name": "Read CSV file",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "id": "52a6ab60-8357-5a1e-b5ea-19645a53244f",
+      "name": "Parse CSV rows",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        680,
+        120
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "e846c4bd-3fa1-5c18-812f-b55f7769a6b4",
+              "leftValue": "={{ $json.source === 'google_sheets' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "49fe30ef-c12d-52e0-815e-4899671b6930",
+      "name": "Source is Google Sheets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Cleaner settings').first().json.google_sheet_url }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Cleaner settings').first().json.input_tab }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "91638c11-34eb-5661-8228-252f839b8541",
+      "name": "Read leads from Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        360
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Synthetic messy lead list for a first test run (source = \"sample\").\n// Column names are deliberately inconsistent; the cleaner maps common variants.\nconst rows = [\n { 'Full Name': ' JOHN SMITH ', 'E-mail': 'John.Smith@Acme-Corp.example ', Company: 'Acme Corp, Inc.', Website: 'https://www.acme-corp.example/about' },\n { 'Full Name': 'john smith', 'E-mail': 'john.smith@acme-corp.example', Company: 'ACME CORP', Website: '', Phone: '+1 415 555 0100' },\n { 'Full Name': \"mary o'brien\", 'E-mail': 'mary.obrien@gmial.com', Company: 'Freelance', Website: '' },\n { 'Full Name': 'Ludwig van der berg', 'E-mail': 'mailto:LUDWIG@vanderberg.example', Company: 'Van der Berg BV', Website: 'vanderberg.example' },\n { 'Full Name': 'Dr. ANNA-LENA MÜLLER', 'E-mail': 'a.mueller@web.de', Company: 'Müller GmbH', Website: 'http://mueller-gmbh.example/' },\n { 'Full Name': 'Sales Team', 'E-mail': 'sales@northwind.example', Company: 'Northwind', Website: 'northwind.example' },\n { 'Full Name': 'Alex Rivera', 'E-mail': 'alex.rivera@mailinator.com', Company: '', Website: '' },\n { 'Full Name': 'Sam Lee', 'E-mail': 'sam.lee@@brightpixel', Company: 'Bright Pixel', Website: 'brightpixel.example' },\n { 'Full Name': 'jane doe', 'E-mail': 'Jane.Doe+webinar@gmail.com', Company: '', Website: '' },\n { 'Full Name': 'Jane Doe', 'E-mail': 'janedoe@gmail.com', Company: 'Doe Design', Website: 'doedesign.example' },\n { 'Full Name': 'Kevin McDonald', 'E-mail': '', Company: 'Highland Ventures LLC', Website: 'www.highlandventures.example' },\n { 'Full Name': 'kevin mcdonald', 'E-mail': '', Company: 'Highland Ventures', Website: 'highlandventures.example/team' },\n];\nreturn rows.map((r) => ({ json: r }));\n"
+      },
+      "id": "9eb7485b-d787-5a6e-9a9a-50b7a10189a5",
+      "name": "Sample messy leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cleans each row: maps column-name variants, fixes name casing, repairs and\n// validates emails, derives the company domain and classifies the address\n// (business / free-mail / disposable / role). Unknown columns are kept as-is.\nconst s = $('Cleaner settings').first().json;\nconst rows = $input.all().filter((r) => r.json && Object.keys(r.json).length > 0);\nif (rows.length === 0) {\n throw new Error('No lead rows found for source \"' + s.source + '\". Check the file path or sheet name and that the first row holds the column headers.');\n}\n\nconst FREE = new Set(('gmail.com googlemail.com yahoo.com yahoo.co.uk yahoo.fr yahoo.de ymail.com rocketmail.com hotmail.com hotmail.co.uk hotmail.fr hotmail.de ' +\n 'outlook.com outlook.de live.com live.co.uk msn.com windowslive.com aol.com icloud.com me.com mac.com proton.me protonmail.com pm.me ' +\n 'gmx.com gmx.de gmx.net gmx.at web.de t-online.de freenet.de mail.com email.com zoho.com zohomail.com yandex.com yandex.ru mail.ru ' +\n 'inbox.ru list.ru bk.ru qq.com 163.com 126.com sina.com naver.com daum.net hanmail.net orange.fr wanadoo.fr free.fr laposte.net ' +\n 'libero.it virgilio.it tiscali.it alice.it seznam.cz wp.pl o2.pl interia.pl rediffmail.com fastmail.com tutanota.com tuta.io hey.com ' +\n 'btinternet.com sky.com comcast.net verizon.net att.net sbcglobal.net cox.net bellsouth.net shaw.ca rogers.com bigpond.com optusnet.com.au ' +\n 'uol.com.br bol.com.br terra.com.br').split(/\\s+/));\nString(s.extra_free_mail_domains || '').split(/[,\\s]+/).map((d) => d.trim().toLowerCase()).filter(Boolean).forEach((d) => FREE.add(d));\nconst DISPOSABLE = new Set(('mailinator.com guerrillamail.com guerrillamail.net sharklasers.com 10minutemail.com 10minutemail.net tempmail.com temp-mail.org ' +\n 'tempmail.net throwawaymail.com yopmail.com yopmail.fr trashmail.com getnada.com nada.email dispostable.com maildrop.cc mintemail.com ' +\n 'mohmal.com emailondeck.com fakeinbox.com spamgourmet.com mailnesia.com tempr.email discard.email burnermail.io moakt.com ' +\n 'mailcatch.com inboxkitten.com tempinbox.com').split(/\\s+/));\nconst ROLE = new Set(('info sales support contact hello hi admin office team marketing billing accounts accounting finance hr jobs careers ' +\n 'press media help service enquiries inquiries noreply no-reply webmaster postmaster abuse legal privacy partners orders bookings').split(/\\s+/));\nconst TYPO = {\n 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmail.co': 'gmail.com', 'gmail.con': 'gmail.com', 'gmaill.com': 'gmail.com',\n 'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmail.co': 'hotmail.com', 'hotmail.con': 'hotmail.com',\n 'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com', 'yahoo.co': 'yahoo.com', 'yahoo.con': 'yahoo.com',\n 'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com', 'outlook.co': 'outlook.com', 'outlook.con': 'outlook.com',\n 'iclould.com': 'icloud.com', 'icloud.co': 'icloud.com', 'iclod.com': 'icloud.com',\n};\nconst PARTICLES = new Set(['van', 'von', 'der', 'den', 'de', 'del', 'della', 'di', 'da', 'du', 'dos', 'das', 'la', 'le', 'bin', 'al', 'ter', 'ten']);\nconst HONORIFICS = /^(mr|mrs|ms|miss|mx|dr|prof|sir|madam)\\.?\\s+/i;\n\nconst ALIASES = {\n first_name: ['first_name', 'firstname', 'first', 'given_name', 'givenname', 'vorname', 'prenom'],\n last_name: ['last_name', 'lastname', 'last', 'surname', 'family_name', 'familyname', 'nachname', 'nom'],\n full_name: ['full_name', 'fullname', 'name', 'contact', 'contact_name', 'lead_name', 'person'],\n email: ['email', 'e_mail', 'email_address', 'emailaddress', 'work_email', 'business_email', 'mail'],\n company: ['company', 'company_name', 'organization', 'organisation', 'account', 'account_name', 'business', 'firma'],\n website: ['website', 'web', 'url', 'domain', 'company_website', 'company_url', 'site', 'homepage'],\n};\nconst keyOf = (k) => String(k).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');\n\nfunction smartCase(str) {\n const t = String(str || '').replace(/\\s+/g, ' ').trim();\n if (!t) return '';\n // Keep names that already have deliberate mixed case (e.g. \"DeShawn\", \"McKenzie\").\n const mixed = t !== t.toLowerCase() && t !== t.toUpperCase();\n if (mixed && !/^[A-Z][a-z]+(\\s[a-z]+)*$/.test(t)) return t;\n return t.toLowerCase().split(' ').map((w, idx) => {\n if (idx > 0 && PARTICLES.has(w)) return w;\n return w.split('-').map((p) => {\n if (!p) return p;\n let out = p.charAt(0).toUpperCase() + p.slice(1);\n out = out.replace(/^(O|D)'(\\p{L})/u, (m, a, b) => a + \"'\" + b.toUpperCase());\n out = out.replace(/^Mc(\\p{L})/u, (m, a) => 'Mc' + a.toUpperCase());\n return out;\n }).join('-');\n }).join(' ');\n}\n\nfunction splitFull(full) {\n const parts = full.split(' ').filter(Boolean);\n if (parts.length < 2) return { first: parts[0] || '', last: '' };\n let i = parts.length - 1;\n while (i > 1 && PARTICLES.has(parts[i - 1].toLowerCase())) i--; // \"van der Berg\" stays together\n return { first: parts.slice(0, i).join(' '), last: parts.slice(i).join(' ') };\n}\n\nfunction cleanDomain(v) {\n let d = String(v || '').trim().toLowerCase();\n if (!d) return '';\n d = d.replace(/^[a-z]+:\\/\\//, '').replace(/^www\\d?\\./, '').split(/[\\/?#]/)[0].split(':')[0].replace(/\\.$/, '');\n return /^[a-z0-9-]+(\\.[a-z0-9-]+)+$/.test(d) ? d : '';\n}\n\nconst EMAIL_RE = /^[a-z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\\.[a-z]{2,}$/;\n\nreturn rows.map((row, index) => {\n const src = row.json;\n const picked = {};\n const extra = {};\n for (const [k, v] of Object.entries(src)) {\n const nk = keyOf(k);\n const field = Object.keys(ALIASES).find((f) => ALIASES[f].includes(nk));\n if (field && picked[field] === undefined) picked[field] = v == null ? '' : String(v);\n else if (nk !== 'row_number') extra[k] = v;\n }\n const issues = [];\n const fixes = [];\n\n // Names\n let full = String(picked.full_name || '').replace(HONORIFICS, '');\n let first = smartCase(String(picked.first_name || '').replace(HONORIFICS, ''));\n let last = smartCase(picked.last_name);\n if (!first && !last && full) { const sp = splitFull(smartCase(full)); first = sp.first; last = sp.last; }\n const fullName = [first, last].filter(Boolean).join(' ') || smartCase(full);\n if (!fullName) issues.push('missing name');\n\n // Email\n const rawEmail = String(picked.email || '');\n let email = rawEmail.trim().toLowerCase().replace(/^mailto:/, '').replace(/^<|>$/g, '').replace(/[;,.]+$/, '').replace(/\\s+/g, '');\n let emailStatus = 'missing';\n if (email) {\n const at = email.lastIndexOf('@');\n let dom = at > 0 ? email.slice(at + 1) : '';\n if (s.fix_email_typos !== false) {\n let fixed = TYPO[dom] || dom.replace(/\\.(con|cmo|ocm|comm|vom)$/, '.com');\n if (fixed !== dom) { fixes.push('email domain ' + dom + ' -> ' + fixed); email = email.slice(0, at + 1) + fixed; dom = fixed; }\n }\n emailStatus = EMAIL_RE.test(email) ? 'valid' : 'invalid';\n }\n if (emailStatus === 'missing') issues.push('missing email');\n if (emailStatus === 'invalid') issues.push('invalid email syntax');\n\n const emailDomain = emailStatus === 'valid' ? email.split('@')[1] : '';\n const local = emailStatus === 'valid' ? email.split('@')[0] : '';\n let emailType = '';\n if (emailStatus === 'valid') {\n if (DISPOSABLE.has(emailDomain)) emailType = 'disposable';\n else if (FREE.has(emailDomain)) emailType = 'free';\n else if (ROLE.has(local.split('+')[0])) emailType = 'role';\n else emailType = 'business';\n }\n if (emailType === 'disposable') issues.push('disposable email domain');\n\n // Company + domain\n const company = String(picked.company || '').replace(/\\s+/g, ' ').trim();\n const companyClean = company && company === company.toUpperCase() && company.length > 4 ? smartCase(company) : company;\n const webDomain = cleanDomain(picked.website);\n if (picked.website && !webDomain) issues.push('website not a valid domain');\n let companyDomain = webDomain;\n let domainSource = webDomain ? 'website' : '';\n if (!companyDomain && (emailType === 'business' || emailType === 'role')) { companyDomain = emailDomain; domainSource = 'email'; }\n\n // Canonical email for duplicate matching: lowercase, drop +tags, ignore dots for Gmail.\n let emailKey = '';\n if (emailStatus === 'valid') {\n let [l, d] = email.split('@');\n l = l.split('+')[0];\n if (d === 'googlemail.com') d = 'gmail.com';\n if (d === 'gmail.com') l = l.replace(/\\./g, '');\n emailKey = l + '@' + d;\n }\n const companyKey = companyClean.toLowerCase()\n .replace(/[.,]/g, ' ')\n .replace(/\\b(inc|llc|ltd|limited|gmbh|ag|bv|sarl|sas|srl|spa|plc|corp|corporation|co|company|pty|oy|ab|as)\\b/g, '')\n .replace(/[^a-z0-9\\u00c0-\\u024f]+/g, ' ').trim();\n\n return {\n json: Object.assign({\n source_row: src.row_number || index + 2, // +2 = header row + 1-based\n first_name: first,\n last_name: last,\n full_name: fullName,\n email,\n email_status: emailStatus,\n email_type: emailType,\n is_free_mail: emailType === 'free',\n company: companyClean,\n company_domain: companyDomain,\n domain_source: domainSource,\n fixes: fixes.join('; '),\n issues: issues.join('; '),\n _email_key: emailKey,\n _name_key: fullName.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z]+/g, ' ').trim(),\n _company_key: companyKey,\n }, extra),\n pairedItem: row.pairedItem || { item: index },\n };\n});\n"
+      },
+      "id": "f83789f8-c4a8-52af-a031-5e0fad046421",
+      "name": "Normalize and validate leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Groups rows that are the same person and merges them into one row:\n// match on canonical email first, then on name + company domain, then name + company.\n// The first row wins; empty fields are filled from its duplicates.\nconst items = $input.all().map((x) => x.json);\nconst parent = items.map((_, i) => i);\nconst find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));\nconst union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[Math.max(ra, rb)] = Math.min(ra, rb); };\n\nconst index = {};\nitems.forEach((r, i) => {\n const keys = [];\n if (r._email_key) keys.push('e:' + r._email_key);\n if (r._name_key && r.company_domain) keys.push('nd:' + r._name_key + '|' + r.company_domain);\n if (r._name_key && r._company_key) keys.push('nc:' + r._name_key + '|' + r._company_key);\n keys.forEach((k) => { if (index[k] !== undefined) union(index[k], i); else index[k] = i; });\n});\n\nconst groups = new Map();\nitems.forEach((r, i) => { const g = find(i); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(i); });\n\nconst out = [];\nfor (const [g, members] of groups) {\n const merged = Object.assign({}, items[members[0]]);\n // Two different valid emails for one person: keep the business one as primary.\n // Addresses that only differ by +tag, case or Gmail dots are one mailbox, so list each mailbox once.\n const byKey = new Map();\n members.forEach((i) => { const r = items[i]; if (r.email_status === 'valid' && !byKey.has(r._email_key)) byKey.set(r._email_key, r.email); });\n const emails = [...byKey.values()];\n if (emails.length > 1) {\n const best = members.map((i) => items[i]).find((r) => r.email_type === 'business') || merged;\n ['email', 'email_status', 'email_type', 'is_free_mail'].forEach((k) => { merged[k] = best[k]; });\n }\n for (const i of members.slice(1)) {\n for (const [k, v] of Object.entries(items[i])) {\n if ((merged[k] === '' || merged[k] === undefined || merged[k] === null) && v !== '' && v != null) merged[k] = v;\n }\n }\n const issues = [...new Set(String(merged.issues || '').split('; ').filter(Boolean))];\n // An issue is resolved if the merged row now has the value.\n const still = issues.filter((x) => !(x === 'missing email' && merged.email_status === 'valid') && !(x === 'missing name' && merged.full_name));\n merged.issues = still.join('; ');\n merged.duplicates_merged = members.length - 1;\n merged.merged_rows = members.length > 1 ? members.map((i) => items[i].source_row).join(', ') : '';\n merged.other_emails = [...byKey].filter(([k]) => k !== merged._email_key).map(([, e]) => e).join(', ');\n merged.lead_status = merged.email_status === 'valid' && merged.email_type !== 'disposable' && merged.full_name ? 'ready' : 'review';\n merged.dedupe_key = merged._email_key || ('name:' + merged._name_key + '|' + (merged.company_domain || merged._company_key));\n delete merged._email_key; delete merged._name_key; delete merged._company_key;\n out.push({ json: merged, pairedItem: members.map((i) => ({ item: i })) });\n}\nreturn out;\n"
+      },
+      "id": "ac6b8588-7dd0-5756-8eee-87bad8e4943f",
+      "name": "Merge duplicate leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One summary item so you can see at a glance what the run changed.\nconst rows = $input.all().map((x) => x.json);\nconst inputRows = $('Normalize and validate leads').all().length;\nconst count = (f) => rows.filter(f).length;\nreturn [{\n json: {\n input_rows: inputRows,\n output_rows: rows.length,\n duplicates_merged: inputRows - rows.length,\n ready: count((r) => r.lead_status === 'ready'),\n needs_review: count((r) => r.lead_status === 'review'),\n business_emails: count((r) => r.email_type === 'business'),\n free_mail: count((r) => r.email_type === 'free'),\n role_addresses: count((r) => r.email_type === 'role'),\n disposable: count((r) => r.email_type === 'disposable'),\n invalid_or_missing_email: count((r) => r.email_status !== 'valid'),\n emails_auto_fixed: count((r) => /email domain/.test(r.fixes || '')),\n },\n}];\n"
+      },
+      "id": "24725fe0-9b32-5f50-b414-769a9033679d",
+      "name": "Summarize cleaning run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "4d9636c2-ea1d-53e1-8a16-a1d890259ee5",
+              "leftValue": "={{ $('Cleaner settings').first().json.source === 'csv' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "90cc1f1a-2f13-5b18-8720-7050530b5f3a",
+      "name": "Write to CSV?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "leads-clean.csv"
+        }
+      },
+      "id": "15c9b515-227e-50e1-8abe-44762bc4d7ee",
+      "name": "Convert to CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Cleaner settings').first().json.csv_output_path }}",
+        "options": {}
+      },
+      "id": "ab6aeac4-76c7-550e-8236-bff2b9000349",
+      "name": "Write cleaned CSV file",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "56c51696-2134-5997-ad42-f33c0af559a9",
+              "leftValue": "={{ $('Cleaner settings').first().json.source === 'google_sheets' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ffc1b699-d461-5ec8-b340-102b195f78eb",
+      "name": "Write to Google Sheets?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Cleaner settings').first().json.google_sheet_url }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Cleaner settings').first().json.output_tab }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "dedupe_key"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "8ab1d6b1-5242-56a5-ac87-200de681131d",
+      "name": "Upsert into cleaned tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1900,
+        240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "42bede31-f3cc-5586-a0a9-0aaa361a27fa",
+      "name": "Preview cleaned leads",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        440
+      ]
+    }
+  ],
+  "connections": {
+    "Run cleaner": {
+      "main": [
+        [
+          {
+            "node": "Cleaner settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cleaner settings": {
+      "main": [
+        [
+          {
+            "node": "Source is CSV?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source is CSV?": {
+      "main": [
+        [
+          {
+            "node": "Read CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Source is Google Sheets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read CSV file": {
+      "main": [
+        [
+          {
+            "node": "Parse CSV rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source is Google Sheets?": {
+      "main": [
+        [
+          {
+            "node": "Read leads from Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sample messy leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CSV rows": {
+      "main": [
+        [
+          {
+            "node": "Normalize and validate leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read leads from Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Normalize and validate leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample messy leads": {
+      "main": [
+        [
+          {
+            "node": "Normalize and validate leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and validate leads": {
+      "main": [
+        [
+          {
+            "node": "Merge duplicate leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge duplicate leads": {
+      "main": [
+        [
+          {
+            "node": "Write to CSV?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summarize cleaning run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to CSV?": {
+      "main": [
+        [
+          {
+            "node": "Convert to CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write to Google Sheets?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to CSV": {
+      "main": [
+        [
+          {
+            "node": "Write cleaned CSV file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Google Sheets?": {
+      "main": [
+        [
+          {
+            "node": "Upsert into cleaned tab",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preview cleaned leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
