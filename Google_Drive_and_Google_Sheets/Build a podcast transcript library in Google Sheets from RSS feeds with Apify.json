@@ -171,7 +171,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Validate settings and build the Actor input. Fails early (before any paid work) on bad settings.\nconst s = $('Podcast settings').first().json;\nconst feeds = String(s.feedUrls || '')\n  .split(/[\\n,]+/).map(x => x.trim()).filter(Boolean);\nif (!feeds.length) throw new Error('Add at least one podcast RSS feed URL in \"Podcast settings\".');\nconst bad = feeds.filter(f => !/^https?:\\/\\//i.test(f));\nif (bad.length) throw new Error('These feed entries are not http(s) URLs: ' + bad.join(', '));\nif (!s.spreadsheetId || /YOUR_/i.test(s.spreadsheetId)) {\n  throw new Error('Set spreadsheetId in \"Podcast settings\" (the long ID in your Google Sheet URL).');\n}\nconst max = Math.max(1, Math.min(Number(s.maxTranscriptsPerRun) || 25, 500));\nconst actorInput = {\n  feedUrls: feeds.slice(0, 100),\n  maxEpisodesPerFeed: Math.max(1, Math.min(Number(s.maxEpisodesPerFeed) || 3, 50)),\n  maxResults: max,\n  onlyWithTranscripts: true,\n  includeSegments: false,          // plain text only: keeps rows small enough for Sheets\n  includeSpeakerLabels: true,\n};\nif (s.publishedSince) actorInput.publishedSince = String(s.publishedSince);\nreturn [{ json: {\n  actorInput,\n  spreadsheetId: String(s.spreadsheetId).trim(),\n  sheetName: String(s.sheetName || 'Transcripts'),\n  maxCostPerRunUsd: Number(s.maxCostPerRunUsd) || 0.1,\n} }];\n"
+        "jsCode": "// Validate settings and build the Actor input. Fails early (before any paid work) on bad settings.\nconst s = $('Podcast settings').first().json;\nconst feeds = String(s.feedUrls || '')\n  .split(/[\\n,]+/).map(x => x.trim()).filter(Boolean);\nif (!feeds.length) throw new Error('Add at least one podcast RSS feed URL in \"Podcast settings\".');\nconst bad = feeds.filter(f => !/^https?:\\/\\//i.test(f));\nif (bad.length) throw new Error('These feed entries are not http(s) URLs: ' + bad.join(', '));\nif (!s.spreadsheetId || /YOUR_/i.test(s.spreadsheetId)) {\n  throw new Error('Set spreadsheetId in \"Podcast settings\" (the long ID in your Google Sheet URL).');\n}\nconst max = Math.max(1, Math.min(Number(s.maxTranscriptsPerRun) || 25, 500));\nconst maxCostPerRunUsd = Number(s.maxCostPerRunUsd ?? 0.1);\nif (!Number.isFinite(maxCostPerRunUsd) || maxCostPerRunUsd < 0) throw new Error('maxCostPerRunUsd must be a finite, non-negative number.');\nconst actorInput = {\n  feedUrls: feeds.slice(0, 100),\n  maxEpisodesPerFeed: Math.max(1, Math.min(Number(s.maxEpisodesPerFeed) || 3, 50)),\n  maxResults: max,\n  onlyWithTranscripts: true,\n  includeSegments: false,          // plain text only: keeps rows small enough for Sheets\n  includeSpeakerLabels: true,\n};\nif (s.publishedSince) actorInput.publishedSince = String(s.publishedSince);\nreturn [{ json: {\n  actorInput,\n  spreadsheetId: String(s.spreadsheetId).trim(),\n  sheetName: String(s.sheetName || 'Transcripts'),\n  maxCostPerRunUsd,\n} }];\n"
       },
       "id": "13f13669-bc61-49b8-80c0-0d48e2575124",
       "name": "Check settings and build input",
@@ -251,7 +251,14 @@
           "value": "={{ $('Check settings and build input').first().json.sheetName }}",
           "mode": "name"
         },
-        "options": {}
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A:A"
+            }
+          }
+        }
       },
       "id": "4bc325dd-b9dc-4b7b-92e8-5d2101fc18e0",
       "name": "Read saved episodes",
