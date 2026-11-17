@@ -1,0 +1,720 @@
+{
+  "name": "Track expenses from Telegram messages into an n8n Data Table with monthly reports",
+  "nodes": [
+    {
+      "id": "5be4d228-d781-4ea4-a7ee-6aad8103712c",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        -48
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 960,
+        "content": "## 💸 Telegram Expense Tracker (no AI key, no external database)\n\nLog spending by sending one message to your Telegram bot — **\"50k coffee\"**, **\"1.2tr rent #bills\"**, **\"12.50 lunch\"** — and get a monthly report by category with `/report`.\n\nUnlike most expense trackers, this one needs **no OpenAI key and no Google Sheets**: messages are parsed in code and saved to n8n's built-in **Data Table**. Runs at $0.\n\n### How it works\n1. **When Telegram Message Received** receives every message sent to your bot.\n2. **Parse Telegram Message** finds the amount (understands `50k`, `1.5tr`, `2m`, `120.000`, `12.50`) and picks a category from keywords (or your `#tag`).\n3. The **Route by Command Type** switch sends it to: save · monthly report · undo · help.\n4. Rows live in a Data Table called `expenses` — one row per expense, filtered by your chat ID (so a shared bot keeps people separate).\n\n### Setup (5 minutes)\n1. Create a bot with **@BotFather** → copy the token → add a **Telegram API** credential in n8n and select it on the 5 Telegram nodes.\n2. In **Data Tables**, create a table named **`expenses`** with columns: `chat_id` (string), `amount` (number), `category` (string), `note` (string), `month` (string), `spent_at` (string).\n3. Open **Prepare Configuration Settings** → set your `currency`, `locale`, `timezone`. Edit `categoryKeywords` to match how you talk about money.\n4. **Activate** the workflow (Telegram triggers need a public HTTPS URL — n8n Cloud or a self-hosted instance with a tunnel).\n\n### Customize\n- Set `smallNumbersAreThousands` to `false` if \"50\" should mean 50 (not 50,000).\n- Add categories/keywords in **Prepare Configuration Settings** — first match wins, `#tag` always overrides.\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "eb97521c-2c23-4c25-9035-f3f9a3a88bdc",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 320,
+        "content": "## Receive Telegram input\n\nCaptures incoming Telegram messages and applies shared configuration values before command handling begins."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "86119b90-915b-401b-b552-9b1a2fb3f8b9",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        144
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 384,
+        "content": "## Parse and route command\n\nParses the Telegram text into a normalized action and routes execution to the matching branch for add, report, undo, or help."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b04e8b4d-5c86-4626-a6c7-ab3637a8762e",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        -48
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 848,
+        "height": 304,
+        "content": "## Save new expense\n\nHandles the add-expense branch by trimming the payload to Data Table columns, saving the new row, building a confirmation message, and sending it to Telegram."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "3c403e9b-eb75-49ef-b601-e59e51274353",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        288
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 640,
+        "height": 304,
+        "content": "## Generate monthly report\n\nRetrieves this chat's current-month expenses, summarizes them into a report, and sends the report back through Telegram."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "6d6bc76a-8954-4bbc-a84b-261d6d35934e",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        624
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 848,
+        "height": 304,
+        "content": "## Undo last expense\n\nFinds the most recent expense, deletes it from the Data Table, builds the undo result message, and notifies the Telegram chat."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "c541d0c3-9c08-491d-b6ae-f3a3c731b851",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        960
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 416,
+        "height": 304,
+        "content": "## Send command help\n\nBuilds usage instructions for the supported Telegram commands and sends the help response."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "f22f87c0-6804-43a4-8ccf-29f1256e1938",
+      "name": "When Telegram Message Received",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "08af3f1f-686a-4550-8eba-0a0d0f99136a",
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "64c00d98-5cb5-42fd-88f1-3d0e4fac4b69",
+      "name": "Prepare Configuration Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"currency\": \"VND\",\n  \"locale\": \"vi-VN\",\n  \"timezone\": \"Asia/Ho_Chi_Minh\",\n  \"smallNumbersAreThousands\": true,\n  \"categoryKeywords\": {\n    \"Food & drinks\": [\n      \"cà phê\",\n      \"cafe\",\n      \"coffee\",\n      \"ăn\",\n      \"cơm\",\n      \"phở\",\n      \"bún\",\n      \"trà sữa\",\n      \"lunch\",\n      \"dinner\",\n      \"breakfast\",\n      \"snack\",\n      \"grocery\",\n      \"groceries\",\n      \"đi chợ\",\n      \"siêu thị\",\n      \"restaurant\",\n      \"pizza\",\n      \"beer\",\n      \"bia\"\n    ],\n    \"Transport\": [\n      \"xăng\",\n      \"grab\",\n      \"be \",\n      \"taxi\",\n      \"uber\",\n      \"bus\",\n      \"xe buýt\",\n      \"parking\",\n      \"gửi xe\",\n      \"fuel\",\n      \"gas\",\n      \"metro\",\n      \"vé xe\"\n    ],\n    \"Bills & utilities\": [\n      \"điện\",\n      \"nước\",\n      \"internet\",\n      \"wifi\",\n      \"điện thoại\",\n      \"phone bill\",\n      \"rent\",\n      \"thuê nhà\",\n      \"electric\",\n      \"water bill\",\n      \"subscription\"\n    ],\n    \"Shopping\": [\n      \"shopee\",\n      \"lazada\",\n      \"tiki\",\n      \"quần\",\n      \"áo\",\n      \"giày\",\n      \"shoes\",\n      \"clothes\",\n      \"amazon\",\n      \"mua sắm\"\n    ],\n    \"Health\": [\n      \"thuốc\",\n      \"khám\",\n      \"bệnh viện\",\n      \"pharmacy\",\n      \"doctor\",\n      \"gym\",\n      \"medicine\",\n      \"dentist\",\n      \"nha khoa\"\n    ],\n    \"Entertainment\": [\n      \"phim\",\n      \"netflix\",\n      \"spotify\",\n      \"game\",\n      \"cinema\",\n      \"movie\",\n      \"concert\",\n      \"karaoke\",\n      \"du lịch\",\n      \"travel\"\n    ],\n    \"Education\": [\n      \"sách\",\n      \"book\",\n      \"học\",\n      \"course\",\n      \"khóa học\",\n      \"tuition\",\n      \"học phí\"\n    ],\n    \"Family & gifts\": [\n      \"quà\",\n      \"gift\",\n      \"sinh nhật\",\n      \"birthday\",\n      \"đám cưới\",\n      \"wedding\",\n      \"con \",\n      \"baby\"\n    ]\n  }\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "734548ef-b776-4faa-8573-638c97c80e30",
+      "name": "Parse Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Parse one Telegram message into an action: add | report | undo | help\nconst cfg = $('Prepare Configuration Settings').first().json;\nconst msg = $('When Telegram Message Received').first().json.message || {};\nconst chatId = String(msg.chat?.id ?? '');\nconst text = String(msg.text || '').trim();\nconst tz = cfg.timezone || 'UTC';\nconst when = msg.date ? DateTime.fromSeconds(msg.date, { zone: tz }) : DateTime.now().setZone(tz);\n\nconst base = { chat_id: chatId, month: when.toFormat('yyyy-MM'), spent_at: when.toISO() };\n\nif (!text || text === '/start' || text === '/help') return [{ json: { ...base, action: 'help' } }];\nif (text.startsWith('/undo')) return [{ json: { ...base, action: 'undo' } }];\nif (text.startsWith('/report')) {\n  const m = text.match(/(\\d{4})-(\\d{1,2})/);\n  const month = m ? `${m[1]}-${m[2].padStart(2, '0')}` : base.month;\n  return [{ json: { ...base, action: 'report', month } }];\n}\n\n// ---- amount: first number in the message, understands 50k / 1.5tr / 2m / 120.000 / 12.50 / $12 ----\nconst re = /(\\d+(?:[.,]\\d+)*)\\s*(k|nghìn|ngàn|tr|triệu|trieu|m|mil|million)?(?![a-zà-ỹ])/i;\nconst hit = text.toLowerCase().match(re);\nif (!hit) return [{ json: { ...base, action: 'help', error: 'no_amount' } }];\n\nlet raw = hit[1];\nconst unit = (hit[2] || '').toLowerCase();\nlet n;\nif (/^\\d{1,3}([.,]\\d{3})+$/.test(raw) && !unit) n = Number(raw.replace(/[.,]/g, ''));   // 120.000 / 1,250,000\nelse n = Number(raw.replace(',', '.'));                                                  // 12.5 / 1,5\nif (['k', 'nghìn', 'ngàn'].includes(unit)) n *= 1e3;\nif (['tr', 'triệu', 'trieu', 'm', 'mil', 'million'].includes(unit)) n *= 1e6;\n// Many VND users type \"50\" meaning 50,000\nif (!unit && cfg.smallNumbersAreThousands && n > 0 && n < 1000) n *= 1e3;\nif (!(n > 0)) return [{ json: { ...base, action: 'help', error: 'no_amount' } }];\n\n// ---- category: \"#tag\" overrides, else keyword rules from Config ----\nlet note = text.replace(hit[0], ' ').replace(/#\\S+/g, ' ').replace(/\\s+/g, ' ').trim();\nconst tag = (text.match(/#(\\S+)/) || [])[1];\nconst rules = cfg.categoryKeywords || {};\nlet category = 'Other';\nif (tag) {\n  const t = tag.toLowerCase();\n  category = Object.keys(rules).find(c => c.toLowerCase().startsWith(t)) || (tag[0].toUpperCase() + tag.slice(1));\n} else {\n  const low = ' ' + note.toLowerCase() + ' ';\n  for (const [cat, words] of Object.entries(rules)) {\n    if (words.some(w => low.includes(w.toLowerCase()))) { category = cat; break; }\n  }\n}\nreturn [{ json: { ...base, action: 'add', amount: Math.round(n * 100) / 100, category, note: note || category } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "7196f064-8a18-4330-9b59-1fa8645f4e67",
+      "name": "Route by Command Type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "add",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "77fb2950-ba98-418a-ba86-91aa3be85bf3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "add"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "report",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "3bdb35d0-d54d-4023-9a74-f64f3ae9a172",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "report"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "undo",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "219b8d15-6824-41b7-97e6-de36e1449bea",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "undo"
+                  }
+                ]
+              },
+              "renameOutput": true
+            },
+            {
+              "outputKey": "help",
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "5da54bc8-b5f2-4c2c-ba4b-f8307a1af91a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "help"
+                  }
+                ]
+              },
+              "renameOutput": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.2
+    },
+    {
+      "id": "040c1b12-6832-409e-96c8-a0261cc87e8c",
+      "name": "Maintain Data Table Fields",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        900,
+        80
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Keep exactly the Data Table columns (auto-map inserts every field it receives)\nconst j = $json;\nreturn { json: { chat_id: j.chat_id, amount: j.amount, category: j.category, note: j.note, month: j.month, spent_at: j.spent_at } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ef4ff609-b25f-4aa4-aaba-d475885814e5",
+      "name": "Store Expense Record",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1120,
+        80
+      ],
+      "parameters": {
+        "columns": {
+          "value": {},
+          "schema": [],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "expenses"
+        }
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "625991d1-cba1-42c8-94fd-2f8ba6627b0c",
+      "name": "Generate Confirmation Message",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1340,
+        80
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const cfg = $('Prepare Configuration Settings').first().json;\nconst fmt = v => new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.currency, maximumFractionDigits: cfg.currency === 'VND' ? 0 : 2 }).format(v);\nconst r = $json;\nreturn { json: { chat_id: r.chat_id, text: `✅ Saved ${fmt(r.amount)} · ${r.category}\\n📝 ${r.note}\\n\\nType /report for this month, /undo to remove it.` } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "b6a06f18-de15-4992-8e68-284c657bfdbd",
+      "name": "Send Telegram Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1560,
+        80
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "155cfd77-542a-4b70-8d56-2f81ce370d34",
+      "name": "Retrieve Monthly Expenses",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        896,
+        432
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "chat_id",
+              "keyValue": "={{ $json.chat_id }}",
+              "condition": "eq"
+            },
+            {
+              "keyName": "month",
+              "keyValue": "={{ $json.month }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "matchType": "allConditions",
+        "operation": "get",
+        "returnAll": true,
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "expenses"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "de941afe-bed5-49aa-b3c3-60a7bb617e42",
+      "name": "Generate Monthly Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        432
+      ],
+      "parameters": {
+        "jsCode": "// Monthly report from all rows of this chat + month (runs once for all items)\nconst cfg = $('Prepare Configuration Settings').first().json;\nconst req = $('Parse Telegram Message').first().json;\nconst fmt = v => new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.currency, maximumFractionDigits: cfg.currency === 'VND' ? 0 : 2 }).format(v);\nconst rows = $input.all().map(i => i.json).filter(r => r && r.amount !== undefined && r.amount !== null);\nif (!rows.length) return [{ json: { chat_id: req.chat_id, text: `📭 No expenses recorded for ${req.month} yet.\\nSend something like \"50k coffee\" to start.` } }];\n\nconst total = rows.reduce((s, r) => s + Number(r.amount), 0);\nconst byCat = {};\nfor (const r of rows) byCat[r.category] = (byCat[r.category] || 0) + Number(r.amount);\nconst cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);\nconst bar = p => '▓'.repeat(Math.max(1, Math.round(p / 10))) + '░'.repeat(10 - Math.max(1, Math.round(p / 10)));\nconst lines = cats.map(([c, v]) => `${bar(v / total * 100)} ${c}: ${fmt(v)} (${Math.round(v / total * 100)}%)`);\nconst top = [...rows].sort((a, b) => b.amount - a.amount).slice(0, 3).map(r => `• ${fmt(r.amount)} — ${r.note}`);\nconst [y, m] = req.month.split('-').map(Number);\nconst now = DateTime.now().setZone(cfg.timezone || 'UTC');\nconst days = (now.year === y && now.month === m) ? now.day : DateTime.local(y, m).daysInMonth;\nreturn [{ json: { chat_id: req.chat_id, text:\n  `📊 Expenses ${req.month}\\nTotal: ${fmt(total)} · ${rows.length} entries · ~${fmt(total / days)}/day\\n\\n` +\n  lines.join('\\n') + `\\n\\n🔝 Biggest:\\n` + top.join('\\n') } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4e135c76-53bc-4e0a-a56f-27f980efd1b9",
+      "name": "Send Telegram Report",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1344,
+        432
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "220d9fdc-3f6f-4dfd-b79c-412eb60412bb",
+      "name": "Locate Last Expense",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        896,
+        752
+      ],
+      "parameters": {
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "chat_id",
+              "keyValue": "={{ $json.chat_id }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "orderBy": true,
+        "matchType": "allConditions",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "expenses"
+        },
+        "orderByColumn": "createdAt",
+        "orderByDirection": "DESC"
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "16e3f880-ec5b-49c7-b4aa-1cb573708f57",
+      "name": "Remove Last Expense",
+      "type": "n8n-nodes-base.dataTable",
+      "position": [
+        1120,
+        752
+      ],
+      "parameters": {
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.id ?? -1 }}",
+              "condition": "eq"
+            }
+          ]
+        },
+        "options": {},
+        "matchType": "allConditions",
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "expenses"
+        }
+      },
+      "typeVersion": 1.1,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "2f030c75-829f-4aba-b822-0c1924df0ddf",
+      "name": "Create Undo Confirmation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1344,
+        752
+      ],
+      "parameters": {
+        "jsCode": "const cfg = $('Prepare Configuration Settings').first().json;\nconst req = $('Parse Telegram Message').first().json;\nconst last = $('Locate Last Expense').all().map(i => i.json).find(r => r && r.id !== undefined);\nconst fmt = v => new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.currency, maximumFractionDigits: cfg.currency === 'VND' ? 0 : 2 }).format(v);\nreturn [{ json: { chat_id: req.chat_id, text: last ? `↩️ Removed ${fmt(last.amount)} · ${last.category} (${last.note})` : 'Nothing to undo.' } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "00a11ffa-3eab-4f21-8d44-a751f8b5d1f7",
+      "name": "Send Undo Acknowledgment",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1568,
+        752
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "8c61bdfb-a964-4482-8128-608fc1795aca",
+      "name": "Create Help Information",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        896,
+        1104
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const req = $json;\nconst lead = req.error === 'no_amount' ? \"🤔 I couldn't find an amount in that message.\\n\\n\" : '';\nreturn { json: { chat_id: req.chat_id, text: lead +\n  '💸 Expense tracker — just type what you spent:\\n' +\n  '• 50k coffee\\n• 1.2tr rent #bills\\n• 35000 grab\\n• 12.50 lunch\\n\\n' +\n  'Commands:\\n/report — this month by category\\n/report 2026-09 — a past month\\n/undo — remove the last entry\\n\\n' +\n  'Tip: add #category to override the automatic category.' } };"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "bcc7f949-39b2-49d9-ad3b-90414a20b71e",
+      "name": "Send Telegram Help Text",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1120,
+        1104
+      ],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "chatId": "={{ $json.chat_id }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "3d65875c-d57c-4b24-ae26-92762feec897",
+      "name": "Sticky Note PRO",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        1624
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 700,
+        "height": 220,
+        "content": "### ⭐ Need more?\nThe **Pro version** adds: credit-card **statement cycles** (what you'll owe on the next statement and when it's due), **receipt photos read by AI**, monthly **budgets with alerts**, month-over-month comparison and a **Google Sheets dashboard**.\nSearch **\"credit card statement cycles expense tracker\"** on n8n.io, or see the link in this template's description."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "connections": {
+    "Locate Last Expense": {
+      "main": [
+        [
+          {
+            "node": "Remove Last Expense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Last Expense": {
+      "main": [
+        [
+          {
+            "node": "Create Undo Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Expense Record": {
+      "main": [
+        [
+          {
+            "node": "Generate Confirmation Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Command Type": {
+      "main": [
+        [
+          {
+            "node": "Maintain Data Table Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retrieve Monthly Expenses",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Locate Last Expense",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Help Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Route by Command Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Help Information": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Help Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Monthly Report": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Undo Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Send Undo Acknowledgment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Monthly Expenses": {
+      "main": [
+        [
+          {
+            "node": "Generate Monthly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Maintain Data Table Fields": {
+      "main": [
+        [
+          {
+            "node": "Store Expense Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Confirmation Message": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Configuration Settings": {
+      "main": [
+        [
+          {
+            "node": "Parse Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Telegram Message Received": {
+      "main": [
+        [
+          {
+            "node": "Prepare Configuration Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
