@@ -1,0 +1,867 @@
+{
+  "name": "Research Brief With a QA Gate (Planner, Researcher, Critic, Writer)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Commission a research brief",
+        "formDescription": "Ask a real question. You get a sourced answer that has already survived a critic pass.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Research question",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Who is this for",
+              "fieldType": "text",
+              "placeholder": "e.g. the board, a client, my newsletter"
+            },
+            {
+              "fieldLabel": "Deliverable",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Email brief"
+                  },
+                  {
+                    "option": "One-page memo"
+                  },
+                  {
+                    "option": "Decision memo with recommendation"
+                  },
+                  {
+                    "option": "Market scan"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "570c003d-9c36-5683-b89b-4e422ed93f96",
+      "name": "Research Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -680,
+        400
+      ],
+      "webhookId": "35729d1a-85dd-508a-90d8-971fbfd602b5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------------- settings\nconst MAX_ATTEMPTS = 2;        // total researcher passes (1 = no revision loop)\nconst MIN_CRITIC_SCORE = 75;   // a draft below this never reaches the writer\n\nconst f = $input.first().json;\nconst question = String(f['Research question'] ?? f.question ?? '').trim();\n\nreturn [{\n  json: {\n    question,\n    audience: f['Who is this for'] || 'the requester',\n    deliverable_type: f['Deliverable'] || 'Email brief',\n    requester_email: f['Your email for the draft'] || '',\n    max_attempts: MAX_ATTEMPTS,\n    min_score: MIN_CRITIC_SCORE,\n    commissioned_at: new Date().toISOString(),\n    attempt: 1,\n  },\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "a7febeee-047b-52e8-ba17-184a7579d4ea",
+      "name": "Prepare Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=REQUEST: {{ $json.question }}\nAUDIENCE: {{ $json.audience }}\nDELIVERABLE: {{ $json.deliverable_type }}\nCOMMISSIONED: {{ $json.commissioned_at }}",
+        "agent": "toolsAgent",
+        "options": {
+          "systemMessage": "You are the planning agent of a research system. Do not answer the question; design how it will be answered and judged.\n\nGiven a raw request:\n- restate the actual question and name the decision behind it\n- produce 3 to 5 subquestions that, answered together, settle it; each must be answerable from public sources\n- write evaluation criteria the critic can check one by one\n- name the failure modes: what a plausible but wrong answer would look like\n\nState any assumption you had to make in `assumptions` instead of inventing facts.",
+          "maxIterations": 3
+        }
+      },
+      "id": "7458fe70-3515-5de8-9b77-33bf2c420385",
+      "name": "Orchestrator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -160,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "b37a7e2f-7721-576e-88a2-a891242d89d5",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"restated_question\": {\"type\": \"string\"}, \"assumptions\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"subquestions\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"question\": {\"type\": \"string\"}, \"why_it_matters\": {\"type\": \"string\"}, \"source_hint\": {\"type\": \"string\"}}, \"required\": [\"question\", \"why_it_matters\"]}}, \"evaluation_criteria\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"failure_modes\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"deliverable_outline\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"restated_question\", \"subquestions\", \"evaluation_criteria\", \"failure_modes\", \"deliverable_outline\"]}"
+      },
+      "id": "34918329-dea0-52f2-9f4c-7590f86d7df8",
+      "name": "Plan Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        20,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const brief = $('Prepare Brief').first().json;\nconst plan = $input.first().json.output ?? $input.first().json;\nreturn [{\n  json: {\n    ...brief,\n    plan,\n    subquestions: plan.subquestions ?? [],\n    criteria: plan.evaluation_criteria ?? [],\n    prior_findings: [],\n    gaps: [],\n    research_round: 1,\n  },\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "5ffe454f-99f8-54f3-aa1b-6723eb252b45",
+      "name": "Start Research",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=RESTATED QUESTION: {{ $json.plan.restated_question }}\nAUDIENCE: {{ $json.audience }} · DELIVERABLE: {{ $json.deliverable_type }}\n\nSUBQUESTIONS:\n{{ ($json.subquestions || []).map((s, i) => `${i + 1}. ${s.question}`).join('\\n') }}\n\nRESEARCH ROUND: {{ $json.research_round }} of {{ $json.max_attempts }}\n{{ $json.gaps.length ? 'GAPS FROM THE PREVIOUS QA PASS — close these first:\\n' + $json.gaps.map(g => '- ' + g).join('\\n') : '' }}\n{{ $json.prior_findings.length ? 'EARLIER FINDINGS (verify, do not just repeat):\\n' + JSON.stringify($json.prior_findings) : '' }}",
+        "agent": "toolsAgent",
+        "options": {
+          "systemMessage": "You are a research agent. Answer the subquestions with the tools you have. You are judged on evidence, not prose.\n\n- Every factual claim needs a source. If you cannot source it, put it in `open_gaps`, not in `claims`.\n- Never invent a URL, a statistic, a date or a company figure.\n- Mark what is inference rather than something a source states.\n- Note the date of each source and prefer recent material.\n- If a subquestion is unanswerable with the tools available, say so and name the source that would settle it.",
+          "maxIterations": 8
+        }
+      },
+      "id": "d6b49f7b-dcac-50cc-90c3-1448385dcfbd",
+      "name": "Researcher",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        440,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "0e86420f-412b-5548-99f5-077ab6a30697",
+      "name": "Research Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"per_subquestion\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"subquestion\": {\"type\": \"string\"}, \"answer\": {\"type\": \"string\"}, \"confidence\": {\"type\": \"string\", \"enum\": [\"low\", \"medium\", \"high\"]}}, \"required\": [\"subquestion\", \"answer\", \"confidence\"]}}, \"claims\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"claim\": {\"type\": \"string\"}, \"source\": {\"type\": \"string\"}, \"url\": {\"type\": \"string\"}, \"published\": {\"type\": \"string\"}, \"claim_type\": {\"type\": \"string\", \"enum\": [\"fact\", \"inference\"]}}, \"required\": [\"claim\", \"source\", \"claim_type\"]}}, \"open_gaps\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"per_subquestion\", \"claims\", \"open_gaps\"]}"
+      },
+      "id": "25bd3dcc-ed05-50e8-a4c3-530e21754d99",
+      "name": "Research Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Look up a named entity, company, person, technology or concept on Wikipedia. Use for definitions and background only."
+      },
+      "id": "48cf68c4-8930-5beb-b8c5-285ce3fcead9",
+      "name": "Web Lookup Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        880,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search recent Google News headlines. Input the search query as {query}. Returns RSS titles, sources and links from the last 30 days.",
+        "method": "GET",
+        "url": "https://news.google.com/rss/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={query}"
+            },
+            {
+              "name": "hl",
+              "value": "en-US"
+            },
+            {
+              "name": "gl",
+              "value": "US"
+            },
+            {
+              "name": "ceid",
+              "value": "US:en"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "fb42494c-6850-54da-ab0b-f25022e3e32f",
+      "name": "News Search Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The state arrives from two possible places: the first pass (Start Research) or a\n// revision pass (Revision Brief). Try the later one first, fall back gracefully.\nlet state = null;\nfor (const name of ['Revision Brief', 'Start Research']) {\n  try {\n    const candidate = $(name).first().json;\n    if (candidate && candidate.plan) { state = candidate; break; }\n  } catch (e) { /* node did not run in this execution */ }\n}\nif (!state) throw new Error('Research state missing — check the Start Research node output');\n\nconst research = $input.first().json.output ?? $input.first().json;\n\nconst prior = state.prior_findings ?? [];\nconst merged = [...prior, ...(research.claims ?? [])];\n// de-duplicate by claim text, keep the newest\nconst seen = new Set();\nconst claims = merged.filter(cl => {\n  const key = String(cl.claim ?? '').toLowerCase().slice(0, 120);\n  if (!key || seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\nreturn [{\n  json: {\n    ...state,\n    research,\n    claims,\n    claim_count: claims.length,\n    sourced_claim_count: claims.filter(cl => cl.url || cl.source).length,\n    open_gaps: research.open_gaps ?? [],\n    attempt: state.attempt,\n  },\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "8d547571-51fd-5137-89d7-6a18c18e7a3a",
+      "name": "Compile Findings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=THE PLAN\nQuestion: {{ $json.plan.restated_question }}\nCriteria:\n{{ ($json.criteria || []).map((c, i) => `${i + 1}. ${c}`).join('\\n') }}\nKnown failure modes:\n{{ ($json.plan.failure_modes || []).map(f => '- ' + f).join('\\n') }}\n\nTHE RESEARCH (round {{ $json.attempt }} of {{ $json.max_attempts }})\nAnswers:\n{{ JSON.stringify($json.research.per_subquestion) }}\nClaims:\n{{ JSON.stringify($json.claims) }}\nResearcher's own open gaps:\n{{ ($json.open_gaps || []).join(' | ') || 'none' }}\n\nScore against the criteria. Required pass mark: {{ $json.min_score }}.",
+        "agent": "toolsAgent",
+        "options": {
+          "systemMessage": "You are the quality gate. You did not write this research and you are not here to be polite. Score it against the plan's evaluation criteria and return PASS or REVISE.\n\n- Below the score bar, or any criterion unmet: REVISE.\n- List every claim with no real source, a stale source, or a claim that overstates its source.\n- `required_fixes` must be instructions the researcher can execute without asking a question.\n- Judge substance, sourcing and coverage only. If the research is sound, PASS it even if the prose is ugly.",
+          "maxIterations": 3
+        }
+      },
+      "id": "32fdf63d-32f6-5e88-a67b-ece505b4eb8a",
+      "name": "Critic QA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        880,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "bd5313ea-4400-53f8-aa37-b5010b16a466",
+      "name": "Critic Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1140,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"verdict\": {\"type\": \"string\", \"enum\": [\"PASS\", \"REVISE\"]}, \"score\": {\"type\": \"number\"}, \"criteria_met\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"criteria_unmet\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"unsupported_claims\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"required_fixes\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"notes_for_writer\": {\"type\": \"string\"}}, \"required\": [\"verdict\", \"score\", \"criteria_met\", \"criteria_unmet\", \"unsupported_claims\", \"required_fixes\", \"notes_for_writer\"]}"
+      },
+      "id": "b5cac89a-aa86-502d-bf1a-71977617bf6f",
+      "name": "Critic Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $('Compile Findings').last().json;\nconst verdict = $input.first().json.output ?? $input.first().json;\n\nconst score = Number(verdict.score ?? 0);\nconst passed = verdict.verdict === 'PASS' || score >= state.min_score;\nconst canRetry = !passed && state.attempt < state.max_attempts;\n\nreturn [{\n  json: {\n    ...state,\n    verdict: passed ? 'PASS' : 'REVISE',\n    raw_verdict: verdict.verdict,\n    score,\n    passed,\n    can_retry: canRetry,\n    criteria_met: verdict.criteria_met ?? [],\n    criteria_unmet: verdict.criteria_unmet ?? [],\n    unsupported_claims: verdict.unsupported_claims ?? [],\n    required_fixes: verdict.required_fixes ?? [],\n    notes_for_writer: verdict.notes_for_writer ?? '',\n  },\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "0c3f943e-f8c4-5dd9-a864-edb5986e0b3a",
+      "name": "Route Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "d69a7ee2-c671-54c6-b385-d3425b09a1eb",
+              "leftValue": "={{ $json.can_retry }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fd13ba3d-2f0a-53ec-9b0e-d0daede04765",
+      "name": "Send Back to Researcher?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nreturn [{\n  json: {\n    ...s,\n    attempt: s.attempt + 1,\n    research_round: s.attempt + 1,\n    prior_findings: s.claims ?? [],\n    gaps: [...(s.required_fixes ?? []), ...(s.criteria_unmet ?? []), ...(s.unsupported_claims ?? [])],\n  },\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "b7e23a9d-85df-5eed-9274-03ae3ac20a0d",
+      "name": "Revision Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "45c23e59-75eb-5f56-8106-f118ea580db7",
+              "leftValue": "={{ $json.passed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5e58f6e8-c8d8-54c7-a669-ea2c6ce89fc4",
+      "name": "QA Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=DELIVERABLE: {{ $json.deliverable_type }} for {{ $json.audience }}\nORIGINAL REQUEST: {{ $json.question }}\nRESTATED QUESTION: {{ $json.plan.restated_question }}\nOUTLINE FROM THE PLANNER: {{ ($json.plan.deliverable_outline || []).join(' -> ') }}\n\nAPPROVED RESEARCH (QA score {{ $json.score }})\n{{ JSON.stringify($json.research.per_subquestion) }}\n\nVERIFIED CLAIMS\n{{ JSON.stringify($json.claims) }}\n\nCRITIC NOTES\n{{ $json.notes_for_writer }}\nREMAINING CAVEATS\n{{ ($json.criteria_unmet || []).join(' | ') || 'none' }}",
+        "agent": "toolsAgent",
+        "options": {
+          "systemMessage": "You are the writer. You receive approved research and a plan. You may not introduce a fact that is not in the approved claims, and you may not cite anything outside that list.\n\n- Lead with the answer, then the evidence that earns it.\n- Where the research is thin, say so in `caveats` instead of smoothing it over.\n- Attribute inline and give every source with its date.\n- No throat-clearing. If the critic left notes, follow them unless they contradict the evidence.",
+          "maxIterations": 3
+        }
+      },
+      "id": "d2feae43-c90e-534e-b596-98e59f3f9e3b",
+      "name": "Writer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1800,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "id": "438f3cea-3f86-582f-b8cc-8fdf7b1888d2",
+      "name": "Writer Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1800,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"title\": {\"type\": \"string\"}, \"direct_answer\": {\"type\": \"string\"}, \"sections\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"heading\": {\"type\": \"string\"}, \"body\": {\"type\": \"string\"}}, \"required\": [\"heading\", \"body\"]}}, \"caveats\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"sources\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"name\": {\"type\": \"string\"}, \"url\": {\"type\": \"string\"}, \"published\": {\"type\": \"string\"}}, \"required\": [\"name\"]}}, \"next_steps\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"title\", \"direct_answer\", \"sections\", \"caveats\", \"sources\", \"next_steps\"]}"
+      },
+      "id": "c0902af3-30de-5ae0-ad00-56085ec1599d",
+      "name": "Draft Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2060,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $('Route Decision').first().json;\nconst d = $input.first().json.output ?? $input.first().json;\n\nconst sources = (d.sources ?? []).map(x => `- ${x.name}${x.published ? ` (${x.published})` : ''}${x.url ? ` — ${x.url}` : ''}`).join('\\n') || '- none cited';\nconst sections = (d.sections ?? []).map(sec => `## ${sec.heading}\\n${sec.body}`).join('\\n\\n');\nconst caveats = (d.caveats ?? []).map(x => `- ${x}`).join('\\n') || '- none';\nconst next = (d.next_steps ?? []).map(x => `- ${x}`).join('\\n') || '- none';\n\nconst markdown = `# ${d.title}\n\n${d.direct_answer}\n\n${sections}\n\n## Caveats\n${caveats}\n\n## Sources\n${sources}\n\n## Next steps\n${next}\n\n---\n_QA: ${s.verdict} at ${s.score}/100 after ${s.attempt} research round(s). Unverified items are excluded by design._\n`;\n\nreturn [{\n  json: {\n    ...s,\n    title: d.title,\n    direct_answer: d.direct_answer,\n    deliverable_markdown: markdown,\n    sources: sources,\n    source_count: (d.sources ?? []).length,\n    requester_email: s.requester_email || '',\n    completed_at: new Date().toISOString(),\n    slack_summary: `*${d.title}*\\n${d.direct_answer}\\n_QA ${s.verdict} · ${s.score}/100 · ${s.attempt} round(s) · ${(d.sources ?? []).length} sources_`,\n  },\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "223da116-9e87-5fc2-b1b2-38b397e8da44",
+      "name": "Format Deliverable",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Research Brief With a QA Gate (Planner, Researcher, Critic, Writer)\n\nMost AI research systems fail the same way: they produce a confident paragraph and you cannot tell which sentence came from a source and which was invented. This workflow refuses to work that way. Four agents with different jobs, one bounded revision loop, and a gate that stops the pipeline instead of guessing.\n\n### How it works\n1. The form takes a question, who it is for, and the deliverable shape.\n2. Orchestrator turns the question into a plan: 3-5 subquestions, evaluation criteria the answer will be judged against, and the failure modes to watch for.\n3. Researcher answers each subquestion with tools and returns claims with a source, a date and a confidence. Anything it cannot source goes into open_gaps list instead of the answer.\n4. Critic scores the research against the plan's own criteria and answers PASS or REVISE, naming every unsupported claim and the concrete fixes required.\n5. A REVISE verdict with attempts left sends the research back once, with the fixes attached. Only a PASS reaches Writer, which may not introduce a fact that is not in the approved claims.\n6. If the final pass still fails, nothing is written; the run ends at QA failed with the unmet criteria.\n\n### Setup\n1. OpenAI credential on the four model nodes. This demo uses gpt-4o; gpt-4o-mini is cheaper.\n2. No other credentials. The tools are Wikipedia lookup and Google News RSS, both keyless.\n3. Submit the form once with a real question and read the Answer node's output.\n4. Tune `MAX_ATTEMPTS` and `MIN_CRITIC_SCORE` in Prepare Brief.\n\n### Customization\nSwap the search tools for a paid search API, add subquestions by editing the plan schema, or replace the final node with Gmail, Slack or Sheets.",
+        "height": 300,
+        "width": 720
+      },
+      "id": "a5c2fabd-071b-54a0-b099-e2ed0aed709b",
+      "name": "Note - Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1 - Plan\nQuestion restated, plan written, evaluation criteria fixed before any research happens. The criteria are what the critic will score later.",
+        "height": 110,
+        "width": 720,
+        "color": 7
+      },
+      "id": "80e5a164-f584-5a7b-9f90-9a37a0be7424",
+      "name": "Note - Plan",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2 - Research and critique\nResearcher returns sourced claims and lists its gaps. Critic scores them against the plan. REVISE sends the work back once with concrete fixes attached.",
+        "height": 110,
+        "width": 1580,
+        "color": 7
+      },
+      "id": "0c603a50-2cb0-5960-8251-b97375961789",
+      "name": "Note - Loop",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3 - Write or stop\nWriter may only use approved claims, so unsourced material cannot return through prose. A failed final pass ends at QA failed and writes nothing.",
+        "height": 110,
+        "width": 760,
+        "color": 7
+      },
+      "id": "29899af4-7024-5ed9-9b5c-d0880883d9cb",
+      "name": "Note - Write",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39a3bd96-7ba1-5217-b37b-e2454c746ecb",
+              "name": "deliverable_markdown",
+              "value": "={{ $json.deliverable_markdown }}",
+              "type": "string"
+            },
+            {
+              "id": "fd6c4d36-1e1b-5cb1-b8db-e139551586df",
+              "name": "qa_verdict",
+              "value": "={{ $json.verdict }}",
+              "type": "string"
+            },
+            {
+              "id": "f0d6b349-f81f-5455-90b0-55dbf80a7be0",
+              "name": "qa_score",
+              "value": "={{ $json.score }}",
+              "type": "number"
+            },
+            {
+              "id": "7d461e26-cfb1-51d4-adf6-33dc42fa0064",
+              "name": "research_rounds",
+              "value": "={{ $json.attempt }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "77611b62-73d9-50d5-b99e-b7be847f3330",
+      "name": "Answer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2300,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "60baa67b-607c-5449-b766-c8f0c6f09180",
+      "name": "QA Failed",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        720
+      ]
+    }
+  ],
+  "connections": {
+    "Research Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Brief": {
+      "main": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Start Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Research": {
+      "main": [
+        [
+          {
+            "node": "Researcher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Researcher": {
+      "main": [
+        [
+          {
+            "node": "Compile Findings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Findings": {
+      "main": [
+        [
+          {
+            "node": "Critic QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critic QA": {
+      "main": [
+        [
+          {
+            "node": "Route Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Decision": {
+      "main": [
+        [
+          {
+            "node": "Send Back to Researcher?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Back to Researcher?": {
+      "main": [
+        [
+          {
+            "node": "Revision Brief",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "QA Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revision Brief": {
+      "main": [
+        [
+          {
+            "node": "Researcher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Passed?": {
+      "main": [
+        [
+          {
+            "node": "Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "QA Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Writer": {
+      "main": [
+        [
+          {
+            "node": "Format Deliverable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Researcher",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Researcher",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Lookup Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Researcher",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Search Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Researcher",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critic Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Critic QA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critic Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Critic QA",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Writer Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Writer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Deliverable": {
+      "main": [
+        [
+          {
+            "node": "Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
