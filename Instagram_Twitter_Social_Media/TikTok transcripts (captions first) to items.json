@@ -1,0 +1,61 @@
+{
+  "name": "TikTok transcripts (captions first) to items",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1f0c6d2-0001-4b7e-9c11-000000000001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"videoUrls\": [\"https://www.tiktok.com/@nasa/video/7707774305056083213\"],\n  \"profiles\": [\"nasa\"],\n  \"maxVideosPerProfile\": 5\n}",
+        "options": {}
+      },
+      "id": "a1f0c6d2-0002-4b7e-9c11-000000000002",
+      "name": "Inputs",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/zrk1212~tiktok-transcript-scraper/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ videoUrls: $json.videoUrls, profiles: $json.profiles, maxVideosPerProfile: $json.maxVideosPerProfile, aiFallback: true, skipVideosWithoutTranscript: true }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "a1f0c6d2-0003-4b7e-9c11-000000000003",
+      "name": "Get transcripts (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Drop error rows, keep the fields useful for analysis. The first 3 segments are usually the hook.\nreturn $input.all()\n  .map(i => i.json)\n  .filter(r => !r.error && r.transcript)\n  .map(r => ({ json: {\n    url: r.url,\n    author: r.authorUsername,\n    views: r.views,\n    likes: r.likes,\n    durationSec: r.durationSec,\n    language: r.language,\n    transcriptSource: r.transcriptSource,\n    hook: (r.segments || []).slice(0, 3).map(s => s.text).join(' '),\n    transcript: r.transcript\n  }}));"
+      },
+      "id": "a1f0c6d2-0004-4b7e-9c11-000000000004",
+      "name": "Clean rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Inputs", "type": "main", "index": 0 }]] },
+    "Inputs": { "main": [[{ "node": "Get transcripts (Apify)", "type": "main", "index": 0 }]] },
+    "Get transcripts (Apify)": { "main": [[{ "node": "Clean rows", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "pinData": {}
+}

@@ -440,6 +440,7 @@ Explore 13 social media automation templates for n8n covering Instagram, Twitter
 | FlowScribe Lite - AI Content Repurposing (4 Platforms) | Converts one blog post into four optimized social media posts for Twitter, LinkedIn, Instagram, and Facebook using OpenAI. | Marketing/Content | [Link to Template](Instagram_Twitter_Social_Media/FlowScribe%20Lite%20-%20AI%20Content%20Repurposing%204%20Platforms.json) |
 | Monitor X Search with Xquik | Searches X with Xquik, normalizes matching posts, and builds an email-ready social listening digest. | Marketing/Analytics | [Link to Template](Instagram_Twitter_Social_Media/Monitor%20X%20Search%20with%20Xquik.json) |
 | Grounded Article to Thread and LinkedIn Post | Turns a pasted article or transcript into a numbered X/Twitter thread and a LinkedIn post, with every fact grounded in the source text. Flags thin input for human review instead of padding filler. | Marketing/Content/AI | [Link to Template](Instagram_Twitter_Social_Media/Grounded%20Article%20to%20Thread%20and%20LinkedIn%20Post.json) |
+| TikTok transcripts (captions first) to items | Takes TikTok video links, fetches transcripts in bulk with the TikTok Transcript Scraper Apify actor (captions first, Whisper fallback) and cleans them into one row per video. Requires an Apify API token credential. | Marketing/Content | [Link to Template](Instagram_Twitter_Social_Media/TikTok%20transcripts%20%28captions%20first%29%20to%20items.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
