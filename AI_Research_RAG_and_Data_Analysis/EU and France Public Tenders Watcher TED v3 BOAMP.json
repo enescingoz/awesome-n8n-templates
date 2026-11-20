@@ -1,0 +1,222 @@
+{
+  "name": "EU & France Public Tenders Watcher (TED v3 + BOAMP) -> Google Sheets & Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily-8am",
+      "name": "Daily 08:00 Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/yannabadie~eu-public-tenders-ted-boamp/run-sync-get-dataset-items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{$env.APIFY_TOKEN}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sources\": [\"ted\", \"boamp\"],\n  \"countries\": [\"FRA\", \"DEU\", \"BEL\"],\n  \"cpvCodes\": [\"72\"],\n  \"publishedSince\": \"{{$now.minus({days: 2}).toFormat('yyyy-MM-dd')}}\",\n  \"scope\": \"ACTIVE\",\n  \"maxResultsPerSource\": 25\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "apify-ted-boamp-call",
+      "name": "Fetch EU TED + BOAMP Tenders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "id": "has-buyer-contact-or-high-value",
+              "leftValue": "={{$json.tenderId}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-valid-tenders",
+      "name": "Keep Valid Tenders",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Tenders",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tenderId": "={{$json.tenderId}}",
+            "source": "={{$json.source}}",
+            "country": "={{$json.buyerCountry}}",
+            "published": "={{$json.publicationDate}}",
+            "deadline": "={{$json.deadlineDate}}",
+            "buyerName": "={{$json.buyerName}}",
+            "buyerEmail": "={{$json.buyerEmail}}",
+            "buyerPhone": "={{$json.buyerPhone}}",
+            "title": "={{$json.title}}",
+            "estimatedValue": "={{$json.estimatedValue}}",
+            "noticeUrl": "={{$json.noticeUrl}}"
+          },
+          "matchingColumns": [
+            "tenderId"
+          ]
+        }
+      },
+      "id": "sheets-upsert",
+      "name": "Upsert into Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1020,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SLACK_WEBHOOK_URL}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"New EU/FR Tender [{{$json.source}} | {{$json.buyerCountry}}]: *{{$json.title}}*\\nBuyer: {{$json.buyerName}} ({{$json.buyerEmail || 'no email'}})\\nDeadline: {{$json.deadlineDate || 'N/A'}} | Est. Value: {{$json.estimatedValue || 'N/A'}} {{$json.currency || ''}}\\nLink: {{$json.noticeUrl}}\"\n}"
+      },
+      "id": "slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1020,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## EU TED v3 & BOAMP Tender Watcher\n1. Set n8n env vars `APIFY_TOKEN` (free Apify tier includes $5/mo credits) and `SLACK_WEBHOOK_URL`.\n2. Edit `countries`, `cpvCodes`, and `sources` in **Fetch EU TED + BOAMP Tenders**.\n3. Replace `REPLACE_WITH_GOOGLE_SHEET_ID` in **Upsert into Google Sheets** and run a manual test before activating.",
+        "height": 195,
+        "width": 520,
+        "color": 5
+      },
+      "id": "sticky-setup",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Idempotent Upsert\n- **Keep Valid Tenders** drops empty records.\n- **Upsert into Google Sheets** matches on `tenderId`, so the 2-day rolling window never creates duplicate rows.\n- Buyer email, phone, deadline, and official TED/BOAMP URL are sent to Slack.",
+        "height": 165,
+        "width": 480,
+        "color": 4
+      },
+      "id": "sticky-output",
+      "name": "Deduplication & Routing Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        740,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 08:00 Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch EU TED + BOAMP Tenders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch EU TED + BOAMP Tenders": {
+      "main": [
+        [
+          {
+            "node": "Keep Valid Tenders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Valid Tenders": {
+      "main": [
+        [
+          {
+            "node": "Upsert into Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "yannabadie-eu-tenders-template-v1"
+  }
+}
