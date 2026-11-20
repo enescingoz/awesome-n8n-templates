@@ -1,0 +1,110 @@
+{
+  "name": "BetterSites: Local Agency Lead Qualification (Google Maps -> BetterSites -> Google Sheets)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"searchStringsArray\": [\"plumbing company Austin TX\"],\n  \"maxCrawledPlacesPerSearch\": 25,\n  \"language\": \"en\"\n}",
+        "options": {}
+      },
+      "id": "apify-gmaps",
+      "name": "Apify: Scrape Local Businesses",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const urls = items\n  .map((i) => i.json.website)\n  .filter((u) => typeof u === 'string' && u.startsWith('http'));\nreturn [{ json: { urls: [...new Set(urls)] } }];"
+      },
+      "id": "extract-urls",
+      "name": "Extract Unique Websites",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/jg62802~bettersites/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"urls\": {{ JSON.stringify($json.urls) }},\n  \"includeDnsEmailChecks\": true,\n  \"includeSslCheck\": true,\n  \"includeSeoHealthChecks\": true,\n  \"concurrency\": 10\n}",
+        "options": {}
+      },
+      "id": "apify-bettersites",
+      "name": "Apify: BetterSites Audit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{ $json.reachable }}", "value2": true },
+            { "value1": "={{ $json.isParkedDomain }}", "value2": false }
+          ],
+          "number": [
+            { "value1": "={{ $json.opportunityScore }}", "operation": "largerEqual", "value2": 30 }
+          ]
+        }
+      },
+      "id": "filter-hot-leads",
+      "name": "Filter Qualified Leads (Score >= 30)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_GOOGLE_SHEET_ID" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Qualified Prospects" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Domain": "={{ $json.domain }}",
+            "Opp Score": "={{ $json.opportunityScore }}",
+            "Pitch Angles": "={{ $json.recommendedPitchAngles }}",
+            "Pitch Summary": "={{ $json.pitchSummary }}",
+            "CMS": "={{ $json.cms }}",
+            "E-Commerce": "={{ $json.ecommercePlatform }}",
+            "Email Provider": "={{ $json.emailProvider }}",
+            "Has DMARC": "={{ $json.hasDmarc }}",
+            "SSL Days": "={{ $json.sslDaysRemaining }}",
+            "Flags": "={{ $json.opportunityFlagsFlat }}"
+          }
+        }
+      },
+      "id": "gsheets-append",
+      "name": "Append to Google Sheets CRM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1340, 240]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Apify: Scrape Local Businesses", "type": "main", "index": 0 }]] },
+    "Apify: Scrape Local Businesses": { "main": [[{ "node": "Extract Unique Websites", "type": "main", "index": 0 }]] },
+    "Extract Unique Websites": { "main": [[{ "node": "Apify: BetterSites Audit", "type": "main", "index": 0 }]] },
+    "Apify: BetterSites Audit": { "main": [[{ "node": "Filter Qualified Leads (Score >= 30)", "type": "main", "index": 0 }]] },
+    "Filter Qualified Leads (Score >= 30)": { "main": [[{ "node": "Append to Google Sheets CRM", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
