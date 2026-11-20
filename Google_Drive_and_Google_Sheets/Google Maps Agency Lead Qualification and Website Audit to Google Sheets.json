@@ -1,5 +1,5 @@
 {
-  "name": "BetterSites: Local Agency Lead Qualification (Google Maps -> BetterSites -> Google Sheets)",
+  "name": "BetterSites: End-to-End Agency Prospecting (Automatic Business Discovery + Website Audit -> Google Sheets)",
   "nodes": [
     {
       "parameters": {},
@@ -12,46 +12,19 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\n  \"searchStringsArray\": [\"plumbing company Austin TX\"],\n  \"maxCrawledPlacesPerSearch\": 25,\n  \"language\": \"en\"\n}",
-        "options": {}
-      },
-      "id": "apify-gmaps",
-      "name": "Apify: Scrape Local Businesses",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "const urls = items\n  .map((i) => i.json.website)\n  .filter((u) => typeof u === 'string' && u.startsWith('http'));\nreturn [{ json: { urls: [...new Set(urls)] } }];"
-      },
-      "id": "extract-urls",
-      "name": "Extract Unique Websites",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [680, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
         "url": "https://api.apify.com/v2/acts/jg62802~bettersites/run-sync-get-dataset-items",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"urls\": {{ JSON.stringify($json.urls) }},\n  \"includeDnsEmailChecks\": true,\n  \"includeSslCheck\": true,\n  \"includeSeoHealthChecks\": true,\n  \"concurrency\": 10\n}",
+        "jsonBody": "{\n  \"discoveryLocation\": \"Austin, Texas, USA\",\n  \"discoveryCategory\": \"dentist\",\n  \"maxDiscoveredBusinesses\": 50,\n  \"includeDnsEmailChecks\": true,\n  \"includeSslCheck\": true,\n  \"includeSeoHealthChecks\": true,\n  \"concurrency\": 10\n}",
         "options": {}
       },
       "id": "apify-bettersites",
-      "name": "Apify: BetterSites Audit",
+      "name": "Apify: BetterSites Discovery & Audit",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300]
+      "position": [520, 300]
     },
     {
       "parameters": {
@@ -61,50 +34,80 @@
             { "value1": "={{ $json.isParkedDomain }}", "value2": false }
           ],
           "number": [
-            { "value1": "={{ $json.opportunityScore }}", "operation": "largerEqual", "value2": 30 }
+            {
+              "value1": "={{ $json.opportunityScore }}",
+              "operation": "largerEqual",
+              "value2": 25
+            }
           ]
         }
       },
-      "id": "filter-hot-leads",
-      "name": "Filter Qualified Leads (Score >= 30)",
+      "id": "filter-qualified",
+      "name": "Filter Qualified Prospects (Score >= 25)",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1120, 300]
+      "typeVersion": 1,
+      "position": [800, 300]
     },
     {
       "parameters": {
         "operation": "append",
-        "documentId": { "__rl": true, "mode": "id", "value": "YOUR_GOOGLE_SHEET_ID" },
-        "sheetName": { "__rl": true, "mode": "name", "value": "Qualified Prospects" },
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_SHEET_DOCUMENT_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Qualified Leads",
+          "mode": "name"
+        },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "Business Name": "={{ $json.businessName }}",
+            "Category": "={{ $json.businessCategory }}",
+            "Phone": "={{ $json.businessPhone }}",
+            "Address": "={{ $json.businessAddress }}",
             "Domain": "={{ $json.domain }}",
-            "Opp Score": "={{ $json.opportunityScore }}",
-            "Pitch Angles": "={{ $json.recommendedPitchAngles }}",
+            "Opportunity Score": "={{ $json.opportunityScore }}",
             "Pitch Summary": "={{ $json.pitchSummary }}",
+            "Recommended Pitch Angles": "={{ $json.recommendedPitchAngles }}",
             "CMS": "={{ $json.cms }}",
             "E-Commerce": "={{ $json.ecommercePlatform }}",
             "Email Provider": "={{ $json.emailProvider }}",
             "Has DMARC": "={{ $json.hasDmarc }}",
-            "SSL Days": "={{ $json.sslDaysRemaining }}",
-            "Flags": "={{ $json.opportunityFlagsFlat }}"
+            "DMARC Policy": "={{ $json.dmarcPolicy }}",
+            "Analytics": "={{ $json.analyticsTools }}",
+            "Ad Pixels": "={{ $json.adPixels }}",
+            "Email Marketing": "={{ $json.emailMarketing }}",
+            "Chat Widgets": "={{ $json.chatWidgets }}",
+            "Booking Tools": "={{ $json.bookingTools }}",
+            "Has Contact Form": "={{ $json.hasContactForm }}",
+            "SSL Days Remaining": "={{ $json.sslDaysRemaining }}",
+            "Social Links": "={{ $json.socialLinks }}"
           }
-        }
+        },
+        "options": {}
       },
-      "id": "gsheets-append",
-      "name": "Append to Google Sheets CRM",
+      "id": "sheets-append",
+      "name": "Google Sheets: Save Qualified Leads",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [1340, 240]
+      "position": [1080, 280]
     }
   ],
   "connections": {
-    "Manual Trigger": { "main": [[{ "node": "Apify: Scrape Local Businesses", "type": "main", "index": 0 }]] },
-    "Apify: Scrape Local Businesses": { "main": [[{ "node": "Extract Unique Websites", "type": "main", "index": 0 }]] },
-    "Extract Unique Websites": { "main": [[{ "node": "Apify: BetterSites Audit", "type": "main", "index": 0 }]] },
-    "Apify: BetterSites Audit": { "main": [[{ "node": "Filter Qualified Leads (Score >= 30)", "type": "main", "index": 0 }]] },
-    "Filter Qualified Leads (Score >= 30)": { "main": [[{ "node": "Append to Google Sheets CRM", "type": "main", "index": 0 }]] }
+    "Manual Trigger": {
+      "main": [[{ "node": "Apify: BetterSites Discovery & Audit", "type": "main", "index": 0 }]]
+    },
+    "Apify: BetterSites Discovery & Audit": {
+      "main": [[{ "node": "Filter Qualified Prospects (Score >= 25)", "type": "main", "index": 0 }]]
+    },
+    "Filter Qualified Prospects (Score >= 25)": {
+      "main": [[{ "node": "Google Sheets: Save Qualified Leads", "type": "main", "index": 0 }], []]
+    }
   },
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }
