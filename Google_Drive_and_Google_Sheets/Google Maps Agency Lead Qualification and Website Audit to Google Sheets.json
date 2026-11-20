@@ -1,0 +1,113 @@
+{
+  "name": "BetterSites: End-to-End Agency Prospecting (Automatic Business Discovery + Website Audit -> Google Sheets)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/jg62802~bettersites/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"discoveryLocation\": \"Austin, Texas, USA\",\n  \"discoveryCategory\": \"dentist\",\n  \"maxDiscoveredBusinesses\": 50,\n  \"includeDnsEmailChecks\": true,\n  \"includeSslCheck\": true,\n  \"includeSeoHealthChecks\": true,\n  \"concurrency\": 10\n}",
+        "options": {}
+      },
+      "id": "apify-bettersites",
+      "name": "Apify: BetterSites Discovery & Audit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{ $json.reachable }}", "value2": true },
+            { "value1": "={{ $json.isParkedDomain }}", "value2": false }
+          ],
+          "number": [
+            {
+              "value1": "={{ $json.opportunityScore }}",
+              "operation": "largerEqual",
+              "value2": 25
+            }
+          ]
+        }
+      },
+      "id": "filter-qualified",
+      "name": "Filter Qualified Prospects (Score >= 25)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_SHEET_DOCUMENT_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Qualified Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Business Name": "={{ $json.businessName }}",
+            "Category": "={{ $json.businessCategory }}",
+            "Phone": "={{ $json.businessPhone }}",
+            "Address": "={{ $json.businessAddress }}",
+            "Domain": "={{ $json.domain }}",
+            "Opportunity Score": "={{ $json.opportunityScore }}",
+            "Pitch Summary": "={{ $json.pitchSummary }}",
+            "Recommended Pitch Angles": "={{ $json.recommendedPitchAngles }}",
+            "CMS": "={{ $json.cms }}",
+            "E-Commerce": "={{ $json.ecommercePlatform }}",
+            "Email Provider": "={{ $json.emailProvider }}",
+            "Has DMARC": "={{ $json.hasDmarc }}",
+            "DMARC Policy": "={{ $json.dmarcPolicy }}",
+            "Analytics": "={{ $json.analyticsTools }}",
+            "Ad Pixels": "={{ $json.adPixels }}",
+            "Email Marketing": "={{ $json.emailMarketing }}",
+            "Chat Widgets": "={{ $json.chatWidgets }}",
+            "Booking Tools": "={{ $json.bookingTools }}",
+            "Has Contact Form": "={{ $json.hasContactForm }}",
+            "SSL Days Remaining": "={{ $json.sslDaysRemaining }}",
+            "Social Links": "={{ $json.socialLinks }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-append",
+      "name": "Google Sheets: Save Qualified Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1080, 280]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Apify: BetterSites Discovery & Audit", "type": "main", "index": 0 }]]
+    },
+    "Apify: BetterSites Discovery & Audit": {
+      "main": [[{ "node": "Filter Qualified Prospects (Score >= 25)", "type": "main", "index": 0 }]]
+    },
+    "Filter Qualified Prospects (Score >= 25)": {
+      "main": [[{ "node": "Google Sheets: Save Qualified Leads", "type": "main", "index": 0 }], []]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
