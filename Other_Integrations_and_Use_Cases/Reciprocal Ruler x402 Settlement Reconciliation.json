@@ -1,0 +1,650 @@
+{
+  "id": "ReciprocalRulerX402Settlement01",
+  "name": "Reciprocal Ruler x402 Settlement Reconciliation",
+  "description": "Settles one agent-to-agent trade in two paid calls: locks the terms both sides agreed on into a deterministic quote_hash ($0.05), then reconciles the amount that actually settled against the agreed holdback ($0.25) and classifies the result as MATCHED, EXCEPTION or PENDING, compensating the shortfall out of the holdback. Handles the x402 402 challenge, retries idempotently and keeps an append-only audit record. Calls are paid in USDC on Base at https://reciprocal-ruler-x402.vercel.app; a free trial endpoint returns the same judgment for three evaluation calls.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Reciprocal Ruler — x402 settlement automation\n\n**One settlement per trade, two paid calls**\n1. `POST /v1/quote-lock` ($0.05) — fixes the terms both sides agreed on into a SHA-256 hash\n2. `POST /v1/reconcile` ($0.25) — compares the real settlement and judges partial payment, non-payment or refund\n\n**First three steps**\n1. Open `1. Sample Event` and put in your own trade values.\n2. Execute `Manual Trigger`.\n3. If you get 402 (payment required), follow the \"attaching payment\" steps in the guide.\n\n**Result paths**\n- `MATCHED` → `8a/8b` append to the audit log\n- `EXCEPTION` / `PENDING` / payment error → `10` alert (Slack, email)\n\nEvery amount is a KRW integer.",
+        "height": 560,
+        "width": 520,
+        "color": 4
+      },
+      "id": "6914cd3e-7c55-462f-9703-455ddc034317",
+      "name": "Sticky Note — How to use",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -980,
+        -260
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "06e06154-7426-40f2-a41c-9b9442f4c35a",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ruler-settlement",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "19650ad9-bc53-404a-8dfd-4e4fed41da2e",
+      "name": "Webhook: Settlement Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        40,
+        240
+      ],
+      "notes": "Production entry point. Push events to POST /webhook/ruler-settlement."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ✏️ Edit only this node with your own trade values and the workflow runs as is.\n// All amounts are KRW integers.\n// An invoice, a travel booking or cancellation, or any settlement record works as long as it has this shape.\nreturn [{\n  json: {\n    // Counterparty (agent) identifiers — free-form strings\n    buyer_id: 'agent_buyer_01',\n    supplier_id: 'agent_supplier_42',\n\n    // Pre-agreed rules version (both sides must match for quote-lock)\n    buyer_version: '1.0',\n    supplier_version: '1.0',\n\n    // Agreed terms — these values are fixed into the hash\n    terms: {\n      price_krw: 220000,\n      currency: 'KRW',\n      free_cancel_until: '2026-11-25T18:00:00+09:00',\n      refund_ratio_on_cancel: 1.0,\n      holdback_ratio: 0.10\n    },\n\n    // Settlement reconciliation input\n    tx_id: 'tx_20261121_0001',\n    expected_amount_krw: 220000,\n    actual_settled_krw: 180000,\n    holdback_krw: 22000,\n    // 'POST_TRADE_REFUND' (refund or partial payment after the trade) or 'HALF_OPEN_TIMEOUT' (left unfinished)\n    event_type: 'POST_TRADE_REFUND'\n  }\n}];"
+      },
+      "id": "ad901500-670f-4f0d-83ff-5aff4d130d3d",
+      "name": "1. Sample Event (edit me)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        40
+      ],
+      "notes": "Manual test input. Replace with real event values before running."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalizes the input event into the two API request bodies and filters out the values the server would reject.\n// (Whether it arrives by phone, webhook or manually, everything after this node is the same.)\nconst items = $input.all();\nconst out = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const e = items[i].json || {};\n  const terms = (e.terms && typeof e.terms === 'object') ? e.terms : {};\n\n  const priceRaw = (e.price_krw !== undefined) ? e.price_krw : terms.price_krw;\n  const price = Number(priceRaw);\n  const expectedRaw = (e.expected_amount_krw !== undefined) ? e.expected_amount_krw : price;\n  const expected = Number(expectedRaw);\n  const actual = Number(e.actual_settled_krw);\n\n  const ratioRaw = (terms.holdback_ratio !== undefined) ? terms.holdback_ratio : 0.1;\n  const ratio = Number(ratioRaw);\n  const holdback = (e.holdback_krw !== undefined && e.holdback_krw !== null && e.holdback_krw !== '')\n    ? Number(e.holdback_krw)\n    : Math.round(expected * (isFinite(ratio) ? ratio : 0.1));\n\n  const missing = [];\n  if (!e.buyer_id) missing.push('buyer_id');\n  if (!e.supplier_id) missing.push('supplier_id');\n  if (!e.tx_id) missing.push('tx_id');\n  if (!isFinite(price)) missing.push('terms.price_krw');\n  if (!isFinite(actual)) missing.push('actual_settled_krw');\n  if (missing.length) {\n    throw new Error('Missing required values: ' + missing.join(', '));\n  }\n\n  const buyerVersion = String(e.buyer_version || '1.0');\n  const supplierVersion = String(e.supplier_version || '1.0');\n  if (buyerVersion !== supplierVersion) {\n    throw new Error('buyer_version (' + buyerVersion + ') and supplier_version (' + supplierVersion + ') differ. Both sides need the same rules version for quote-lock.');\n  }\n\n  const eventType = (e.event_type === 'HALF_OPEN_TIMEOUT') ? 'HALF_OPEN_TIMEOUT' : 'POST_TRADE_REFUND';\n  const idemKey = String(e.idempotency_key || ('idem_' + e.tx_id));\n\n  out.push({ json: {\n    quote_lock_body: {\n      buyer_version: buyerVersion,\n      supplier_version: supplierVersion,\n      buyer_id: String(e.buyer_id),\n      supplier_id: String(e.supplier_id),\n      terms: terms\n    },\n    reconcile_body: {\n      idempotency_key: idemKey,\n      tx_id: String(e.tx_id),\n      quote_hash: '',\n      expected_amount_krw: Math.trunc(expected),\n      actual_settled_krw: Math.trunc(actual),\n      holdback_krw: Math.trunc(holdback),\n      event_type: eventType\n    },\n    meta: {\n      tx_id: String(e.tx_id),\n      buyer_id: String(e.buyer_id),\n      supplier_id: String(e.supplier_id),\n      buyer_version: buyerVersion,\n      price_krw: Math.trunc(price),\n      free_cancel_until: terms.free_cancel_until || null,\n      expected_amount_krw: Math.trunc(expected),\n      actual_settled_krw: Math.trunc(actual),\n      holdback_krw: Math.trunc(holdback),\n      event_type: eventType,\n      idempotency_key: idemKey,\n      received_at: new Date().toISOString()\n    }\n  }});\n}\nreturn out;"
+      },
+      "id": "70cd9e16-5a72-40ec-84ac-fac9b5cde475",
+      "name": "2. Normalize & Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        140
+      ],
+      "notes": "Builds both API request bodies and checks required fields and version match first."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://reciprocal-ruler-x402.vercel.app/v1/quote-lock",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.quote_lock_body) }}",
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "909f0d00-977c-4971-b2c4-f256de496e28",
+      "name": "3a. POST /v1/quote-lock ($0.05)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "notes": "Sent with neverError + fullResponse so a 402 does not stop the workflow. See 3c and the guide for 402 handling."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2cd7d3a5-9f35-42db-a9f3-72bf34e228e4",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d82f06bb-7b7c-468f-aaf0-413681289202",
+      "name": "3b. quote-lock OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        980,
+        140
+      ],
+      "notes": "On 200 it takes the quote_hash to reconcile; otherwise it routes to 3c."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns 402 (payment required), 409 (version mismatch) and 422 (body format) into a human-readable alert.\nfunction decodeBase64Json(value) {\n  try {\n    let text = '';\n    if (typeof Buffer !== 'undefined') {\n      text = Buffer.from(value, 'base64').toString('utf8');\n    } else if (typeof atob === 'function') {\n      const bin = atob(value);\n      const bytes = new Uint8Array(bin.length);\n      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);\n      text = new TextDecoder('utf-8').decode(bytes);\n    } else {\n      return null;\n    }\n    return JSON.parse(text);\n  } catch (err) {\n    return null;\n  }\n}\n\nconst items = $input.all();\nconst out = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const res = items[i].json || {};\n  const body = res.body || {};\n  const headers = res.headers || {};\n  const raw = headers['payment-required'] || headers['PAYMENT-REQUIRED'];\n  const required = raw ? decodeBase64Json(raw) : null;\n  const accept = (required && required.accepts && required.accepts.length) ? required.accepts[0] : null;\n\n  let reason = 'HTTP ' + res.statusCode;\n  if (body && body.error) reason = String(body.error);\n  if (body && body.detail && body.detail.error) reason = String(body.detail.error);\n  if (required && required.error) reason = String(required.error);\n\n  const amountUsd = accept ? (Number(accept.amount) / 1000000).toFixed(2) : null;\n\n  const lines = [\n    'Reciprocal Ruler · quote-lock failed [' + res.statusCode + ' ' + reason + ']'\n  ];\n  if (accept) {\n    lines.push('- Payment required: ' + amountUsd + ' USDC on ' + accept.network + ' → ' + accept.payTo);\n  }\n  if (res.statusCode === 402) {\n    lines.push('- Cause: this is a paid x402 endpoint and the request has no payment signature, or the wallet balance is short.');\n    lines.push('- Fix: point this HTTP node at the payment relay (x402 payer), or send it again with a header signed by a Base USDC wallet.');\n  }\n  if (res.statusCode === 409) {\n    lines.push('- Cause: the two agents use different rules versions. Align buyer_version and supplier_version.');\n  }\n  if (res.statusCode === 422) {\n    lines.push('- Cause: the request body format is wrong. Check field names and types (int/string).');\n  }\n  if (res.statusCode >= 500) {\n    lines.push('- Cause: server error. On free hosting this can be a cold start of tens of seconds; retry shortly.');\n  }\n\n  out.push({ json: {\n    stage: 'quote-lock',\n    status_code: res.statusCode,\n    reason: reason,\n    payment_required: accept ? {\n      network: accept.network,\n      asset: accept.asset,\n      amount_atomic: accept.amount,\n      amount_usd: amountUsd,\n      pay_to: accept.payTo,\n      max_timeout_seconds: accept.maxTimeoutSeconds\n    } : null,\n    alert_text: lines.join('\\n')\n  }});\n}\nreturn out;"
+      },
+      "id": "75570d99-275f-4cb3-bf50-4913e2a071b0",
+      "name": "3c. quote-lock 402/Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        360
+      ],
+      "notes": "Decodes the PAYMENT-REQUIRED header into an alert message with the amount required, the wallet and the cause."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Takes the quote_hash out of the quote-lock response and attaches it to the reconcile body.\n// If the payment went through, the PAYMENT-RESPONSE header carries the settlement receipt.\nfunction decodeBase64Json(value) {\n  try {\n    let text = '';\n    if (typeof Buffer !== 'undefined') {\n      text = Buffer.from(value, 'base64').toString('utf8');\n    } else if (typeof atob === 'function') {\n      const bin = atob(value);\n      const bytes = new Uint8Array(bin.length);\n      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);\n      text = new TextDecoder('utf-8').decode(bytes);\n    } else {\n      return null;\n    }\n    return JSON.parse(text);\n  } catch (err) {\n    return null;\n  }\n}\n\nconst inputs = $input.all();\nconst normItems = $('2. Normalize & Validate').all();\nconst out = [];\n\nfor (let i = 0; i < inputs.length; i++) {\n  const res = inputs[i].json || {};\n  const body = res.body || {};\n  const headers = res.headers || {};\n  const norm = ((normItems[i] || {}).json) || {};\n  const meta = norm.meta || {};\n  const base = norm.reconcile_body || {};\n\n  const quoteHash = body.quote_hash || '';\n  const reconcileBody = Object.assign({}, base, { quote_hash: quoteHash });\n\n  const receiptHeader = headers['payment-response'] || headers['PAYMENT-RESPONSE'];\n  const receipt = receiptHeader ? decodeBase64Json(receiptHeader) : null;\n\n  out.push({ json: {\n    quote_lock: {\n      status: body.status || null,\n      quote_hash: quoteHash,\n      rule_version: body.rule_version || null,\n      locked_at: body.locked_at || null\n    },\n    payment_receipt: receipt,\n    reconcile_body: reconcileBody,\n    meta: meta\n  }});\n}\n\nif (out.length === 0) {\n  throw new Error('The quote-lock response is empty.');\n}\nif (!out[0].json.quote_lock.quote_hash) {\n  throw new Error('The quote-lock response has no quote_hash. Check the message from node 3c.');\n}\nreturn out;"
+      },
+      "id": "9a91a71c-206f-4c03-9b78-d05dd2a0677d",
+      "name": "4. Attach quote_hash",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        40
+      ],
+      "notes": "Puts the quote_hash from the quote-lock result into the reconcile body unchanged."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://reciprocal-ruler-x402.vercel.app/v1/reconcile",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.reconcile_body) }}",
+        "options": {
+          "timeout": 90000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "c8c9963a-dc16-4d19-8ae9-06e92207a170",
+      "name": "5a. POST /v1/reconcile ($0.25)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        40
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "notes": "Sending the same idempotency_key again replays the earlier judgment instead of settling twice."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cd0db08f-9a1c-4f0c-9591-541bb5550a32",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "131e640c-f619-48a1-911d-46c324c347b9",
+      "name": "5b. reconcile OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns a failed reconcile (402/422/5xx) into an alert message.\nfunction decodeBase64Json(value) {\n  try {\n    let text = '';\n    if (typeof Buffer !== 'undefined') {\n      text = Buffer.from(value, 'base64').toString('utf8');\n    } else if (typeof atob === 'function') {\n      const bin = atob(value);\n      const bytes = new Uint8Array(bin.length);\n      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);\n      text = new TextDecoder('utf-8').decode(bytes);\n    } else {\n      return null;\n    }\n    return JSON.parse(text);\n  } catch (err) {\n    return null;\n  }\n}\n\nconst items = $input.all();\nconst prevItems = $('4. Attach quote_hash').all();\nconst out = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const res = items[i].json || {};\n  const body = res.body || {};\n  const headers = res.headers || {};\n  const prev = ((prevItems[i] || {}).json) || {};\n  const meta = prev.meta || {};\n  const raw = headers['payment-required'] || headers['PAYMENT-REQUIRED'];\n  const required = raw ? decodeBase64Json(raw) : null;\n  const accept = (required && required.accepts && required.accepts.length) ? required.accepts[0] : null;\n\n  let reason = 'HTTP ' + res.statusCode;\n  if (body && body.error) reason = String(body.error);\n  if (body && body.detail && body.detail.error) reason = String(body.detail.error);\n  if (body && body.detail && !body.detail.error && typeof body.detail === 'string') reason = body.detail;\n  if (required && required.error) reason = String(required.error);\n\n  const amountUsd = accept ? (Number(accept.amount) / 1000000).toFixed(2) : null;\n\n  const lines = [\n    'Reciprocal Ruler · reconcile failed [' + res.statusCode + ' ' + reason + ']',\n    '- tx_id: ' + (meta.tx_id || '(unknown)') + ' / expected: ' + meta.expected_amount_krw + ' KRW'\n  ];\n  if (accept) {\n    lines.push('- Payment required: ' + amountUsd + ' USDC on ' + accept.network + ' → ' + accept.payTo);\n  }\n  if (res.statusCode === 402) {\n    lines.push('- Cause: no payment signature, or the wallet balance is short. Retry the same body with the payment attached.');\n  }\n  if (res.statusCode === 422) {\n    lines.push('- Cause: body format error. Check that quote_hash is the value the quote-lock response returned and that the amounts are integers.');\n  }\n  if (res.statusCode >= 500) {\n    lines.push('- Cause: server error (possibly a cold start). Retry shortly with the same idempotency_key.');\n  }\n\n  out.push({ json: {\n    stage: 'reconcile',\n    status_code: res.statusCode,\n    reason: reason,\n    tx_id: meta.tx_id || null,\n    alert_text: lines.join('\\n')\n  }});\n}\nreturn out;"
+      },
+      "id": "a16ec714-88d8-4e08-b8cb-552275720021",
+      "name": "5c. reconcile 402/Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Maps the reconcile status to a verdict.\n//   SETTLED_OK              → MATCHED                           → audit log\n//   COMPENSATED             → partial payment or refund, covered from the holdback → alert\n//   PENDING_RECONCILIATION  → unpaid, awaiting reconciliation   → alert\nfunction decodeBase64Json(value) {\n  try {\n    let text = '';\n    if (typeof Buffer !== 'undefined') {\n      text = Buffer.from(value, 'base64').toString('utf8');\n    } else if (typeof atob === 'function') {\n      const bin = atob(value);\n      const bytes = new Uint8Array(bin.length);\n      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);\n      text = new TextDecoder('utf-8').decode(bytes);\n    } else {\n      return null;\n    }\n    return JSON.parse(text);\n  } catch (err) {\n    return null;\n  }\n}\n\n// Thousands separator, built by hand so the text is identical in every locale\nfunction fmtKrw(n) {\n  const v = Math.round(Number(n) || 0);\n  return String(v).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');\n}\n\nconst STATES = {\n  SETTLED_OK: { verdict: 'MATCHED', action: 'audit', label: 'settled in full' },\n  COMPENSATED: { verdict: 'EXCEPTION', action: 'alert', label: 'partial payment, covered from the holdback' },\n  PENDING_RECONCILIATION: { verdict: 'PENDING', action: 'alert', label: 'unpaid, awaiting reconciliation' }\n};\n\nconst items = $input.all();\nconst prevItems = $('4. Attach quote_hash').all();\nconst out = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const res = items[i].json || {};\n  const body = res.body || {};\n  const headers = res.headers || {};\n  const prev = ((prevItems[i] || {}).json) || {};\n  const meta = prev.meta || {};\n  const quote = prev.quote_lock || {};\n\n  const state = body.status || 'UNKNOWN';\n  const rule = STATES[state] || { verdict: 'UNKNOWN', action: 'alert', label: 'unknown state' };\n\n  let receipt = prev.payment_receipt || null;\n  const receiptHeader = headers['payment-response'] || headers['PAYMENT-RESPONSE'];\n  if (receiptHeader) {\n    const decoded = decodeBase64Json(receiptHeader);\n    if (decoded) receipt = decoded;\n  }\n\n  const expected = Number(meta.expected_amount_krw || 0);\n  const actual = Number(meta.actual_settled_krw || 0);\n  const shortfall = expected - actual;\n  const compensated = Number(body.compensated_krw || 0);\n  const uncovered = Number(body.uncovered_krw || 0);\n\n  const record = {\n    recorded_at: new Date().toISOString(),\n    tx_id: body.tx_id || meta.tx_id || null,\n    idempotency_key: meta.idempotency_key || null,\n    quote_hash: quote.quote_hash || null,\n    rule_version: quote.rule_version || null,\n    buyer_id: meta.buyer_id || null,\n    supplier_id: meta.supplier_id || null,\n    event_type: meta.event_type || null,\n    expected_amount_krw: expected,\n    actual_settled_krw: actual,\n    shortfall_krw: shortfall > 0 ? shortfall : 0,\n    holdback_krw: Number(meta.holdback_krw || 0),\n    state: state,\n    verdict: rule.verdict,\n    action: rule.action,\n    compensated_krw: compensated,\n    uncovered_krw: uncovered,\n    credit_delta: Number(body.credit_delta || 0),\n    idempotent_replay: body.idempotent_replay === true,\n    payment_payer: receipt ? (receipt.payer || null) : null,\n    payment_tx: receipt ? (receipt.transaction || null) : null,\n    payment_network: receipt ? (receipt.network || null) : null\n  };\n\n  const lines = [];\n  if (rule.verdict === 'MATCHED') {\n    lines.push('Reciprocal Ruler · settlement matched');\n  } else {\n    lines.push('Reciprocal Ruler · settlement exception — ' + rule.label);\n  }\n  lines.push('- tx_id: ' + record.tx_id);\n  lines.push('- Status: ' + state + (record.idempotent_replay ? ' (idempotent replay)' : ''));\n  lines.push('- Expected / actual: ' + fmtKrw(expected) + ' / ' + fmtKrw(actual) + ' KRW');\n  if (shortfall > 0) lines.push('- Shortfall: ' + fmtKrw(shortfall) + ' KRW');\n  lines.push('- Covered from the holdback: ' + fmtKrw(compensated) + ' KRW / uncovered: ' + fmtKrw(uncovered) + ' KRW');\n  lines.push('- Credit change (credit_delta): ' + record.credit_delta);\n  if (record.payment_tx) lines.push('- Payment receipt tx: ' + record.payment_tx);\n\n  const merged = Object.assign({}, record, { alert_text: lines.join('\\n') });\n  out.push({ json: merged });\n}\nreturn out;"
+      },
+      "id": "d803d17a-f1b7-41ea-a141-f72b903d7655",
+      "name": "6. Classify Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        -40
+      ],
+      "notes": "SETTLED_OK → MATCHED, COMPENSATED/PENDING → exception. The payment receipt (PAYMENT-RESPONSE) is merged in here too."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a604c2a8-d6ba-4cad-9ef1-7a52b384c18e",
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "MATCHED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "aeb8130e-ecc8-4f86-869b-c32f98555b62",
+      "name": "7. MATCHED?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2140,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns a matched settlement into one append-only audit line.\n// audit_line is tab-separated — append it unchanged to Google Sheets, a Data Table or your own log.\nconst items = $input.all();\nconst out = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const r = items[i].json || {};\n  const cols = [\n    r.recorded_at, r.tx_id, r.quote_hash, r.rule_version,\n    r.buyer_id, r.supplier_id, r.event_type,\n    r.expected_amount_krw, r.actual_settled_krw, r.shortfall_krw,\n    r.state, r.compensated_krw, r.uncovered_krw, r.credit_delta,\n    r.payment_tx || ''\n  ];\n  out.push({ json: Object.assign({}, r, {\n    audit_line: cols.join('\\t'),\n    audit_status: 'APPEND'\n  }) });\n}\nreturn out;"
+      },
+      "id": "502ef1f7-616e-4168-8b4a-0e91e751c5b3",
+      "name": "8a. Audit Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2380,
+        -180
+      ],
+      "notes": "Turns a matched settlement into one append-only line."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://audit.example.com/ruler/settlement-log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "50533e41-a787-446a-bd66-eff76f3db600",
+      "name": "8b. Audit Log Append (placeholder)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        -180
+      ],
+      "disabled": true,
+      "notes": "Placeholder for the audit log store. Swap in a Google Sheets or Data Table node, or use our endpoint URL, then enable it."
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "text": "={{ $json.alert_text }}",
+        "otherOptions": {}
+      },
+      "id": "14909cb1-dd21-48a0-a1d2-c4ab6d099d1c",
+      "name": "10. Slack Alert (placeholder)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        2380,
+        40
+      ],
+      "disabled": true,
+      "notes": "Slack placeholder. Pick a channel, connect Slack credentials, then enable it."
+    },
+    {
+      "parameters": {
+        "fromEmail": "ruler-alerts@example.com",
+        "toEmail": "ops@example.com",
+        "subject": "={{ 'Reciprocal Ruler settlement alert: ' + ($json.stage || $json.state || 'event') }}",
+        "emailFormat": "text",
+        "text": "={{ $json.alert_text }}",
+        "options": {}
+      },
+      "id": "3e8c07f5-7f13-46ce-8292-ee7e3dc3fe54",
+      "name": "10b. Email Alert (placeholder)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2380,
+        220
+      ],
+      "disabled": true,
+      "notes": "Email placeholder. Set SMTP credentials and a recipient, then enable it."
+    },
+    {
+      "parameters": {
+        "content": "### When 402 Payment Required comes back\n\nThis API is a paid x402 endpoint. The built-in n8n HTTP Request node **cannot produce a payment signature**.\n\n**Fastest route** — start the payment relay (guide, section 5) and change the URL of the two nodes:\n- `3a` → `http://<relay>/v1/quote-lock`\n- `5a` → `http://<relay>/v1/reconcile`\n\nWhen the relay receives a 402 it signs with Base USDC, retries automatically and returns the response unchanged. No body or judgment logic needs to change.",
+        "height": 360,
+        "width": 460,
+        "color": 3
+      },
+      "id": "075dda93-7a2f-41a6-aa2d-67828d3fa6ed",
+      "name": "Sticky Note — 402 payment",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Request/response contract (as the server specifies)\n\n**quote-lock** `{buyer_version, supplier_version, buyer_id, supplier_id, terms}`\n→ `{status:\"QUOTE_LOCKED\", quote_hash, rule_version, locked_at}` · 409 on mismatch\n\n**reconcile** `{idempotency_key, tx_id, quote_hash, expected_amount_krw, actual_settled_krw, holdback_krw, event_type}`\n→ `{status, idempotent_replay, tx_id, compensated_krw, uncovered_krw, credit_delta}`\n\n`event_type`: `POST_TRADE_REFUND` | `HALF_OPEN_TIMEOUT`\n**Leaving out `holdback_krw` defaults it to 22,000** — always set it explicitly.",
+        "height": 340,
+        "width": 560,
+        "color": 5
+      },
+      "id": "8d1e4fcf-0b7a-494e-a933-03fb050fe20f",
+      "name": "Sticky Note — Data contract",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        700,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Sample Event (edit me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Sample Event (edit me)": {
+      "main": [
+        [
+          {
+            "node": "2. Normalize & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Settlement Event": {
+      "main": [
+        [
+          {
+            "node": "2. Normalize & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Normalize & Validate": {
+      "main": [
+        [
+          {
+            "node": "3a. POST /v1/quote-lock ($0.05)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3a. POST /v1/quote-lock ($0.05)": {
+      "main": [
+        [
+          {
+            "node": "3b. quote-lock OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3b. quote-lock OK?": {
+      "main": [
+        [
+          {
+            "node": "4. Attach quote_hash",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "3c. quote-lock 402/Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3c. quote-lock 402/Error": {
+      "main": [
+        [
+          {
+            "node": "10. Slack Alert (placeholder)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "10b. Email Alert (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Attach quote_hash": {
+      "main": [
+        [
+          {
+            "node": "5a. POST /v1/reconcile ($0.25)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5a. POST /v1/reconcile ($0.25)": {
+      "main": [
+        [
+          {
+            "node": "5b. reconcile OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5b. reconcile OK?": {
+      "main": [
+        [
+          {
+            "node": "6. Classify Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5c. reconcile 402/Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5c. reconcile 402/Error": {
+      "main": [
+        [
+          {
+            "node": "10. Slack Alert (placeholder)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "10b. Email Alert (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Classify Result": {
+      "main": [
+        [
+          {
+            "node": "7. MATCHED?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. MATCHED?": {
+      "main": [
+        [
+          {
+            "node": "8a. Audit Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "10. Slack Alert (placeholder)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "10b. Email Alert (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8a. Audit Record": {
+      "main": [
+        [
+          {
+            "node": "8b. Audit Log Append (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "06e52624-daab-49e5-a004-100be5943d17",
+  "activeVersionId": null,
+  "sourceWorkflowId": null,
+  "tags": []
+}
