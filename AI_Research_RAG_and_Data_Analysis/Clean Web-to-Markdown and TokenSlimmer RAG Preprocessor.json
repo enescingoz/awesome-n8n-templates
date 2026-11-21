@@ -1,0 +1,117 @@
+{
+  "name": "Clean Web-to-Markdown and TokenSlimmer RAG Preprocessor",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Clean Web-to-Markdown & TokenSlimmer RAG Preprocessor\n\n**Who it's for:** AI engineers and automation builders ingesting web pages into RAG vector stores (Qdrant, Pinecone, Supabase) or LLM workflows.\n\n**What it does:**\n1. Fetches any public URL via `POST https://topaigateway.com/v1/extract` and strips ads, scripts, cookie banners, and navigation clutter into clean Markdown in <30ms.\n2. Runs deterministic AST compression via `POST https://topaigateway.com/v1/compress` to trim redundant tokens before calling OpenAI/Anthropic.\n\n**Setup:** No credentials are required to test on the free public sandbox. Replace the sample URL in the Extract node or add an optional `Authorization: Bearer <TOPAI_API_KEY>` header for high-volume quotas.",
+        "height": 280,
+        "width": 520
+      },
+      "id": "sticky-note-topai-rag",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        40
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger-topai-rag",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://topaigateway.com/v1/extract",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"url\": \"https://example.com\"\n}",
+        "options": {}
+      },
+      "id": "http-extract-markdown",
+      "name": "Web-to-Markdown Extractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://topaigateway.com/v1/compress",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.markdown || '' }) }}",
+        "options": {}
+      },
+      "id": "http-compress-tokens",
+      "name": "TokenSlimmer AST Compressor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        380
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Web-to-Markdown Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web-to-Markdown Extractor": {
+      "main": [
+        [
+          {
+            "node": "TokenSlimmer AST Compressor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "description": "Extract clean RAG-ready Markdown from any public URL and deterministically compress redundant tokens before LLM inference using TopAI Gateway."
+  }
+}
