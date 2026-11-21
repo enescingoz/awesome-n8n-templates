@@ -1,0 +1,205 @@
+{
+  "name": "Remove Product Photo Backgrounds with remove.ac API",
+  "description": "Drop-in replacement for retired remove.bg /v1.0/removebg workflows: sends a product image URL to POST https://remove.ac/v1.0/removebg with X-Api-Key and outputs a ready-to-upload transparent PNG/WebP or solid-background JPG binary.",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Remove Product Photo Backgrounds with remove.ac API\n\nDrop-in replacement for retired `remove.bg` `/v1.0/removebg` workflows (standalone remove.bg API retires December 1, 2026).\n\n### Setup\n1. Create a free account at https://remove.ac/api-info (verified email accounts include 10 free full-resolution Cloud GPU credits valid 30 days).\n2. In n8n, create a **Header Auth** credential with Header Name `X-Api-Key` and Value `rac_live_...`.\n3. Run the workflow manually or replace the Manual Trigger with a Webhook, Shopify, or Google Drive trigger.\n\n### Large Files (>4 MB up to 25 MB / 50 MP)\nFor self-hosted n8n processing studio photos over 4 MB or binary inputs, you can also install the MIT community node `n8n-nodes-remove-ac` (v1.0.1), which handles `/v1.0/removebg/ticket` zero-disk streaming automatically.",
+        "height": 340,
+        "width": 520,
+        "color": 4
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -120
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-1111-4000-8000-000000000002",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "img-url",
+              "name": "imageUrl",
+              "value": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200",
+              "type": "string"
+            },
+            {
+              "id": "cutout-size",
+              "name": "size",
+              "value": "full",
+              "type": "string"
+            },
+            {
+              "id": "cutout-format",
+              "name": "format",
+              "value": "png",
+              "type": "string"
+            },
+            {
+              "id": "bg-color",
+              "name": "bgColor",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000003",
+      "name": "Set Product Image Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://remove.ac/v1.0/removebg",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.imageUrl }}"
+            },
+            {
+              "name": "size",
+              "value": "={{ $json.size }}"
+            },
+            {
+              "name": "format",
+              "value": "={{ $json.format }}"
+            },
+            {
+              "name": "bg_color",
+              "value": "={{ $json.bgColor }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000004",
+      "name": "Remove Background (remove.ac)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_REMOVE_AC_HEADER_AUTH_ID",
+          "name": "remove.ac API Key (X-Api-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-binary-output",
+              "leftValue": "={{ Boolean($binary && $binary.data) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000005",
+      "name": "Verify Cutout Binary",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        760,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set Product Image Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Product Image Parameters": {
+      "main": [
+        [
+          {
+            "node": "Remove Background (remove.ac)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Background (remove.ac)": {
+      "main": [
+        [
+          {
+            "node": "Verify Cutout Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
