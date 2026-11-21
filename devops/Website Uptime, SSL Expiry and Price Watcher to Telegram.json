@@ -1,0 +1,221 @@
+{
+  "name": "Website Uptime, SSL Expiry and Price Watcher to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Website Uptime, SSL Expiry & Price Watcher\n\n### Required Environment Variables\n- `WATCH_TARGET_URLS`: Comma-separated list of URLs to probe (e.g. `https://example.com,https://status.example.com`)\n- `TELEGRAM_BOT_TOKEN`: Telegram Bot API token\n- `TELEGRAM_ALERT_CHAT_ID`: Target Telegram chat or group ID\n\n### Optional Environment Variables\n- `WATCH_MAX_LATENCY_MS`: Latency threshold in milliseconds (default: `2500`)\n- `WATCH_PRICE_REGEX`: Regex pattern to extract a price or status token from the response body\n- `WATCH_EXPECTED_PRICE`: Expected matched string; alerts when extracted value differs\n- `WATCH_SSL_MIN_DAYS`: Minimum days remaining if upstream exposes an `x-ssl-expiry-days` header (default: `14`)",
+        "height": 340,
+        "width": 440
+      },
+      "id": "node-setup-note",
+      "name": "Setup & Environment Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-15m",
+      "name": "Schedule Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = String($env.WATCH_TARGET_URLS || 'https://example.com,https://status.example.com');\nconst targets = raw\n  .split(',')\n  .map((u) => u.trim())\n  .filter((u) => u.startsWith('https://') || u.startsWith('http://'));\nconst maxLatencyMs = Number($env.WATCH_MAX_LATENCY_MS || 2500);\nconst pricePattern = String($env.WATCH_PRICE_REGEX || '').trim();\nconst expectedPrice = String($env.WATCH_EXPECTED_PRICE || '').trim();\nconst minSslDays = Number($env.WATCH_SSL_MIN_DAYS || 14);\n\nreturn targets.map((url) => ({\n  json: {\n    url,\n    maxLatencyMs,\n    pricePattern,\n    expectedPrice,\n    minSslDays,\n    checkedAt: new Date().toISOString(),\n    startedMs: Date.now()\n  }\n}));"
+      },
+      "id": "node-targets-list",
+      "name": "Load Monitored URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 12000
+        }
+      },
+      "id": "node-http-probe",
+      "name": "Fetch HTTP Status & Body",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst srcItems = $('Load Monitored URLs').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const resp = items[i].json || {};\n  const meta = srcItems[i]?.json || {};\n  const statusCode = Number(resp.statusCode || 0);\n  const elapsedMs = Math.max(1, Date.now() - Number(meta.startedMs || Date.now()));\n  const headers = resp.headers || {};\n  const bodyStr = typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body || '');\n  const errorMsg = String(resp.error?.message || resp.error || '');\n  const reasons = [];\n\n  if (statusCode < 200 || statusCode >= 400) {\n    const detail = errorMsg ? `${statusCode || 'ERR'} (${errorMsg.slice(0, 120)})` : String(statusCode || 'TIMEOUT / TLS ERROR');\n    reasons.push(`HTTP error: ${detail}`);\n  }\n  if (elapsedMs > Number(meta.maxLatencyMs || 2500)) {\n    reasons.push(`High latency: ${elapsedMs}ms > ${meta.maxLatencyMs}ms`);\n  }\n  if (meta.url && meta.url.startsWith('http://')) {\n    reasons.push('HTTPS/TLS not enabled (plain http:// URL)');\n  }\n  const sslDaysHeader = headers['x-ssl-expiry-days'] ?? headers['X-SSL-Expiry-Days'];\n  if (sslDaysHeader !== undefined && sslDaysHeader !== '') {\n    const sslDays = Number(sslDaysHeader);\n    if (!Number.isNaN(sslDays) && sslDays <= Number(meta.minSslDays || 14)) {\n      reasons.push(`SSL certificate expires in ${sslDays} day(s)`);\n    }\n  }\n  if (/cert|ssl|tls|expired/i.test(errorMsg)) {\n    reasons.push(`TLS/SSL verification error: ${errorMsg.slice(0, 120)}`);\n  }\n\n  let matchedPrice = '';\n  if (meta.pricePattern) {\n    try {\n      const rx = new RegExp(meta.pricePattern, 'i');\n      const m = bodyStr.match(rx);\n      if (m) {\n        matchedPrice = m[0];\n        if (meta.expectedPrice && matchedPrice !== meta.expectedPrice) {\n          reasons.push(`Price/token changed: expected \"${meta.expectedPrice}\", got \"${matchedPrice}\"`);\n        }\n      } else if (meta.expectedPrice) {\n        reasons.push('Price/token pattern not found in response body');\n      }\n    } catch (_err) {\n      reasons.push('Invalid WATCH_PRICE_REGEX expression');\n    }\n  }\n\n  const shouldAlert = reasons.length > 0;\n  results.push({\n    json: {\n      url: meta.url,\n      statusCode,\n      elapsedMs,\n      matchedPrice,\n      reasons,\n      shouldAlert,\n      checkedAt: meta.checkedAt,\n      alertText: [\n        'WEBSITE UPTIME / SSL / PRICE ALERT',\n        `URL: ${meta.url}`,\n        `Status: HTTP ${statusCode || 'ERR'} (${elapsedMs}ms)`,\n        `Issues: ${reasons.join('; ')}`,\n        matchedPrice ? `Matched value: ${matchedPrice}` : 'Price watch: not triggered',\n        `Checked at: ${meta.checkedAt}`\n      ].join('\\n')\n    }\n  });\n}\nreturn results;"
+      },
+      "id": "node-eval-health",
+      "name": "Analyze Uptime, SSL & Price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-alert",
+              "leftValue": "={{ $json.shouldAlert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-incident",
+      "name": "Incident or Price Change?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1190,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_ALERT_CHAT_ID, text: $json.alertText }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "node-tg-uptime",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Load Monitored URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Monitored URLs": {
+      "main": [
+        [
+          {
+            "node": "Fetch HTTP Status & Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch HTTP Status & Body": {
+      "main": [
+        [
+          {
+            "node": "Analyze Uptime, SSL & Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Uptime, SSL & Price": {
+      "main": [
+        [
+          {
+            "node": "Incident or Price Change?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Incident or Price Change?": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "DevOps"
+    },
+    {
+      "name": "Uptime"
+    },
+    {
+      "name": "SSL-Monitor"
+    },
+    {
+      "name": "Telegram"
+    }
+  ]
+}
