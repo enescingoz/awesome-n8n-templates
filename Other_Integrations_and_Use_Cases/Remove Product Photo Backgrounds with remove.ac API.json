@@ -1,10 +1,10 @@
 {
   "name": "Remove Product Photo Backgrounds with remove.ac API",
-  "description": "Drop-in replacement for retired remove.bg /v1.0/removebg workflows: sends a product image URL to POST https://remove.ac/v1.0/removebg with X-Api-Key and outputs a ready-to-upload transparent PNG/WebP or solid-background JPG binary.",
+  "description": "Drop-in replacement for retired remove.bg /v1.0/removebg workflows: sends a product image URL to the /v1.0/removebg endpoint with X-Api-Key and outputs a ready-to-upload transparent PNG/WebP or solid-background JPG binary.",
   "nodes": [
     {
       "parameters": {
-        "content": "## Remove Product Photo Backgrounds with remove.ac API\n\nDrop-in replacement for retired `remove.bg` `/v1.0/removebg` workflows (standalone remove.bg API retires December 1, 2026).\n\n### Setup\n1. Create a free account at https://remove.ac/api-info (verified email accounts include 10 free full-resolution Cloud GPU credits valid 30 days).\n2. In n8n, create a **Header Auth** credential with Header Name `X-Api-Key` and Value `rac_live_...`.\n3. Run the workflow manually or replace the Manual Trigger with a Webhook, Shopify, or Google Drive trigger.\n\n### Large Files (>4 MB up to 25 MB / 50 MP)\nFor self-hosted n8n processing studio photos over 4 MB or binary inputs, you can also install the MIT community node `n8n-nodes-remove-ac` (v1.0.1), which handles `/v1.0/removebg/ticket` zero-disk streaming automatically.",
+        "content": "## Remove Product Photo Backgrounds with remove.ac API\n\nDrop-in replacement for retired `remove.bg` `/v1.0/removebg` workflows (standalone remove.bg API retires December 1, 2026).\n\n### Setup\n1. Create a free account at https://remove.ac/api-info (verified email accounts include 10 free full-resolution Cloud GPU credits valid 30 days).\n2. In n8n, create a **Header Auth** credential with Header Name `X-Api-Key` and Value `rac_live_...`.\n3. Run the workflow manually or replace the Manual Trigger with a Webhook, Shopify, or Google Drive trigger.\n\n### Large Files (>4 MB up to 25 MB / 50 MP)\nFor self-hosted n8n processing studio photos over 4 MB or binary inputs, you can also install the MIT community node `n8n-nodes-remove-ac` (v1.0.2), which handles `/v1.0/removebg/ticket` zero-disk streaming automatically.",
         "height": 340,
         "width": 520,
         "color": 4
