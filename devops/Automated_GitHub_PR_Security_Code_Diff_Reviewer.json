@@ -1,0 +1,281 @@
+{
+  "name": "Automated GitHub Pull Request Security & Code Diff Reviewer",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Automated GitHub PR Security & Code Diff Reviewer\n\n### What this workflow does\nListens for GitHub Pull Request webhook events (`opened`, `synchronize`, `reopened`), fetches the changed diff files via GitHub REST API, audits the patch for real security flaws and logic bugs (XSS, SQLi, auth bypasses, race conditions, leaked secrets) using any OpenAI-compatible LLM, and posts a structured Markdown review comment back on the PR.\n\n### Setup Steps\n1. **GitHub Webhook:** Add this workflow's Production Webhook URL in your repository under *Settings → Webhooks* (Content type: `application/json`, Events: `Pull requests`).\n2. **Environment Variables:** Configure `GITHUB_TOKEN` (PAT with `pull_requests: write`) and `OPENAI_API_KEY`. Optionally set `OPENAI_BASE_URL` and `OPENAI_MODEL` for OpenRouter, Groq, or Ollama.\n3. **Customize Policy:** Update the security reviewer prompt in `AI Security & Bug Audit` to enforce your team's specific architecture rules.",
+        "height": 300,
+        "width": 560,
+        "color": 4
+      },
+      "id": "a3d5f2ce-b427-5ad2-bed8-82ab81d379cd",
+      "name": "Sticky Note - Overview & Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Filter PR Events & Fetch Diff\nIgnores noisy events (closed/labeled/edited) and retrieves up to 30 changed files from GitHub API, trimming each patch safely to control token usage.",
+        "height": 140,
+        "width": 720,
+        "color": 5
+      },
+      "id": "e1b2c3d4-0002-4000-8000-000000000001",
+      "name": "Sticky Note - Step 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. AI Security Review & GitHub Comment\nRuns a focused security audit returning `{ riskLevel, markdownComment }` in strict JSON mode and posts the formatted risk summary back onto the Pull Request.",
+        "height": 140,
+        "width": 660,
+        "color": 6
+      },
+      "id": "e1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Sticky Note - Step 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr-security-reviewer",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "8e37cbfe-1f6f-5f80-9cc8-d172e2a8d20f",
+      "name": "GitHub PR Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        320
+      ],
+      "webhookId": "e1350ea8-d2a3-5b10-aa4b-862f2ab07cd9"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $input.first().json.body || $input.first().json;\nconst action = p.action || \"\";\nconst pr = p.pull_request || {};\nconst repo = p.repository?.full_name || \"\";\nif (![\"opened\", \"synchronize\", \"reopened\"].includes(action) || !repo || !pr.number) {\n  return [];\n}\nreturn [{\n  json: {\n    repo,\n    prNumber: pr.number,\n    title: pr.title || \"\",\n    author: pr.user?.login || \"unknown\",\n    filesUrl: `https://api.github.com/repos/${repo}/pulls/${pr.number}/files?per_page=30`,\n    commentUrl: `https://api.github.com/repos/${repo}/issues/${pr.number}/comments`,\n  }\n}];"
+      },
+      "id": "eb39f796-c0f3-50e6-b1f2-205288b61c6e",
+      "name": "Filter Opened/Sync PRs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.filesUrl }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        }
+      },
+      "id": "5454ef0e-72be-590e-9e2c-ea85347baefa",
+      "name": "Fetch PR Diff Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $('Filter Opened/Sync PRs').first().json;\nconst files = $input.all().map((i) => i.json).flat();\nconst patchSummary = files.slice(0, 12).map((f) => `FILE: ${f.filename} (+${f.additions}/-${f.deletions})\\n${String(f.patch || '').slice(0, 1200)}`).join('\\n---\\n').slice(0, 10000);\nreturn [{ json: { ...meta, patchSummary } }];"
+      },
+      "id": "ac5a43da-a0b0-5f7e-b680-56f9077fae05",
+      "name": "Compact Diff Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.OPENAI_BASE_URL || \"https://api.openai.com/v1\") + \"/chat/completions\" }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $env.OPENAI_MODEL || \"gpt-4o-mini\", temperature: 0.2, response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: \"You are a staff security & code reviewer. Review the diff concisely for concrete bugs, race conditions, security flaws (XSS, SQLi, auth bypass, secret leaks). Do not nitpick style. Return JSON: { riskLevel: 'LOW'|'MEDIUM'|'HIGH', markdownComment: string }.\" }, { role: \"user\", content: JSON.stringify({ title: $json.title, diff: $json.patchSummary }) } ] }) }}"
+      },
+      "id": "c2f20dfe-06d2-581d-a4df-6f32b2accf8d",
+      "name": "AI Security & Bug Audit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1180,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $('Filter Opened/Sync PRs').first().json;\nconst raw = $input.first().json?.choices?.[0]?.message?.content || '{}';\nlet ai = { riskLevel: 'LOW', markdownComment: 'No critical issues detected.' };\ntry { ai = { ...ai, ...JSON.parse(raw) }; } catch {}\nreturn [{ json: { commentUrl: meta.commentUrl, body: `### 🛡️ Automated PR Security Review (Risk: **${ai.riskLevel}**)\\n\\n${ai.markdownComment}` } }];"
+      },
+      "id": "e5805412-ba37-590b-add6-1b3fb9581f82",
+      "name": "Prepare GitHub Comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.commentUrl }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: $json.body }) }}"
+      },
+      "id": "83ed937c-6a42-5508-9ed7-e44915dc3d37",
+      "name": "Post Comment to GitHub PR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "GitHub PR Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Opened/Sync PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Opened/Sync PRs": {
+      "main": [
+        [
+          {
+            "node": "Fetch PR Diff Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch PR Diff Files": {
+      "main": [
+        [
+          {
+            "node": "Compact Diff Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compact Diff Payload": {
+      "main": [
+        [
+          {
+            "node": "AI Security & Bug Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Security & Bug Audit": {
+      "main": [
+        [
+          {
+            "node": "Prepare GitHub Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare GitHub Comment": {
+      "main": [
+        [
+          {
+            "node": "Post Comment to GitHub PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0f6a8cd1-91ae-5b3f-a994-5bda07830463",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

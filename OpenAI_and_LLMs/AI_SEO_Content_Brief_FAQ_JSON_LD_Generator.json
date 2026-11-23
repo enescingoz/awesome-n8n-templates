@@ -1,0 +1,200 @@
+{
+  "name": "AI SEO Content Brief & FAQ JSON-LD Schema Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AI SEO Content Brief & FAQ JSON-LD Schema Generator\n\n### What this workflow does\nTurns any target keyword sent via POST webhook into a complete, developer-ready SEO content brief containing search intent, meta title, meta description, URL slug, H2/H3 outline with talking points, and a ready-to-embed `FAQPage` Schema.org JSON-LD block — returned directly in the webhook HTTP response.\n\n### Setup Steps\n1. **Environment Variables:** Set `OPENAI_API_KEY` (required). Optionally set `OPENAI_BASE_URL` and `OPENAI_MODEL` to run with OpenRouter, Groq, or a local Ollama server.\n2. **Test the Endpoint:** Send a `POST` request to the webhook URL with `{ \"keyword\": \"n8n workflow automation\", \"locale\": \"en-US\", \"productToPlug\": \"Your SaaS\" }`.\n3. **Connect Downstream:** Feed the JSON response directly into Notion, Airtable, WordPress, or your headless CMS.",
+        "height": 290,
+        "width": 560,
+        "color": 4
+      },
+      "id": "912acca5-927c-5296-b503-dd521035f451",
+      "name": "Sticky Note - Overview & Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Receive & Sanitize Input\nExtracts `keyword`, `locale`, and optional `productToPlug` with safe defaults so malformed payloads never break generation.",
+        "height": 130,
+        "width": 440,
+        "color": 5
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000001",
+      "name": "Sticky Note - Step 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        190,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Generate Brief, Build FAQPage JSON-LD & Respond\nRequests strict JSON output from the LLM, compiles a valid `https://schema.org` `FAQPage` JSON-LD payload, and returns the entire object to the caller.",
+        "height": 130,
+        "width": 660,
+        "color": 6
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000002",
+      "name": "Sticky Note - Step 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-seo-brief-generator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "29b434f9-2255-539a-b970-910eb3d6a9a0",
+      "name": "Incoming Keyword Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        320
+      ],
+      "webhookId": "ec289238-df3a-5a66-8768-a94155233284"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || $input.first().json;\nreturn [{ json: { keyword: String(b.keyword || \"n8n workflow templates\").trim(), locale: String(b.locale || \"en-US\"), productToPlug: String(b.productToPlug || \"\") } }];"
+      },
+      "id": "634da6b8-18d2-5a93-a8c7-190a8313dc94",
+      "name": "Normalize Keyword Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.OPENAI_BASE_URL || \"https://api.openai.com/v1\") + \"/chat/completions\" }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $env.OPENAI_MODEL || \"gpt-4o-mini\", temperature: 0.2, response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: \"You are a technical SEO strategist. Return JSON: { searchIntent: string, titleTag: string, metaDescription: string, slug: string, outline: [{ h2: string, h3s: string[], talkingPoints: string[] }], faqs: [{ q: string, a: string }] }.\" }, { role: \"user\", content: JSON.stringify($json) } ] }) }}"
+      },
+      "id": "c937a515-19bc-5c08-bb0e-a285891adec1",
+      "name": "Build Complete SEO Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json?.choices?.[0]?.message?.content || '{}';\nlet ai = {};\ntry { ai = JSON.parse(raw); } catch {}\nconst faqSchema = {\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"FAQPage\",\n  \"mainEntity\": (ai.faqs || []).map((f) => ({ \"@type\": \"Question\", \"name\": f.q, \"acceptedAnswer\": { \"@type\": \"Answer\", \"text\": f.a } }))\n};\nreturn [{ json: { ...ai, faqJsonLd: JSON.stringify(faqSchema) } }];"
+      },
+      "id": "3952702f-7d1e-5e04-8f72-f4f971344fd8",
+      "name": "Attach JSON-LD Schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "7b2a1c4d-9988-4455-a123-990088776655",
+      "name": "Return SEO Brief JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1180,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Incoming Keyword Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Keyword Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Keyword Brief": {
+      "main": [
+        [
+          {
+            "node": "Build Complete SEO Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Complete SEO Brief": {
+      "main": [
+        [
+          {
+            "node": "Attach JSON-LD Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach JSON-LD Schema": {
+      "main": [
+        [
+          {
+            "node": "Return SEO Brief JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3e4883f9-6f4e-5c40-a9f8-7910510fec30",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

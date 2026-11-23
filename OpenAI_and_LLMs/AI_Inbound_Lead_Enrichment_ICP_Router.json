@@ -1,0 +1,290 @@
+{
+  "name": "AI Inbound Lead Enrichment & ICP Qualification Router",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AI Inbound Lead Enrichment & ICP Qualification Router\n\n### What this workflow does\nAutomatically qualifies incoming B2B website/form leads with an LLM, assigns a `0-100` ICP fit score (`HOT`, `WARM`, or `COLD`), generates a personalized opening line, alerts your Sales Slack channel for hot leads (`>= 75`), and forwards warm/cold leads to your CRM webhook.\n\n### Setup Steps\n1. **Webhook:** Copy the Production Webhook URL from `Incoming Lead Webhook` and connect it to your form tool (Typeform, Tally, Webflow, or landing page).\n2. **Environment Variables:** Set `OPENAI_API_KEY` (required), `SLACK_WEBHOOK_URL` (required for hot lead alerts), and `CRM_WEBHOOK_URL` (optional for warm/cold logging). Optionally set `OPENAI_BASE_URL` and `OPENAI_MODEL` to use OpenRouter, Groq, or Ollama.\n3. **Customize ICP:** Edit the system prompt in `AI ICP Qualification` with your exact ideal customer profile criteria and score threshold (`75` by default).",
+        "height": 300,
+        "width": 540,
+        "color": 4
+      },
+      "id": "a1e0b34f-0d49-5cc2-b67e-985e0dcfd164",
+      "name": "Sticky Note - Overview & Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Capture & Normalize\nAccepts `{ name, email, company, website, message }` via POST, infers corporate domain vs. free webmail, and trims text to prevent token overflow.",
+        "height": 140,
+        "width": 440,
+        "color": 5
+      },
+      "id": "f4c1a01b-2d11-4430-9f1a-010011001101",
+      "name": "Sticky Note - Step 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        190,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. AI ICP Scoring & Routing\nCalls any OpenAI-compatible Chat Completions endpoint in strict JSON mode, parses the score safely with fallback protection, and splits HOT (`>= 75`) vs. Warm/Cold leads.",
+        "height": 140,
+        "width": 660,
+        "color": 6
+      },
+      "id": "f4c1a01b-2d11-4430-9f1a-010011001102",
+      "name": "Sticky Note - Step 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        470
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbound-lead-icp-scorer",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "213b6f96-eb80-594b-9bd3-6b4774b5fc8c",
+      "name": "Incoming Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        320
+      ],
+      "webhookId": "4e139e20-7e1b-55c5-97b1-4def602c9bbc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || $input.first().json;\nconst email = String(b.email || \"\").trim().toLowerCase();\nconst domain = email.includes(\"@\") ? email.split(\"@\")[1] : \"\";\nconst freeDomains = new Set([\"gmail.com\", \"yahoo.com\", \"hotmail.com\", \"outlook.com\", \"icloud.com\", \"proton.me\"]);\nreturn [{\n  json: {\n    name: String(b.name || \"Unknown\").trim(),\n    email,\n    company: String(b.company || domain || \"Unknown\").trim(),\n    website: String(b.website || (domain && !freeDomains.has(domain) ? `https://${domain}` : \"\")).trim(),\n    isCorporateEmail: Boolean(domain && !freeDomains.has(domain)),\n    message: String(b.message || \"\").slice(0, 1500),\n    receivedAt: new Date().toISOString(),\n  }\n}];"
+      },
+      "id": "b214bf03-b55d-58a4-a508-0f6626665b14",
+      "name": "Normalize Lead Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.OPENAI_BASE_URL || \"https://api.openai.com/v1\") + \"/chat/completions\" }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $env.OPENAI_MODEL || \"gpt-4o-mini\", temperature: 0.2, response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: \"You are a B2B revenue operations analyst. Return JSON: { score: number (0-100), tier: 'HOT'|'WARM'|'COLD', summary: string, recommendedNextAction: string, personalizedOpeningLine: string }.\" }, { role: \"user\", content: JSON.stringify($json) } ] }) }}"
+      },
+      "id": "080664e9-a91e-5280-a0e8-676f91427f89",
+      "name": "AI ICP Qualification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('Normalize Lead Payload').first().json;\nconst raw = $input.first().json?.choices?.[0]?.message?.content || '{}';\nlet ai = { score: 0, tier: 'COLD', summary: 'Parse fallback', recommendedNextAction: 'Review manually', personalizedOpeningLine: '' };\ntry { ai = { ...ai, ...JSON.parse(raw) }; } catch {}\nreturn [{ json: { ...lead, ...ai, score: Number(ai.score) || 0 } }];"
+      },
+      "id": "19323401-83c0-5444-a211-a48cf5960d45",
+      "name": "Parse Score & Merge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "109a43af-8b50-5d87-8dc7-b4e85ef93352",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 75,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "4411c657-9004-5680-b1eb-ede6487a2e36",
+      "name": "Is Hot Lead (>=75)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: `🔥 HOT LEAD (${$json.score}/100): *${$json.name}* (${$json.company}) — ${$json.email}\\n*Summary:* ${$json.summary}\\n*Next Action:* ${$json.recommendedNextAction}\\n*Icebreaker:* ${$json.personalizedOpeningLine}` }) }}"
+      },
+      "id": "897e8f61-19b5-5cc8-86dd-904e0da12dc3",
+      "name": "Alert Sales Slack (HOT)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CRM_WEBHOOK_URL }}",
+        "options": {
+          "timeout": 20000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "8fcb1445-a27b-5e9e-91cb-6e2c93b0ae3b",
+      "name": "Log Warm/Cold Lead to CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Incoming Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Payload": {
+      "main": [
+        [
+          {
+            "node": "AI ICP Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI ICP Qualification": {
+      "main": [
+        [
+          {
+            "node": "Parse Score & Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Score & Merge": {
+      "main": [
+        [
+          {
+            "node": "Is Hot Lead (>=75)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Hot Lead (>=75)?": {
+      "main": [
+        [
+          {
+            "node": "Alert Sales Slack (HOT)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Warm/Cold Lead to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cc7f3a2d-3187-5809-82c2-602d334fa916",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
