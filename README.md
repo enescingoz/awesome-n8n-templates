@@ -138,6 +138,7 @@ This collection includes 9 email automation templates for n8n covering Gmail, Ou
 | Daily Email Notification | Summarizes daily inbox emails using local LLM (Ollama) and sends notifications via Telegram or ntfy. | Ops | [Link to Template](Gmail_and_Email_Automation/Daily%20Email%20Notification.json) |
 | Website-Grounded Cold Email Writer | Fetches each lead's real website, extracts the page text, and writes a personalized cold email grounded only in that content. Flags thin or broken sites for human review instead of inventing facts. | Sales | [Link to Template](Gmail_and_Email_Automation/Website-Grounded%20Cold%20Email%20Writer.json) |
 | Inbox Rail Audit - Gmail payment rails to Google Sheets | One pass over ~13 months of Gmail receipt metadata. Groups charges by payment rail (PayPal, Apple/Apple Pay, Google Play/Pay, Stripe/Paddle, SEPA/incasso, Klarna), writes amount/last4/VERIFIED evidence to Google Sheets. No PDF download, no mailbox writes, no LLM. | Finance/Ops | [Link to Template](Gmail_and_Email_Automation/Inbox%20Rail%20Audit%20-%20Gmail%20payment%20rails%20to%20Google%20Sheets.json) |
+| ATS Live Hiring Intent & Tech Stack Outreach | Monitors 71K+ live ATS job boards (Greenhouse, Lever, Ashby) for 45–120d hard-to-fill roles and tech-stack tags, routes hot accounts via Switch, and logs to Google Sheets & Slack. | Sales | [Link to Template](Gmail_and_Email_Automation/ATS%20Live%20Hiring%20Intent%20%26%20Tech%20Stack%20Outreach.json) |
 
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
@@ -572,6 +573,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 | DataForge Lite - AI URL Data Extractor | POST any URL and extract structured data using OpenAI. Returns clean JSON output for easy integration with other workflows. | Data Extraction, AI Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/DataForge%20Lite%20-%20AI%20URL%20Data%20Extractor.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Transforms Perplexity AI research into HTML content for AI-powered content creation. | Content Creation, AI Research | [Link to Template](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 | Live Web Research Agent with Superhighway | Search the live web, get AI-ready results (title, URL, snippet) using Superhighway's free search API. No browser required — pure HTTP. | Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/Live%20Web%20Research%20Agent%20with%20Superhighway.json) |
+| App Store & Google Play Churn Intel Lead Enricher | Detects silent recent review drops across unified iOS & Android apps, checks paid UA/MMP signals, routes high-opportunity leads via Switch, and logs to Google Sheets & Slack. | Sales/Data | [Link to Template](AI_Research_RAG_and_Data_Analysis/App%20Store%20%26%20Google%20Play%20Churn%20Intel%20Lead%20Enricher.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />
