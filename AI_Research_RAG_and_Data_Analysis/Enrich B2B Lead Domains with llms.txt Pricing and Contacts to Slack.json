@@ -1,0 +1,320 @@
+{
+  "name": "Enrich B2B Domains with Verified Contacts, SaaS /pricing Tiers & /llms.txt Briefs",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup (2 minutes)\n1. Subscribe to the free Basic plan on RapidAPI (`website-contacts-socials-pricing-llm-brief-api` \u2014 500 free req/mo).\n2. Create a Generic Header Auth credential named **RapidAPI Key** (`x-rapidapi-key`).\n3. Put your prospect domains or work emails in **Set Prospect List**.",
+        "height": 200,
+        "width": 440,
+        "color": 4
+      },
+      "id": "c0cdad75-2b25-4a4f-a3e1-8dcc8794c6c8",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Deduplication & WAF Protection\n- Cross-format duplicates (`stripe.com` and `ceo@stripe.com`) are deduplicated automatically.\n- WAF-blocked domains return a clean `error` while preserving DNS `emailProvider` \u2014 routed cleanly to the fallback branch.",
+        "height": 200,
+        "width": 420,
+        "color": 6
+      },
+      "id": "277f5877-4bb5-481c-953f-688121be4f7b",
+      "name": "Built-in Hygiene",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        -240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6b13bea0-aac4-4f02-8727-f3645a4b42e7",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a58efafb-fef3-44e4-a6b4-4fbc73a1ad86",
+              "name": "domains",
+              "value": "={{ ['stripe.com', 'linear.app', 'posthog.com', 'webflow.com'] }}",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "3c61d165-a750-48db-9cfc-84da4ebab5c8",
+      "name": "Set Prospect List",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://website-contacts-socials-pricing-llm-brief-api.p.rapidapi.com/enrich",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "website-contacts-socials-pricing-llm-brief-api.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domains: $json.domains }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "7a2ea689-471f-4212-9fd1-f41a34cb32d4",
+      "name": "Batch Enrich Company Domains",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        60
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "id": "dbd4a20f-deb6-435f-ac18-acfab054359f",
+      "name": "Split Out Enriched Companies",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "41f132de-1058-4e4d-8c90-743ae14ac8a5",
+              "leftValue": "={{ $json.error || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "0db3ff71-c914-41f3-bc5e-a14c6f4ec3dc",
+      "name": "Filter Reachable Domains",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bf331565-442f-462d-a52d-6efdd3508b1a",
+              "name": "domain",
+              "value": "={{ $json.domain }}",
+              "type": "string"
+            },
+            {
+              "id": "1399c5e3-e36a-4e1b-9c6c-f8288fe53056",
+              "name": "companyName",
+              "value": "={{ $json.companyName }}",
+              "type": "string"
+            },
+            {
+              "id": "52ad6ce2-84cf-4330-a656-856d791427b3",
+              "name": "primaryEmails",
+              "value": "={{ $json.primaryEmails || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "065e98ff-4ef2-4fe4-989b-51309d4bbe5b",
+              "name": "socials",
+              "value": "={{ $json.socialLinksSummary || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "42174371-3dee-4748-b94e-8290279ed5cf",
+              "name": "pricingSummary",
+              "value": "={{ $json.pricingSummary || 'None' }}",
+              "type": "string"
+            },
+            {
+              "id": "f81a1cd2-2cbd-4a31-8c70-fa1b0259acc2",
+              "name": "emailHost",
+              "value": "={{ $json.dns?.emailProvider || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "6128f718-ad92-41af-aaba-e97c49053620",
+              "name": "briefSource",
+              "value": "={{ $json.briefSource || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "433686a3-3157-4387-95cb-15482197c684",
+      "name": "Format Enriched Prospect",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#lead-enrichment"
+        },
+        "text": "={{ $json.companyName + ' (' + $json.domain + ') | Emails: ' + ($json.primaryEmails || 'None') + ' | Pricing: ' + $json.pricingSummary + ' | Mail: ' + $json.emailHost + ' | Brief: ' + $json.briefSource }}"
+      },
+      "id": "92ac5a03-fee1-4e74-a481-38c4e139b2fa",
+      "name": "Send Enriched Brief to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Prospect List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prospect List": {
+      "main": [
+        [
+          {
+            "node": "Batch Enrich Company Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Enrich Company Domains": {
+      "main": [
+        [
+          {
+            "node": "Split Out Enriched Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Enriched Companies": {
+      "main": [
+        [
+          {
+            "node": "Filter Reachable Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Reachable Domains": {
+      "main": [
+        [
+          {
+            "node": "Format Enriched Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Enriched Prospect": {
+      "main": [
+        [
+          {
+            "node": "Send Enriched Brief to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "8cc62a14-1cde-4f38-8879-34a7077f7bff",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Lead Enrichment"
+    },
+    {
+      "name": "AI"
+    },
+    {
+      "name": "Sales"
+    }
+  ]
+}
