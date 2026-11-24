@@ -572,6 +572,7 @@ Explore 39 AI research, RAG, and data analysis templates for n8n -- the largest 
 | DataForge Lite - AI URL Data Extractor | POST any URL and extract structured data using OpenAI. Returns clean JSON output for easy integration with other workflows. | Data Extraction, AI Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/DataForge%20Lite%20-%20AI%20URL%20Data%20Extractor.json) |
 | 🔍 Perplexity Research to HTML: AI-Powered Content Creation | Transforms Perplexity AI research into HTML content for AI-powered content creation. | Content Creation, AI Research | [Link to Template](./AI_Research_RAG_and_Data_Analysis/%F0%9F%94%8D%20Perplexity%20Research%20to%20HTML_%20AI-Powered%20Content%20Creation.json) |
 | Live Web Research Agent with Superhighway | Search the live web, get AI-ready results (title, URL, snippet) using Superhighway's free search API. No browser required — pure HTTP. | Research | [Link to Template](AI_Research_RAG_and_Data_Analysis/Live%20Web%20Research%20Agent%20with%20Superhighway.json) |
+| Live SEC Form D Startup Funding and 409A Lead Tracker | Queries live SEC EDGAR Form D XML filings for newly funded operating startups with CEO/CFO signer contact, phone, closed dollars, IRC 409A triggers, and state tax nexus. No API key required to test. | Finance, Sales | [Link to Template](AI_Research_RAG_and_Data_Analysis/Live%20SEC%20Form%20D%20Startup%20Funding%20and%20409A%20Lead%20Tracker.json) |
 
 > 🚀 **Automate any workflow.** [Start an n8n Cloud trial →](https://n8n.partnerlinks.io/h1pwwf5m4toe)
 <br />

@@ -1,0 +1,140 @@
+{
+  "nodes": [
+    {
+      "id": "ql-sec-form-d-leads-01-trig",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -460,
+        80
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "ql-sec-form-d-leads-01-cfg",
+      "name": "Filter & Optional API Key",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -200,
+        80
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fd-1",
+              "name": "state_filter",
+              "type": "string",
+              "value": "CA"
+            },
+            {
+              "id": "fd-2",
+              "name": "days_back",
+              "type": "number",
+              "value": 14
+            },
+            {
+              "id": "fd-3",
+              "name": "min_amount_sold_usd",
+              "type": "number",
+              "value": 250000
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "ql-sec-form-d-leads-01-http",
+      "name": "QuantLedger Deterministic API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        80,
+        80
+      ],
+      "parameters": {
+        "url": "https://quantledger-ghost-kitchen-3yplwqtnha-uc.a.run.app/v1/public/form-d-preview",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"state_filter\": \"{{ $json.state_filter }}\",\n  \"days_back\": {{ $json.days_back }},\n  \"min_amount_sold_usd\": {{ $json.min_amount_sold_usd }},\n  \"exclude_pooled_funds\": true\n}",
+        "options": {}
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "ql-sec-form-d-leads-01-fmt",
+      "name": "Normalize Clean Rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        340,
+        80
+      ],
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst leads = body.leads || [];\nreturn leads.map((r) => ({ json: {\n  company: r.issuer_name,\n  state: r.state_or_country,\n  amount_sold_usd: r.total_amount_sold_usd,\n  executive_signer: r.primary_executive_name,\n  executive_title: r.primary_executive_title,\n  phone: r.issuer_phone,\n  irc_409a_trigger: r.irc_409a_valuation_trigger,\n  qsbs_1202_status: r.irc_1202_qsbs_eligibility,\n  sec_filing_date: r.filing_date\n}}));\n"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "ql-sec-form-d-leads-01-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -460,
+        -220
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 250,
+        "content": "## Live SEC Form D Startup Funding & IRC 409A Lead Tracker\n\nExtracts newly funded private-placement operating companies from live SEC EDGAR Form D XML filings with CEO/CFO signer contact, phone number, closed dollars, IRC Sec. 409A revaluation triggers, and 57-state corporate tax nexus.\n\n**1/ Instant Zero-Key Run:** Click **Test workflow** right away \u2014 runs in keyless preview mode out of the box.\n**2/ Full 100-Lead Pro Batches:** Get a free RapidAPI key at https://rapidapi.com/quantledger/api/quantledger-73-engine-financial-and-statutory-api or install `n8n-nodes-quantledger`."
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Filter & Optional API Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Optional API Key": {
+      "main": [
+        [
+          {
+            "node": "QuantLedger Deterministic API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QuantLedger Deterministic API": {
+      "main": [
+        [
+          {
+            "node": "Normalize Clean Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "meta": {
+    "instanceId": "quantledger-ql-sec-form-d-leads-01"
+  },
+  "id": "ql-sec-form-d-leads-01",
+  "name": "Live SEC Form D Startup Funding and 409A Lead Tracker",
+  "active": false
+}
