@@ -1,0 +1,499 @@
+{
+  "name": "Daily App Store & Google Play Churn Intel & Developer Outreach Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1. Setup Guide (Zero Hardcoded Secrets)\n1. Create an **HTTP Header Auth** credential (`Apify Bearer Auth`) with Header Name `Authorization` and Value `Bearer <YOUR_APIFY_TOKEN>`.\n2. Edit **Workflow Config** to customize `searchTerms`, `countries`, `outreachPersona`, `dedupStoreName`, and optional `crmWebhookUrl`.\n3. Connect your Slack & Gmail credentials on the notification nodes, then activate the daily 08:00 schedule.",
+        "height": 230,
+        "width": 520
+      },
+      "id": "sticky-setup",
+      "name": "Sticky: Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [160, -140]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Async Apify Runner (waitForFinish=60)\nCalls `maitreya_buddha~app-store-google-play-churn-intel-lead-enricher` under `LIMITED_PERMISSIONS` with `watchDiff=true` ($0 on unchanged apps) and a clean `RUNNING`/`READY` polling loop (15s wait) so multi-country runs never time out.",
+        "height": 180,
+        "width": 520
+      },
+      "id": "sticky-runner",
+      "name": "Sticky: Async Runner",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [740, -140]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Silent Churn & Watch-Diff Signal Router\nUses `typeValidation: \"loose\"` Switch routing to route high-priority apps (`opportunityScore >= 55` or `NEW_CRITICAL_REVIEW` / `CRASH_SPIKE_ALERT`) to **Slack + Gmail + CRM** in parallel.",
+        "height": 180,
+        "width": 520
+      },
+      "id": "sticky-router",
+      "name": "Sticky: Signal Router",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1340, -140]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Guarded CRM Webhook Delivery\nThe **CRM Webhook Configured?** IF node guards the HTTP Request so unconfigured placeholder URLs are skipped cleanly without workflow errors.",
+        "height": 180,
+        "width": 440
+      },
+      "id": "sticky-webhook",
+      "name": "Sticky: Guarded Webhook",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1920, -140]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "node-1-schedule",
+      "name": "Daily 08:00 Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [180, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-actor-slug",
+              "name": "actorSlug",
+              "value": "maitreya_buddha~app-store-google-play-churn-intel-lead-enricher",
+              "type": "string"
+            },
+            {
+              "id": "cfg-dedup-store",
+              "name": "dedupStoreName",
+              "value": "daily-app-churn-watch",
+              "type": "string"
+            },
+            {
+              "id": "cfg-persona",
+              "name": "outreachPersona",
+              "value": "aso_growth_agency",
+              "type": "string"
+            },
+            {
+              "id": "cfg-crm-webhook",
+              "name": "crmWebhookUrl",
+              "value": "={{ $vars?.CRM_WEBHOOK_URL || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-2-config",
+      "name": "Workflow Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/{{ $json.actorSlug }}/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "waitForFinish",
+              "value": "60"
+            },
+            {
+              "name": "memory",
+              "value": "128"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"mode\": \"app_intelligence\",\n  \"searchTerms\": [\"invoice maker\"],\n  \"countries\": [\"us\"],\n  \"maxApps\": 5,\n  \"sampleReviewsPerStore\": 40,\n  \"watchDiff\": true,\n  \"preflightShortCircuit\": true,\n  \"dedupStoreName\": \"{{ $json.dedupStoreName }}\",\n  \"outreachPersona\": \"{{ $json.outreachPersona }}\",\n  \"crmPreset\": \"default\"\n}",
+        "options": {
+          "timeout": 75000
+        }
+      },
+      "id": "node-3-start-actor",
+      "name": "Run App Churn Intel Monitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Apify Bearer Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-run-succeeded",
+              "leftValue": "={{ $json.data?.status }}",
+              "rightValue": "SUCCEEDED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-4-if-succeeded",
+      "name": "Run Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [940, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-running",
+              "leftValue": "={{ $json.data?.status }}",
+              "rightValue": "RUNNING",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cond-ready",
+              "leftValue": "={{ $json.data?.status }}",
+              "rightValue": "READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "node-5-if-running",
+      "name": "Still Running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [940, 420]
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "id": "node-6-wait",
+      "name": "Wait 15s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [680, 420]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $json.data?.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "waitForFinish",
+              "value": "60"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 75000
+        }
+      },
+      "id": "node-7-poll",
+      "name": "Poll Actor Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 620],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Apify Bearer Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/datasets/{{ $json.data?.defaultDatasetId }}/items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "clean",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "node-8-fetch-items",
+      "name": "Fetch Dataset Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Apify Bearer Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "high_churn_alert",
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "sw-score",
+                    "leftValue": "={{ Number($json.opportunityScore || 0) }}",
+                    "rightValue": 55,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  },
+                  {
+                    "id": "sw-watch",
+                    "leftValue": "={{ Array.isArray($json.watchTriggers) && $json.watchTriggers.length > 0 }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "outputKey": "standard_crm_sync",
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "sw-std",
+                    "leftValue": "={{ Number($json.opportunityScore || 0) }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  },
+                  {
+                    "id": "sw-std-app",
+                    "leftValue": "={{ Boolean($json.appName) }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-9-switch",
+      "name": "Route By Churn Opportunity",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1460, 200]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#app-churn-alerts",
+          "mode": "name"
+        },
+        "text": "=*App Churn Signal* — *{{ $json.appName || 'Unknown' }}* ({{ $json.platformCoverage || 'UNKNOWN' }})\n• Score: {{ $json.opportunityScore ?? 0 }} ({{ $json.opportunityTier || 'n/a' }}) | Lifetime: {{ $json.overallBlendedRating ?? 'n/a' }}★ vs Recent: {{ $json.recentReviewsAvg ?? 'n/a' }}★ (Gap: {{ $json.silentChurnDivergence ?? 'n/a' }})\n• Top Pain: {{ $json.topPainBucket || 'n/a' }} | ASO: {{ $json.asoMetadataScore ?? 'n/a' }}/100\n• Developer Contact: {{ $json.primaryEmail || 'n/a' }} | Paid Ads/MMP: {{ (Array.isArray($json.adPlatforms) ? $json.adPlatforms : []).join(', ') || 'none' }}\n• Watch Triggers: {{ (Array.isArray($json.watchTriggers) ? $json.watchTriggers : []).join(', ') || 'baseline' }}\n• Opener: {{ $json.outreachOpener || 'n/a' }}",
+        "otherOptions": {}
+      },
+      "id": "node-10-slack",
+      "name": "Send Slack Churn Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1740, 80]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $vars?.ALERT_EMAIL || 'team@example.com' }}",
+        "subject": "=[App Churn Alert] {{ $json.appName || 'Unknown' }} — {{ $json.outreachSubject || $json.topPainBucket || 'Silent Churn Signal' }}",
+        "emailType": "text",
+        "message": "=App: {{ $json.appName || 'Unknown' }} ({{ $json.platformCoverage || 'UNKNOWN' }})\nDeveloper: {{ $json.developerName || 'n/a' }} ({{ $json.developerLegalEntity || 'n/a' }})\nOpportunity Score: {{ $json.opportunityScore ?? 0 }} ({{ $json.opportunityTier || 'n/a' }})\nLifetime vs Recent Rating: {{ $json.overallBlendedRating ?? 'n/a' }} vs {{ $json.recentReviewsAvg ?? 'n/a' }} (Gap: {{ $json.silentChurnDivergence ?? 'n/a' }})\nASO Score: {{ $json.asoMetadataScore ?? 'n/a' }}/100 | Top Pain: {{ $json.topPainBucket || 'n/a' }}\nVerified Email: {{ $json.primaryEmail || 'n/a' }} | Phone: {{ $json.developerPhone || 'n/a' }}\n\nSuggested Outreach:\n{{ $json.outreachBody || 'n/a' }}\n\nLinkedIn Decision-Maker Search:\n{{ $json.linkedinDecisionMakerSearchUrl || 'n/a' }}"
+      },
+      "id": "node-11-gmail",
+      "name": "Send Gmail Digest Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1740, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-webhook-set",
+              "leftValue": "={{ $('Workflow Config').first()?.json?.crmWebhookUrl || '' }}",
+              "rightValue": "https://",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-12-if-webhook",
+      "name": "CRM Webhook Configured?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1740, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Config').first()?.json?.crmWebhookUrl || '' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "node-13-crm-webhook",
+      "name": "Push To CRM Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2020, 440],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRM_WEBHOOK_HEADER_AUTH",
+          "name": "CRM Webhook Header Auth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 08:00 Trigger": {
+      "main": [[{ "node": "Workflow Config", "type": "main", "index": 0 }]]
+    },
+    "Workflow Config": {
+      "main": [[{ "node": "Run App Churn Intel Monitor", "type": "main", "index": 0 }]]
+    },
+    "Run App Churn Intel Monitor": {
+      "main": [[{ "node": "Run Succeeded?", "type": "main", "index": 0 }]]
+    },
+    "Run Succeeded?": {
+      "main": [
+        [{ "node": "Fetch Dataset Items", "type": "main", "index": 0 }],
+        [{ "node": "Still Running?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Still Running?": {
+      "main": [[{ "node": "Wait 15s", "type": "main", "index": 0 }], []]
+    },
+    "Wait 15s": {
+      "main": [[{ "node": "Poll Actor Run", "type": "main", "index": 0 }]]
+    },
+    "Poll Actor Run": {
+      "main": [[{ "node": "Run Succeeded?", "type": "main", "index": 0 }]]
+    },
+    "Fetch Dataset Items": {
+      "main": [[{ "node": "Route By Churn Opportunity", "type": "main", "index": 0 }]]
+    },
+    "Route By Churn Opportunity": {
+      "main": [
+        [
+          { "node": "Send Slack Churn Alert", "type": "main", "index": 0 },
+          { "node": "Send Gmail Digest Alert", "type": "main", "index": 0 },
+          { "node": "CRM Webhook Configured?", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "CRM Webhook Configured?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "CRM Webhook Configured?": {
+      "main": [[{ "node": "Push To CRM Webhook", "type": "main", "index": 0 }], []]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
