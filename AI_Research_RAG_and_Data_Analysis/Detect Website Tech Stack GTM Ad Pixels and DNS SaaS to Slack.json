@@ -1,0 +1,317 @@
+{
+  "name": "Qualify B2B Leads by Website Tech Stack, Ad Pixels & DNS SaaS Signals",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup (2 minutes)\n1. Subscribe to the free Basic plan on RapidAPI (`website-tech-stack-ad-pixels-and-saas-detector`).\n2. Create a Generic Header Auth credential named **RapidAPI Key** (`x-rapidapi-key`).\n3. Replace the sample domains in **Set Prospect Domains** (or connect a Google Sheets / HubSpot trigger).",
+        "height": 200,
+        "width": 440,
+        "color": 4
+      },
+      "id": "49f03d2a-712f-40a5-8130-13cce6363ada",
+      "name": "Setup Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Why This Works on Enterprise Domains\n- Even when a domain returns HTTP 403 (WAF), `POST /scan` still returns `verifiedDnsSaaS` and `emailProvider` via MX/TXT/DMARC.\n- Publisher ad scripts (AdSense/GPT) are excluded from `hasAdPixels` so only true paid advertisers route to Sales.",
+        "height": 200,
+        "width": 420,
+        "color": 6
+      },
+      "id": "1b8acba6-9da5-4cdd-92ce-59478d813d88",
+      "name": "WAF-Resilient Logic",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        -240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e304ed87-5e3f-4e93-944f-58459b0d5526",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "14a87419-f24b-49b2-aad2-9eff7de288fd",
+              "name": "domains",
+              "value": "={{ ['posthog.com', 'stripe.com', 'zillow.com', 'hubspot.com'] }}",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "c548b093-11ac-44ad-a52f-92f4abe1a023",
+      "name": "Set Prospect Domains",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://website-tech-stack-ad-pixels-and-saas-detector.p.rapidapi.com/scan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "website-tech-stack-ad-pixels-and-saas-detector.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domains: $json.domains }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "a0807a79-fd49-4338-ba0e-6f82f0577c3e",
+      "name": "Scan Tech Stack, Pixels & DNS SaaS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        60
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "87f11418-eca4-405c-9e25-d48e3e8c7cc7",
+      "name": "Split Out Scanned Domains",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "de2c6aee-2009-4642-87f6-d264daeac91c",
+              "leftValue": "={{ $json.hasAdPixels }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "5cc0dcb5-bf6c-408f-8889-915622bfd0b7",
+              "leftValue": "={{ ($json.verifiedDnsSaaS || []).length }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        }
+      },
+      "id": "127c6c21-97ca-4791-9532-816026f76df8",
+      "name": "Filter Qualified B2B Prospects",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d410955-5b1e-4b4d-8a0f-cbbaf388d032",
+              "name": "domain",
+              "value": "={{ $json.domain }}",
+              "type": "string"
+            },
+            {
+              "id": "ec7f2a1b-97ef-48ae-a08f-b487b7a32418",
+              "name": "scanStatus",
+              "value": "={{ $json.scanStatus }}",
+              "type": "string"
+            },
+            {
+              "id": "f77e92c3-c948-4678-88fc-66a01970af7b",
+              "name": "adPlatforms",
+              "value": "={{ ($json.adPlatforms || []).join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "5f914c1a-f4cf-4a18-a90d-680c7554b832",
+              "name": "emailProvider",
+              "value": "={{ $json.emailProvider || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "5f143c5d-871b-48a0-91bf-d296d343d6aa",
+              "name": "dnsSaaS",
+              "value": "={{ ($json.verifiedDnsSaaS || []).slice(0, 8).join(', ') }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "3d5aa5ea-8da8-4c62-9820-d26de5b0b624",
+      "name": "Format Technographic Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#sales-signals"
+        },
+        "text": "={{ 'Qualified Account: ' + $json.domain + ' | Ads: ' + ($json.adPlatforms || 'None') + ' | Mail: ' + $json.emailProvider + ' | DNS SaaS: ' + $json.dnsSaaS }}"
+      },
+      "id": "965de3a9-5660-46fc-b0fd-2b22dba47d16",
+      "name": "Notify Sales Channel on Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Prospect Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prospect Domains": {
+      "main": [
+        [
+          {
+            "node": "Scan Tech Stack, Pixels & DNS SaaS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan Tech Stack, Pixels & DNS SaaS": {
+      "main": [
+        [
+          {
+            "node": "Split Out Scanned Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Scanned Domains": {
+      "main": [
+        [
+          {
+            "node": "Filter Qualified B2B Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Qualified B2B Prospects": {
+      "main": [
+        [
+          {
+            "node": "Format Technographic Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Technographic Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Sales Channel on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "5a5c1880-cb5e-44d2-ac66-4a771e000766",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Sales"
+    },
+    {
+      "name": "Lead Enrichment"
+    },
+    {
+      "name": "Technographics"
+    }
+  ]
+}
