@@ -1,36 +1,84 @@
 {
-  "name": "Enrich B2B Domains with Verified Contacts, SaaS /pricing Tiers & /llms.txt Briefs",
+  "name": "Enrich B2B lead domains with RapidAPI and send briefs to Slack",
   "nodes": [
     {
       "parameters": {
-        "content": "## Setup (2 minutes)\n1. Subscribe to the free Basic plan on RapidAPI (`website-contacts-socials-pricing-llm-brief-api` \u2014 500 free req/mo).\n2. Create a Generic Header Auth credential named **RapidAPI Key** (`x-rapidapi-key`).\n3. Put your prospect domains or work emails in **Set Prospect List**.",
-        "height": 200,
-        "width": 440,
-        "color": 4
+        "content": "## Enrich B2B Lead Domains & Send Slack Briefs\n\n### How it works\nThis workflow enriches a list of B2B prospect domains (or work emails) in a single batch call and delivers structured account briefs to Slack:\n1. **Manual Trigger** and **Set Prospect List** define the target company domains to research.\n2. **Batch Enrich Company Domains** calls the RapidAPI Website Contacts, Pricing & LLM Brief API to extract verified role emails, phone numbers, social profiles, SaaS `/pricing` tiers, DNS email provider (`MX`/`SPF`), and `/llms.txt` briefs. Cross-format duplicates (e.g., `stripe.com` and `ceo@stripe.com`) are deduplicated automatically.\n3. **Split Out Enriched Companies** turns the batch array into one item per domain.\n4. **Filter Reachable Domains** passes clean results to **Format Enriched Prospect** and **Send Enriched Brief to Slack**, while keeping WAF-blocked domains isolated on the false branch.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`website-contacts-socials-pricing-llm-brief-api`, 500 free req/mo).\n2. Create a **Header Auth** credential named `RapidAPI Key` with header name `x-rapidapi-key` and your RapidAPI key as the value, then select it in **Batch Enrich Company Domains**.\n3. Connect your **Slack** credential and choose your target channel in **Send Enriched Brief to Slack**.\n4. Replace the sample domains in **Set Prospect List** and click **Execute workflow**.\n\n### Customization\n- Replace **Manual Trigger** with a **Schedule Trigger**, **Webhook**, or CRM trigger (HubSpot, Pipedrive, Airtable).\n- Connect the `false` output of **Filter Reachable Domains** to a spreadsheet or Slack alert to track WAF-blocked domains alongside their DNS `emailProvider`.\n- Adjust the summary fields in **Format Enriched Prospect** to match your team's CRM schema.",
+        "height": 640,
+        "width": 460,
+        "color": 1
       },
       "id": "c0cdad75-2b25-4a4f-a3e1-8dcc8794c6c8",
-      "name": "Setup Guide",
+      "name": "Workflow Overview",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        0,
-        -240
+        -520,
+        40
       ]
     },
     {
       "parameters": {
-        "content": "### Deduplication & WAF Protection\n- Cross-format duplicates (`stripe.com` and `ceo@stripe.com`) are deduplicated automatically.\n- WAF-blocked domains return a clean `error` while preserving DNS `emailProvider` \u2014 routed cleanly to the fallback branch.",
-        "height": 200,
-        "width": 420,
-        "color": 6
+        "content": "## 1. Trigger & Prospect Input\nStart the workflow manually and define the array of prospect domains or work emails to enrich.\n\n*Tip: Swap Manual Trigger for a Webhook, Schedule, or CRM trigger in production.*",
+        "height": 380,
+        "width": 460,
+        "color": 5
       },
-      "id": "277f5877-4bb5-481c-953f-688121be4f7b",
-      "name": "Built-in Hygiene",
+      "id": "e1a9d411-72be-4c8d-9b34-101010101001",
+      "name": "Step 1: Input",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        520,
-        -240
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Batch Domain Enrichment\nSends all domains in one `POST /enrich` request via RapidAPI, deduplicating cross-format inputs (`domain` vs `email`), then splits the `results` array into individual company items.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "277f5877-4bb5-481c-953f-688121be4f7b",
+      "name": "Step 2: Enrich & Split",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Filter Errors & Format Brief\nFilters out unreachable or WAF-blocked domains (`error` is empty) so only clean profiles continue, then maps contacts, socials, SaaS `/pricing`, DNS mail host, and `/llms.txt` brief source into flat fields.",
+        "height": 380,
+        "width": 500,
+        "color": 6
+      },
+      "id": "e1a9d411-72be-4c8d-9b34-101010101003",
+      "name": "Step 3: Filter & Format",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Post Brief to Slack\nDelivers each formatted B2B prospect summary directly to your chosen Slack channel (`#lead-enrichment` by default).",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "e1a9d411-72be-4c8d-9b34-101010101004",
+      "name": "Step 4: Slack Output",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        60
       ]
     },
     {
@@ -40,8 +88,8 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        0,
-        60
+        40,
+        260
       ]
     },
     {
@@ -62,8 +110,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        240,
-        60
+        280,
+        260
       ]
     },
     {
@@ -93,8 +141,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        480,
-        60
+        560,
+        260
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -113,8 +161,8 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        720,
-        60
+        820,
+        260
       ]
     },
     {
@@ -144,8 +192,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        960,
-        60
+        1100,
+        260
       ]
     },
     {
@@ -202,8 +250,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1220,
-        0
+        1360,
+        240
       ]
     },
     {
@@ -221,8 +269,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
       "position": [
-        1460,
-        0
+        1680,
+        240
       ]
     }
   ],
