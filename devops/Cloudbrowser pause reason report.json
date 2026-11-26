@@ -1,0 +1,118 @@
+{
+  "name": "Cloudbrowser pause reason report",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "11ab79ab-043d-43d3-8cb5-a1f6b8e60f01",
+      "name": "Run report manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: {\n  \"items\": [\n    {\n      \"id\": \"br_example1\",\n      \"status\": \"paused\",\n      \"pauseReason\": \"idle\"\n    },\n    {\n      \"id\": \"br_example2\",\n      \"status\": \"paused\",\n      \"pauseReason\": \"free_allowance_exhausted\"\n    },\n    {\n      \"id\": \"br_example3\",\n      \"status\": \"pausing\",\n      \"pauseReason\": \"payment_required\"\n    },\n    {\n      \"id\": \"br_example4\",\n      \"status\": \"paused\",\n      \"pauseReason\": \"upstream\"\n    },\n    {\n      \"id\": \"br_example5\",\n      \"status\": \"running\",\n      \"pauseReason\": \"payment_required\"\n    },\n    {\n      \"id\": \"br_example6\",\n      \"status\": \"paused\",\n      \"pauseReason\": null\n    }\n  ],\n  \"nextCursor\": null\n} }];"
+      },
+      "id": "11ab79ab-043d-43d3-8cb5-a1f6b8e60f02",
+      "name": "Load sample browsers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const envelope = $input.first().json;\nif (!Array.isArray(envelope.items)) {\n  throw new Error('Expected a Cloudbrowser list response with an items array.');\n}\nconst known = new Set(['user','idle','created_paused','upstream','free_allowance_exhausted','payment_required','concurrency_limit']);\nconst routine = new Set(['user','idle','created_paused']);\nconst pauseReasons = {};\nlet pausing = 0;\nlet paused = 0;\nlet needsReview = 0;\n\nfor (const browser of envelope.items) {\n  if (!browser || typeof browser.status !== 'string') {\n    throw new Error('Each item needs a browser status.');\n  }\n  if (browser.status === 'pausing') pausing++;\n  else if (browser.status === 'paused') paused++;\n  else continue;\n  const reason = known.has(browser.pauseReason) ? browser.pauseReason : 'unknown';\n  pauseReasons[reason] = (pauseReasons[reason] ?? 0) + 1;\n  if (!routine.has(reason)) needsReview++;\n}\nreturn [{\n  json: {\n    inspected: envelope.items.length,\n    paused,\n    pausing,\n    needsReview,\n    pauseReasons,\n    hasAnotherPage: typeof envelope.nextCursor === 'string' && envelope.nextCursor.length > 0,\n  },\n}];"
+      },
+      "id": "11ab79ab-043d-43d3-8cb5-a1f6b8e60f03",
+      "name": "Summarize pause reasons",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://cloudbrowser.tv/api/v1/browsers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "11ab79ab-043d-43d3-8cb5-a1f6b8e60f04",
+      "name": "List real browsers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Start with the synthetic fixture\nRun **Run report manually** in n8n. The report summarizes statuses from one page and ignores historical pause reasons on browsers that are running.\n\nTo inspect a real workspace, create a **Header Auth** credential in n8n with header `Authorization` and value `Bearer YOUR_WORKSPACE_API_KEY`. Select it on **List real browsers**, then wire **Run report manually → List real browsers → Summarize pause reasons** in place of **Load sample browsers**. Keep the workflow inactive until you choose how to run it.\n\n`hasAnotherPage` indicates a partial view. Read current usage before deciding whether a browser can resume. [Cloudbrowser REST API reference](https://cloudbrowser.tv/docs/api)",
+        "height": 330,
+        "width": 460
+      },
+      "id": "11ab79ab-043d-43d3-8cb5-a1f6b8e60f05",
+      "name": "Setup instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -470,
+        -90
+      ]
+    }
+  ],
+  "connections": {
+    "Run report manually": {
+      "main": [
+        [
+          {
+            "node": "Load sample browsers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load sample browsers": {
+      "main": [
+        [
+          {
+            "node": "Summarize pause reasons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
