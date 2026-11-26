@@ -1,0 +1,417 @@
+{
+  "name": "Weekly Competitor Google Ads & EU DSA Creative Monitor to Sheets and Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Weekly Competitor Google Ads & EU DSA Creative Monitor\n\n### How it works\nThis workflow monitors competitor Google Search, YouTube, and Display ad activity every week and sends concise creative digests to Slack:\n1. **Weekly Schedule Trigger** and **Set Target Domains** kick off the run for your competitor domain list.\n2. **Screen Domains for Active Google Ads** sends all domains in one batch (`POST /screen`) via RapidAPI (`google-ads-transparency-creative-spy`), and **Split Out Screened Domains** unpacks each company record.\n3. **Filter Active Advertisers** keeps only domains with `hasActiveAds = true`, then **Fetch Top Active Creatives** (`GET /search`) pulls up to 5 active creatives per advertiser.\n4. **Format Ad Digest Row** extracts advertiser name, creative count, latest format, and last shown date, and **Send Weekly Ad Digest to Slack** posts the summary to `#marketing-intel`.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`google-ads-transparency-creative-spy`).\n2. Create a **Header Auth** credential named `RapidAPI Key` with header `x-rapidapi-key` and attach it to both **Screen Domains for Active Google Ads** and **Fetch Top Active Creatives**.\n3. Connect your **Slack** credential and choose a target channel in **Send Weekly Ad Digest to Slack**.\n4. Update the competitor list in **Set Target Domains** and test the workflow.\n\n### Customization\n- Change **Weekly Schedule Trigger** to daily or add a **Google Sheets** / **Airtable** node alongside Slack to archive historical creative counts.\n- Change `region: 'ALL'` in **Screen Domains for Active Google Ads** to a specific country code (e.g., `'US'` or `'DE'`) to narrow EU DSA reach monitoring.",
+        "height": 640,
+        "width": 460,
+        "color": 1
+      },
+      "id": "google-overview-note",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Schedule & Target Domains\nRuns weekly and defines the array of competitor domains to check for active Google Ads campaigns.",
+        "height": 380,
+        "width": 460,
+        "color": 5
+      },
+      "id": "adp-sec-1",
+      "name": "Step 1: Schedule & Targets",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Batch Screen Active Ads\nCalls `POST /screen` in one batch request to check which target domains currently run Google Ads, then splits out each domain.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "adp-sec-2",
+      "name": "Step 2: Batch Screen",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Filter, Fetch Creatives & Format\nFilters active advertisers (`hasActiveAds = true`), fetches up to 5 top creatives via `GET /search`, and formats advertiser name, format, and last shown date.",
+        "height": 380,
+        "width": 760,
+        "color": 6
+      },
+      "id": "adp-sec-3",
+      "name": "Step 3: Filter & Fetch Creatives",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Post Digest to Slack\nPosts each active advertiser's creative update to your Slack channel (`#marketing-intel` by default).",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "adp-sec-4",
+      "name": "Step 4: Slack Digest",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "ff3bcf6a-b339-48ee-a92e-898ce37db58d",
+      "name": "Weekly Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        40,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b5ad136d-6488-400a-bb82-f7190f3d60f7",
+              "name": "domains",
+              "value": "={{ ['shopify.com', 'hubspot.com', 'zalando.de'] }}",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "62f744b7-b8d5-4bc4-bc33-44e8c7b3979e",
+      "name": "Set Target Domains",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google-ads-transparency-creative-spy.p.rapidapi.com/screen",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "google-ads-transparency-creative-spy.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domains: $json.domains, region: 'ALL' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "4a8f550e-ae33-47fd-b9a3-859c8c38f0c5",
+      "name": "Screen Domains for Active Google Ads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "06420fc2-747f-42b0-90bb-820e71f842b4",
+      "name": "Split Out Screened Domains",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        820,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "55ab68a1-1d3e-4d1f-8341-f86f875c72ee",
+              "leftValue": "={{ $json.hasActiveAds }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "fcd8d04d-655e-434d-9926-5fb8936fa6d1",
+      "name": "Filter Active Advertisers",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://google-ads-transparency-creative-spy.p.rapidapi.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "maxResults",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "google-ads-transparency-creative-spy.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "fc99c216-3c45-4bf1-89ee-396ed76debf8",
+      "name": "Fetch Top Active Creatives",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        240
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c84be687-768c-44df-8778-a556e9d9718a",
+              "name": "advertiser",
+              "value": "={{ $json.items?.[0]?.advertiserName || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "769baa86-db32-4469-b23b-85d5aa7d8c63",
+              "name": "creativeCount",
+              "value": "={{ $json.count || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "8e0decc0-88a6-447d-bae3-f92061d2ed5a",
+              "name": "latestFormat",
+              "value": "={{ $json.items?.[0]?.format || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "59d6a3e7-35ec-490a-a8d1-89dedfb885ac",
+              "name": "lastShownDate",
+              "value": "={{ $json.items?.[0]?.lastShownDate || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "013284f9-6c82-4fee-a5e4-b1ad93fe6d86",
+      "name": "Format Ad Digest Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1620,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#marketing-intel"
+        },
+        "text": "={{ 'Google Ads Update — ' + $json.advertiser + ': ' + $json.creativeCount + ' creatives sampled (latest: ' + $json.latestFormat + ', ' + $json.lastShownDate + ')' }}"
+      },
+      "id": "b10ee1b1-536d-4d5b-adcc-580c6e7e8615",
+      "name": "Send Weekly Ad Digest to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1940,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Target Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Target Domains": {
+      "main": [
+        [
+          {
+            "node": "Screen Domains for Active Google Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screen Domains for Active Google Ads": {
+      "main": [
+        [
+          {
+            "node": "Split Out Screened Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Screened Domains": {
+      "main": [
+        [
+          {
+            "node": "Filter Active Advertisers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Active Advertisers": {
+      "main": [
+        [
+          {
+            "node": "Fetch Top Active Creatives",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Fetch Top Active Creatives": {
+      "main": [
+        [
+          {
+            "node": "Format Ad Digest Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Ad Digest Row": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Ad Digest to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "f58adeee-d533-42d0-b031-8774b850b663",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Marketing"
+    },
+    {
+      "name": "Google Ads"
+    },
+    {
+      "name": "Competitive Intelligence"
+    }
+  ]
+}

@@ -451,6 +451,7 @@ This section includes 49 additional n8n integration templates covering a wide ra
 
 | Title | Description | Department | Link |
 |-------|-------------|------------|------|
+| Monitor Competitor Google Ads Transparency Creatives to Slack | Screens competitor domains against Google Ads Transparency Center for active creatives, ad copy, formats, and EU DSA reach disclosures without headless browsers. | Marketing, PPC | [Link to Template](Other_Integrations_and_Use_Cases/Monitor%20Competitor%20Google%20Ads%20Transparency%20Creatives%20to%20Slack.json) |
 | Generate a product image with Magic Hour | Generate one product image, require completion, and download PNG binary data. Requires the Magic Hour community node and API credits. | Marketing/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Generate%20a%20product%20image%20with%20Magic%20Hour.json) |
 | Animate a product photo with Magic Hour | Animate a product photo into a short video, require completion, and download MP4 binary data. Requires the Magic Hour community node and API credits. | Marketing/Creative | [Link to Template](Other_Integrations_and_Use_Cases/Animate%20a%20product%20photo%20with%20Magic%20Hour.json) |
 | Recover a completed video with Magic Hour | Retrieve a completed video by project ID without starting another paid generation; stop if unfinished. Requires the Magic Hour community node. | Engineering/Ops | [Link to Template](Other_Integrations_and_Use_Cases/Recover%20a%20completed%20video%20with%20Magic%20Hour.json) |
