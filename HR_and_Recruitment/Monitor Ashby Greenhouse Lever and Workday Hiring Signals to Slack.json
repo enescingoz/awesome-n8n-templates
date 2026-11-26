@@ -1,0 +1,374 @@
+{
+  "name": "Monitor Target Accounts for Hiring Velocity, Salary Bands & JD Tech Signals (6 ATS)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Monitor Target Accounts for 6-ATS Hiring Velocity, Salary & Tech Signals\n\n### How it works\nThis workflow tracks hiring velocity, salary benchmarks, and job-description tech signals across six major ATS platforms every week:\n1. **Weekly Schedule Trigger** and **Set Target Accounts** initiate monitoring for your target company domains (or work emails).\n2. **Screen 6-ATS Hiring Signals** calls `POST /screen` on RapidAPI (`unified-multi-ats-jobs-salary-hiring-intelligence`) to auto-detect boards across Ashby, Greenhouse, Lever, SmartRecruiters, Workday, and BambooHR and return open role counts, median USD salaries, remote share, and 135+ JD tech-stack signals. **Split Out Company Summaries** separates each company item.\n3. **Filter Active Hiring Accounts** keeps accounts with `status = ok` and at least `5` open roles.\n4. **Format Hiring Signal Digest** extracts company, ATS, open role count, median USD salary, and top tech skills, and **Send Hiring Signal Alert to Slack** posts alerts to `#hiring-signals`.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`unified-multi-ats-jobs-salary-hiring-intelligence`).\n2. Create a **Header Auth** credential named `RapidAPI Key` (`x-rapidapi-key`) and select it in **Screen 6-ATS Hiring Signals**.\n3. Connect your **Slack** credential and select your destination channel in **Send Hiring Signal Alert to Slack**.\n4. Edit the company list in **Set Target Accounts** and test the workflow.\n\n### Customization\n- Lower or raise the `totalOpenJobs >= 5` threshold in **Filter Active Hiring Accounts** to match your territory size.\n- Pipe **Format Hiring Signal Digest** into **HubSpot**, **Salesforce**, or **Notion** alongside Slack for account-level hiring history.",
+        "height": 640,
+        "width": 460,
+        "color": 1
+      },
+      "id": "ats-jo-overview-note",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Weekly Trigger & Target Accounts\nRuns on a weekly schedule and defines the target company domains or work emails to monitor.",
+        "height": 380,
+        "width": 460,
+        "color": 5
+      },
+      "id": "rol-sec-1",
+      "name": "Step 1: Schedule & Accounts",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Screen 6-ATS Boards & Split\nAuto-detects Ashby, Greenhouse, Lever, SmartRecruiters, Workday, and BambooHR boards in one `POST /screen` call, then splits company summaries.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "rol-sec-2",
+      "name": "Step 2: Screen 6 ATS",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Filter Hiring Velocity & Format\nKeeps accounts with `status = ok` and `>= 5` open roles, then formats ATS name, role count, median USD salary, and top JD tech signals.",
+        "height": 380,
+        "width": 500,
+        "color": 6
+      },
+      "id": "rol-sec-3",
+      "name": "Step 3: Filter & Format",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Send Hiring Alert to Slack\nPosts each active hiring account's digest directly to `#hiring-signals`.",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "rol-sec-4",
+      "name": "Step 4: Slack Alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "292f8065-a5bf-4acb-9387-e9d668dac46f",
+      "name": "Weekly Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        40,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c59e97a7-bcb3-4d24-ab30-cf3a1edff3f2",
+              "name": "companies",
+              "value": "={{ ['ramp.com', 'datadoghq.com', 'stripe.com', 'linear.app'] }}",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "84089974-b668-45ea-a774-407811472e83",
+      "name": "Set Target Accounts",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://unified-multi-ats-jobs-salary-hiring-intelligence.p.rapidapi.com/screen",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "unified-multi-ats-jobs-salary-hiring-intelligence.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ companies: $json.companies }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "48bc19eb-6dc3-48b2-bc68-42dab14da467",
+      "name": "Screen 6-ATS Hiring Signals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "summaries",
+        "options": {}
+      },
+      "id": "f7fae73d-efc2-4ccc-ae0f-7e244d502585",
+      "name": "Split Out Company Summaries",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        820,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c9819fb2-a5a3-4e4c-bf61-765ccd4e7f54",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "ebd0b2cc-918c-4bf5-9f64-4f86e582d1d0",
+              "leftValue": "={{ $json.totalOpenJobs }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "b4dfd452-56e2-4a81-a27d-587a5e36933d",
+      "name": "Filter Active Hiring Accounts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a97faed8-fb58-427b-b9fe-291064b2746b",
+              "name": "company",
+              "value": "={{ $json.company }}",
+              "type": "string"
+            },
+            {
+              "id": "08add1d7-8038-4731-9d31-4773b359a52d",
+              "name": "ats",
+              "value": "={{ $json.ats }}",
+              "type": "string"
+            },
+            {
+              "id": "15d695f8-580d-4b20-8d7c-b23136cdf006",
+              "name": "openJobs",
+              "value": "={{ $json.totalOpenJobs }}",
+              "type": "number"
+            },
+            {
+              "id": "2f92e0b0-b221-470f-9d4f-eb5291e63778",
+              "name": "medianSalaryUsd",
+              "value": "={{ $json.medianSalaryUsd || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "b9befc1e-8bcf-4a82-a2df-f593e66c0cc2",
+              "name": "topTechNames",
+              "value": "={{ $json.topTechNames || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "714c9f96-d745-4c9e-b776-72ecc7999048",
+      "name": "Format Hiring Signal Digest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#hiring-signals"
+        },
+        "text": "={{ $json.company + ' (' + $json.ats + '): ' + $json.openJobs + ' open roles | Median USD: $' + $json.medianSalaryUsd + ' | Top Tech: ' + $json.topTechNames }}"
+      },
+      "id": "e3910196-5e7a-4ba3-a6b8-c2010da43b41",
+      "name": "Send Hiring Signal Alert to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Target Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Target Accounts": {
+      "main": [
+        [
+          {
+            "node": "Screen 6-ATS Hiring Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screen 6-ATS Hiring Signals": {
+      "main": [
+        [
+          {
+            "node": "Split Out Company Summaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Company Summaries": {
+      "main": [
+        [
+          {
+            "node": "Filter Active Hiring Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Active Hiring Accounts": {
+      "main": [
+        [
+          {
+            "node": "Format Hiring Signal Digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Hiring Signal Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Hiring Signal Alert to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "49708fb3-4b78-45c0-8e01-1fb2ca6961f7",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Recruiting"
+    },
+    {
+      "name": "Sales"
+    },
+    {
+      "name": "Hiring Signals"
+    }
+  ]
+}
