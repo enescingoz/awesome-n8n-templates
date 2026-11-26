@@ -1,0 +1,368 @@
+{
+  "name": "Enrich B2B lead domains with RapidAPI and send briefs to Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Enrich B2B Lead Domains & Send Slack Briefs\n\n### How it works\nThis workflow enriches a list of B2B prospect domains (or work emails) in a single batch call and delivers structured account briefs to Slack:\n1. **Manual Trigger** and **Set Prospect List** define the target company domains to research.\n2. **Batch Enrich Company Domains** calls the RapidAPI Website Contacts, Pricing & LLM Brief API to extract verified role emails, phone numbers, social profiles, SaaS `/pricing` tiers, DNS email provider (`MX`/`SPF`), and `/llms.txt` briefs. Cross-format duplicates (e.g., `stripe.com` and `ceo@stripe.com`) are deduplicated automatically.\n3. **Split Out Enriched Companies** turns the batch array into one item per domain.\n4. **Filter Reachable Domains** passes clean results to **Format Enriched Prospect** and **Send Enriched Brief to Slack**, while keeping WAF-blocked domains isolated on the false branch.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`website-contacts-socials-pricing-llm-brief-api`, 500 free req/mo).\n2. Create a **Header Auth** credential named `RapidAPI Key` with header name `x-rapidapi-key` and your RapidAPI key as the value, then select it in **Batch Enrich Company Domains**.\n3. Connect your **Slack** credential and choose your target channel in **Send Enriched Brief to Slack**.\n4. Replace the sample domains in **Set Prospect List** and click **Execute workflow**.\n\n### Customization\n- Replace **Manual Trigger** with a **Schedule Trigger**, **Webhook**, or CRM trigger (HubSpot, Pipedrive, Airtable).\n- Connect the `false` output of **Filter Reachable Domains** to a spreadsheet or Slack alert to track WAF-blocked domains alongside their DNS `emailProvider`.\n- Adjust the summary fields in **Format Enriched Prospect** to match your team's CRM schema.",
+        "height": 640,
+        "width": 460,
+        "color": 1
+      },
+      "id": "c0cdad75-2b25-4a4f-a3e1-8dcc8794c6c8",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Trigger & Prospect Input\nStart the workflow manually and define the array of prospect domains or work emails to enrich.\n\n*Tip: Swap Manual Trigger for a Webhook, Schedule, or CRM trigger in production.*",
+        "height": 380,
+        "width": 460,
+        "color": 5
+      },
+      "id": "e1a9d411-72be-4c8d-9b34-101010101001",
+      "name": "Step 1: Input",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Batch Domain Enrichment\nSends all domains in one `POST /enrich` request via RapidAPI, deduplicating cross-format inputs (`domain` vs `email`), then splits the `results` array into individual company items.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "277f5877-4bb5-481c-953f-688121be4f7b",
+      "name": "Step 2: Enrich & Split",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Filter Errors & Format Brief\nFilters out unreachable or WAF-blocked domains (`error` is empty) so only clean profiles continue, then maps contacts, socials, SaaS `/pricing`, DNS mail host, and `/llms.txt` brief source into flat fields.",
+        "height": 380,
+        "width": 500,
+        "color": 6
+      },
+      "id": "e1a9d411-72be-4c8d-9b34-101010101003",
+      "name": "Step 3: Filter & Format",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Post Brief to Slack\nDelivers each formatted B2B prospect summary directly to your chosen Slack channel (`#lead-enrichment` by default).",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "e1a9d411-72be-4c8d-9b34-101010101004",
+      "name": "Step 4: Slack Output",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6b13bea0-aac4-4f02-8727-f3645a4b42e7",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a58efafb-fef3-44e4-a6b4-4fbc73a1ad86",
+              "name": "domains",
+              "value": "={{ ['stripe.com', 'linear.app', 'posthog.com', 'webflow.com'] }}",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "3c61d165-a750-48db-9cfc-84da4ebab5c8",
+      "name": "Set Prospect List",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://website-contacts-socials-pricing-llm-brief-api.p.rapidapi.com/enrich",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "website-contacts-socials-pricing-llm-brief-api.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domains: $json.domains }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "7a2ea689-471f-4212-9fd1-f41a34cb32d4",
+      "name": "Batch Enrich Company Domains",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "id": "dbd4a20f-deb6-435f-ac18-acfab054359f",
+      "name": "Split Out Enriched Companies",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        820,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "41f132de-1058-4e4d-8c90-743ae14ac8a5",
+              "leftValue": "={{ $json.error || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "0db3ff71-c914-41f3-bc5e-a14c6f4ec3dc",
+      "name": "Filter Reachable Domains",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bf331565-442f-462d-a52d-6efdd3508b1a",
+              "name": "domain",
+              "value": "={{ $json.domain }}",
+              "type": "string"
+            },
+            {
+              "id": "1399c5e3-e36a-4e1b-9c6c-f8288fe53056",
+              "name": "companyName",
+              "value": "={{ $json.companyName }}",
+              "type": "string"
+            },
+            {
+              "id": "52ad6ce2-84cf-4330-a656-856d791427b3",
+              "name": "primaryEmails",
+              "value": "={{ $json.primaryEmails || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "065e98ff-4ef2-4fe4-989b-51309d4bbe5b",
+              "name": "socials",
+              "value": "={{ $json.socialLinksSummary || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "42174371-3dee-4748-b94e-8290279ed5cf",
+              "name": "pricingSummary",
+              "value": "={{ $json.pricingSummary || 'None' }}",
+              "type": "string"
+            },
+            {
+              "id": "f81a1cd2-2cbd-4a31-8c70-fa1b0259acc2",
+              "name": "emailHost",
+              "value": "={{ $json.dns?.emailProvider || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "6128f718-ad92-41af-aaba-e97c49053620",
+              "name": "briefSource",
+              "value": "={{ $json.briefSource || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "433686a3-3157-4387-95cb-15482197c684",
+      "name": "Format Enriched Prospect",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#lead-enrichment"
+        },
+        "text": "={{ $json.companyName + ' (' + $json.domain + ') | Emails: ' + ($json.primaryEmails || 'None') + ' | Pricing: ' + $json.pricingSummary + ' | Mail: ' + $json.emailHost + ' | Brief: ' + $json.briefSource }}"
+      },
+      "id": "92ac5a03-fee1-4e74-a481-38c4e139b2fa",
+      "name": "Send Enriched Brief to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Prospect List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prospect List": {
+      "main": [
+        [
+          {
+            "node": "Batch Enrich Company Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Enrich Company Domains": {
+      "main": [
+        [
+          {
+            "node": "Split Out Enriched Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Enriched Companies": {
+      "main": [
+        [
+          {
+            "node": "Filter Reachable Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Reachable Domains": {
+      "main": [
+        [
+          {
+            "node": "Format Enriched Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Enriched Prospect": {
+      "main": [
+        [
+          {
+            "node": "Send Enriched Brief to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "8cc62a14-1cde-4f38-8879-34a7077f7bff",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Lead Enrichment"
+    },
+    {
+      "name": "AI"
+    },
+    {
+      "name": "Sales"
+    }
+  ]
+}
