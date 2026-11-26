@@ -1,0 +1,136 @@
+{
+  "name": "Audit sitemap indexability signals weekly with Apify",
+  "nodes": [
+    {
+      "name": "Try once manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "id": "550ee531-1c24-475d-afa1-41421fab886a",
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Weekly schedule (off)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "id": "ef81abf0-f664-4a48-acde-113665129dd0",
+      "disabled": true,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "name": "Run Actor and get dataset rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "21a6e299-bd1c-467e-a2e1-05ff78145f5d",
+      "position": [
+        270,
+        0
+      ],
+      "retryOnFail": false,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/axiorasolutions~sitemap-seo-audit/run-sync-get-dataset-items?format=json&clean=true&limit=1000&timeout=90&maxTotalChargeUsd=0.25&restartOnError=false&forcePermissionLevel=LIMITED_PERMISSIONS",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"sites\": [\n    \"apify.com\"\n  ],\n  \"mode\": \"audit\",\n  \"maxUrlsPerSite\": 10,\n  \"maxUrlsTotal\": 10,\n  \"maxSitemapsPerSite\": 5,\n  \"respectRobotsTxt\": true\n}",
+        "options": {
+          "timeout": 110000
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Read before running",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "id": "90963dd9-75de-4db0-af2a-70a65f4a16ea",
+      "position": [
+        -520,
+        -50
+      ],
+      "parameters": {
+        "width": 470,
+        "height": 480,
+        "content": "## Weekly sitemap check\n\nCheck a bounded sitemap sample for noindex URLs, redirects, HTTP errors, and canonical mismatches. Returns one JSON summary per run and shows fetch errors separately from page findings.\n\n1. In the HTTP Request node, add a Header Auth credential with name `Authorization` and value `Bearer <your Apify API token>`. Store it only in Credentials.\n\n2. Run the 10-URL demo once. Replace `sites` in the request body with a site you maintain or are authorized to audit. The workflow respects robots.txt.\n\n3. Inspect the summary. If you want repeat runs, set your workflow time zone, enable the disabled weekly trigger, and publish. Add storage or alerts if you want them; nothing is sent there by default.\n\nThe request asks Apify to cap Actor charges at US$0.25 per run. [Actor and current pricing](https://apify.com/axiorasolutions/sitemap-seo-audit). This Actor is published by Axiora Solutions, the template author."
+      }
+    },
+    {
+      "name": "Summarize sitemap findings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        0
+      ],
+      "id": "d40400e7-332a-49dd-869b-cd4490aabb24",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function report(items, now) {\n  const rows = items.flatMap(({ json }) => Array.isArray(json) ? json : [json]);\n  const pages = rows.filter(row => row?.recordType === 'page' && row.ok === true);\n  const important = new Set(['http-error', 'redirect', 'noindex', 'noindex-in-sitemap', 'canonical-differs']);\n  const flaggedPages = pages.flatMap(row => {\n    const ids = new Set((Array.isArray(row.findings) ? row.findings : [])\n      .map(f => f?.id).filter(id => important.has(id)));\n    // The final response can be 200 after a redirect, so keep its chain signal.\n    if (Number.isInteger(row.redirectCount) && row.redirectCount > 0) ids.add('redirect');\n    if (Number.isInteger(row.httpStatus) && row.httpStatus >= 400) ids.add('http-error');\n    if (ids.has('noindex-in-sitemap')) ids.delete('noindex');\n    if (!ids.size) return [];\n    return [{ url: row.url, finalUrl: row.finalUrl ?? null, status: row.httpStatus ?? null,\n      canonicalUrl: row.canonicalUrl ?? null, signals: [...ids].sort() }];\n  });\n  const errors = rows.filter(row => row?.ok === false)\n    .map(row => ({ url: row.url ?? row.input ?? null, code: row.errorCode ?? null }));\n  return {\n    checkedAt: now,\n    state: !pages.length ? 'no-pages-audited' : errors.length ? 'incomplete' :\n      flaggedPages.length ? 'findings' : 'no-matching-findings-in-sample',\n    pagesAudited: pages.length,\n    flaggedPages,\n    errors,\n    note: 'A bounded sample, not a full-site audit or proof of Google indexing. Check Actor run details for limits and skipped URLs.',\n  };\n}\n\nreturn [{ json: report($input.all(), new Date().toISOString()) }];"
+      }
+    }
+  ],
+  "connections": {
+    "Try once manually": {
+      "main": [
+        [
+          {
+            "node": "Run Actor and get dataset rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly schedule (off)": {
+      "main": [
+        [
+          {
+            "node": "Run Actor and get dataset rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Actor and get dataset rows": {
+      "main": [
+        [
+          {
+            "node": "Summarize sitemap findings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 120
+  },
+  "pinData": {},
+  "tags": []
+}
