@@ -1,0 +1,332 @@
+{
+  "name": "Monitor SEC EDGAR Form D Startup Funding & Insider Signals to Slack",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Weekly SEC EDGAR Form D Startup Funding & Form 4 Cluster Buys Alert\n\n### How it works\nThis workflow monitors official SEC EDGAR filings every week and sends high-signal startup funding rounds and multi-insider cluster buys to Slack:\n1. **Weekly Schedule Trigger** kicks off the monitoring run automatically.\n2. **Fetch SPV-Filtered Form D Rounds** calls `POST /funding` on RapidAPI (`sec-edgar-form-d-funding-form-4-insider-8-k-api`) with `excludeFunds: true` and `excludeSpvs: true` to isolate operating US startup financings.\n3. **Split Out Funding Rounds** turns the `items` array into individual deal records.\n4. **Filter Significant Rounds ($1M+)** keeps rounds with at least `$1,000,000` sold, then **Format SEC Filing Digest** extracts company, amount sold, state, industry, CEO, and official SEC filing URL.\n5. **Send Funding Alert to Slack** posts concise deal briefs to `#sec-signals`.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`sec-edgar-form-d-funding-form-4-insider-8-k-api` — 500 free req/mo).\n2. Create a **Header Auth** credential named `RapidAPI Key` (`x-rapidapi-key`) and select it in **Fetch SPV-Filtered Form D Rounds**.\n3. Connect your **Slack** credential and choose your channel in **Send Funding Alert to Slack**.\n4. Adjust lookback `days` or `minAmountSoldUsd` and click **Execute workflow**.\n\n### Customization\n- Switch the endpoint to `/insiders/clusters` to alert on multi-insider Form 4 open-market cluster buys, or `/events` for Form 8-K EX-99.1 corporate catalysts.\n- Pipe **Format SEC Filing Digest** to **Airtable**, **HubSpot**, or **Google Sheets** to maintain a live VC sourcing ledger.",
+        "height": 640,
+        "width": 460,
+        "color": 1
+      },
+      "id": "fil-overview-note",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Schedule Trigger\nRuns weekly (or daily) to pull the latest official SEC EDGAR filings automatically.",
+        "height": 380,
+        "width": 300,
+        "color": 5
+      },
+      "id": "fil-sec-1",
+      "name": "Step 1: Schedule",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Fetch & Split Form D Rounds\nCalls `POST /funding` with dual SPV & pooled-fund filters enabled, then splits out each startup filing.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "fil-sec-2",
+      "name": "Step 2: Fetch & Split",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        320,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Filter $1M+ Rounds & Format\nKeeps meaningful operating rounds (`>= $1,000,000` sold) and formats company, CEO, state, industry, and SEC link.",
+        "height": 380,
+        "width": 500,
+        "color": 6
+      },
+      "id": "fil-sec-3",
+      "name": "Step 3: Filter & Format",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        860,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Post Deal Brief to Slack\nSends each formatted SEC Form D funding alert directly to `#sec-signals`.",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "fil-sec-4",
+      "name": "Step 4: Slack Alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "fil-trigger-1",
+      "name": "Weekly Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        60,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sec-edgar-form-d-funding-form-4-insider-8-k-api.p.rapidapi.com/funding",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "sec-edgar-form-d-funding-form-4-insider-8-k-api.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ days: 7, excludeFunds: true, excludeSpvs: true, minAmountSoldUsd: 1000000, maxResults: 20 }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "fil-http-2",
+      "name": "Fetch SPV-Filtered Form D Rounds",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "fil-split-3",
+      "name": "Split Out Funding Rounds",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        660,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "fil-cond-1",
+              "leftValue": "={{ $json.totalAmountSoldUsd || $json.sold || 0 }}",
+              "rightValue": 1000000,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "fil-if-4",
+      "name": "Filter Significant Rounds ($1M+)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "company",
+              "value": "={{ $json.companyName || $json.company || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "f2",
+              "name": "amountSoldUsd",
+              "value": "={{ $json.totalAmountSoldUsd || $json.sold || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "f3",
+              "name": "state",
+              "value": "={{ $json.state || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f4",
+              "name": "industry",
+              "value": "={{ $json.industryGroup || $json.industry || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f5",
+              "name": "secUrl",
+              "value": "={{ $json.filingUrl || $json.url || '' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "fil-set-5",
+      "name": "Format SEC Filing Digest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#sec-signals"
+        },
+        "text": "={{ 'SEC Form D Round — ' + $json.company + ' (' + $json.state + ', ' + $json.industry + '): $' + $json.amountSoldUsd + ' sold | ' + $json.secUrl }}"
+      },
+      "id": "fil-slack-6",
+      "name": "Send Funding Alert to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch SPV-Filtered Form D Rounds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch SPV-Filtered Form D Rounds": {
+      "main": [
+        [
+          {
+            "node": "Split Out Funding Rounds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Funding Rounds": {
+      "main": [
+        [
+          {
+            "node": "Filter Significant Rounds ($1M+)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Significant Rounds ($1M+)": {
+      "main": [
+        [
+          {
+            "node": "Format SEC Filing Digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format SEC Filing Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Funding Alert to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "c1f8a221-9b44-4d1c-8e92-1a2b3c4d5e6f",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Finance"
+    },
+    {
+      "name": "SEC EDGAR"
+    },
+    {
+      "name": "VC Sourcing"
+    }
+  ]
+}
