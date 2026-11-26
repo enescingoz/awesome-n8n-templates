@@ -3,34 +3,82 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Setup (2 minutes)\n1. Subscribe to the free Basic plan on RapidAPI (`website-tech-stack-ad-pixels-and-saas-detector`).\n2. Create a Generic Header Auth credential named **RapidAPI Key** (`x-rapidapi-key`).\n3. Replace the sample domains in **Set Prospect Domains** (or connect a Google Sheets / HubSpot trigger).",
-        "height": 200,
-        "width": 440,
-        "color": 4
+        "content": "## Qualify B2B Leads by Website Tech Stack, Ad Pixels & DNS SaaS\n\n### How it works\nThis workflow qualifies B2B prospect domains using live technographics, paid ad conversion pixels, and DNS-verified SaaS signals:\n1. **Manual Trigger** and **Set Prospect Domains** supply the list of company domains to inspect.\n2. **Scan Tech Stack, Pixels & DNS SaaS** calls `POST /scan` on RapidAPI (`website-tech-stack-ad-pixels-and-saas-detector`) to detect 180+ web technologies, consent-gated GTM ad pixels, and 70+ DNS-verified B2B SaaS tools (`MX`/`TXT`/`DMARC`), even when a domain returns HTTP 403 behind a WAF. **Split Out Scanned Domains** separates each scanned company.\n3. **Filter Qualified B2B Prospects** passes accounts that either run paid ad pixels (`hasAdPixels = true`, excluding publisher scripts like AdSense) or have at least 3 verified DNS SaaS tools.\n4. **Format Technographic Summary** shapes key fields and **Notify Sales Channel on Slack** posts qualified leads to `#sales-signals`.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`website-tech-stack-ad-pixels-and-saas-detector`).\n2. Create a **Header Auth** credential named `RapidAPI Key` (`x-rapidapi-key`) and select it in **Scan Tech Stack, Pixels & DNS SaaS**.\n3. Connect your **Slack** credential and choose a channel in **Notify Sales Channel on Slack**.\n4. Update **Set Prospect Domains** and click **Execute workflow**.\n\n### Customization\n- Swap **Manual Trigger** for a **HubSpot**, **Google Sheets**, or **Webhook** trigger for continuous inbound lead scoring.\n- Adjust the qualification rule in **Filter Qualified B2B Prospects** (for example, require specific ad platforms or increase the DNS SaaS threshold).",
+        "height": 640,
+        "width": 460,
+        "color": 1
       },
-      "id": "49f03d2a-712f-40a5-8130-13cce6363ada",
-      "name": "Setup Guide",
+      "id": "tech-s-overview-note",
+      "name": "Workflow Overview",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        0,
-        -240
+        -520,
+        40
       ]
     },
     {
       "parameters": {
-        "content": "### Why This Works on Enterprise Domains\n- Even when a domain returns HTTP 403 (WAF), `POST /scan` still returns `verifiedDnsSaaS` and `emailProvider` via MX/TXT/DMARC.\n- Publisher ad scripts (AdSense/GPT) are excluded from `hasAdPixels` so only true paid advertisers route to Sales.",
-        "height": 200,
-        "width": 420,
-        "color": 6
+        "content": "## 1. Trigger & Prospect Domains\nStarts the workflow and supplies the target company domains for technographic qualification.\n\n*Tip: Swap Manual Trigger for a CRM or Webhook trigger.*",
+        "height": 380,
+        "width": 460,
+        "color": 5
       },
-      "id": "1b8acba6-9da5-4cdd-92ce-59478d813d88",
-      "name": "WAF-Resilient Logic",
+      "id": "stk-sec-1",
+      "name": "Step 1: Trigger & Domains",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        520,
-        -240
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Batch Technographic Scan\nCalls `POST /scan` to detect web tech, paid ad pixels, and WAF-resilient DNS SaaS (`MX`/`TXT`/`DMARC`), then splits each domain item.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "stk-sec-2",
+      "name": "Step 2: Scan & Split",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Qualify Leads & Format Summary\nRoutes accounts with true paid ad pixels (`hasAdPixels = true`) or `>= 3` verified DNS SaaS tools, then formats the Slack summary.",
+        "height": 380,
+        "width": 500,
+        "color": 6
+      },
+      "id": "stk-sec-3",
+      "name": "Step 3: Qualify & Format",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Notify Sales on Slack\nPosts each qualified account's ad platforms, email provider, and DNS SaaS stack to `#sales-signals`.",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "stk-sec-4",
+      "name": "Step 4: Slack Alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        60
       ]
     },
     {
@@ -40,8 +88,8 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        0,
-        60
+        40,
+        260
       ]
     },
     {
@@ -62,8 +110,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        240,
-        60
+        280,
+        260
       ]
     },
     {
@@ -93,8 +141,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        480,
-        60
+        560,
+        260
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -113,8 +161,8 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        720,
-        60
+        820,
+        260
       ]
     },
     {
@@ -153,8 +201,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        960,
-        60
+        1100,
+        260
       ]
     },
     {
@@ -199,8 +247,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1220,
-        0
+        1360,
+        240
       ]
     },
     {
@@ -218,8 +266,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
       "position": [
-        1460,
-        0
+        1680,
+        240
       ]
     }
   ],
