@@ -1,0 +1,365 @@
+{
+  "name": "Qualify B2B Leads by Website Tech Stack, Ad Pixels & DNS SaaS Signals",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Qualify B2B Leads by Website Tech Stack, Ad Pixels & DNS SaaS\n\n### How it works\nThis workflow qualifies B2B prospect domains using live technographics, paid ad conversion pixels, and DNS-verified SaaS signals:\n1. **Manual Trigger** and **Set Prospect Domains** supply the list of company domains to inspect.\n2. **Scan Tech Stack, Pixels & DNS SaaS** calls `POST /scan` on RapidAPI (`website-tech-stack-ad-pixels-and-saas-detector`) to detect 180+ web technologies, consent-gated GTM ad pixels, and 70+ DNS-verified B2B SaaS tools (`MX`/`TXT`/`DMARC`), even when a domain returns HTTP 403 behind a WAF. **Split Out Scanned Domains** separates each scanned company.\n3. **Filter Qualified B2B Prospects** passes accounts that either run paid ad pixels (`hasAdPixels = true`, excluding publisher scripts like AdSense) or have at least 3 verified DNS SaaS tools.\n4. **Format Technographic Summary** shapes key fields and **Notify Sales Channel on Slack** posts qualified leads to `#sales-signals`.\n\n### Setup\n1. Subscribe to the free Basic plan on RapidAPI (`website-tech-stack-ad-pixels-and-saas-detector`).\n2. Create a **Header Auth** credential named `RapidAPI Key` (`x-rapidapi-key`) and select it in **Scan Tech Stack, Pixels & DNS SaaS**.\n3. Connect your **Slack** credential and choose a channel in **Notify Sales Channel on Slack**.\n4. Update **Set Prospect Domains** and click **Execute workflow**.\n\n### Customization\n- Swap **Manual Trigger** for a **HubSpot**, **Google Sheets**, or **Webhook** trigger for continuous inbound lead scoring.\n- Adjust the qualification rule in **Filter Qualified B2B Prospects** (for example, require specific ad platforms or increase the DNS SaaS threshold).",
+        "height": 640,
+        "width": 460,
+        "color": 1
+      },
+      "id": "tech-s-overview-note",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. Trigger & Prospect Domains\nStarts the workflow and supplies the target company domains for technographic qualification.\n\n*Tip: Swap Manual Trigger for a CRM or Webhook trigger.*",
+        "height": 380,
+        "width": 460,
+        "color": 5
+      },
+      "id": "stk-sec-1",
+      "name": "Step 1: Trigger & Domains",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Batch Technographic Scan\nCalls `POST /scan` to detect web tech, paid ad pixels, and WAF-resilient DNS SaaS (`MX`/`TXT`/`DMARC`), then splits each domain item.",
+        "height": 380,
+        "width": 500,
+        "color": 4
+      },
+      "id": "stk-sec-2",
+      "name": "Step 2: Scan & Split",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Qualify Leads & Format Summary\nRoutes accounts with true paid ad pixels (`hasAdPixels = true`) or `>= 3` verified DNS SaaS tools, then formats the Slack summary.",
+        "height": 380,
+        "width": 500,
+        "color": 6
+      },
+      "id": "stk-sec-3",
+      "name": "Step 3: Qualify & Format",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Notify Sales on Slack\nPosts each qualified account's ad platforms, email provider, and DNS SaaS stack to `#sales-signals`.",
+        "height": 380,
+        "width": 320,
+        "color": 7
+      },
+      "id": "stk-sec-4",
+      "name": "Step 4: Slack Alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e304ed87-5e3f-4e93-944f-58459b0d5526",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "14a87419-f24b-49b2-aad2-9eff7de288fd",
+              "name": "domains",
+              "value": "={{ ['posthog.com', 'stripe.com', 'zillow.com', 'hubspot.com'] }}",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "id": "c548b093-11ac-44ad-a52f-92f4abe1a023",
+      "name": "Set Prospect Domains",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://website-tech-stack-ad-pixels-and-saas-detector.p.rapidapi.com/scan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "website-tech-stack-ad-pixels-and-saas-detector.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domains: $json.domains }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "a0807a79-fd49-4338-ba0e-6f82f0577c3e",
+      "name": "Scan Tech Stack, Pixels & DNS SaaS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "RapidAPI Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "87f11418-eca4-405c-9e25-d48e3e8c7cc7",
+      "name": "Split Out Scanned Domains",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        820,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "de2c6aee-2009-4642-87f6-d264daeac91c",
+              "leftValue": "={{ $json.hasAdPixels }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "5cc0dcb5-bf6c-408f-8889-915622bfd0b7",
+              "leftValue": "={{ ($json.verifiedDnsSaaS || []).length }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        }
+      },
+      "id": "127c6c21-97ca-4791-9532-816026f76df8",
+      "name": "Filter Qualified B2B Prospects",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d410955-5b1e-4b4d-8a0f-cbbaf388d032",
+              "name": "domain",
+              "value": "={{ $json.domain }}",
+              "type": "string"
+            },
+            {
+              "id": "ec7f2a1b-97ef-48ae-a08f-b487b7a32418",
+              "name": "scanStatus",
+              "value": "={{ $json.scanStatus }}",
+              "type": "string"
+            },
+            {
+              "id": "f77e92c3-c948-4678-88fc-66a01970af7b",
+              "name": "adPlatforms",
+              "value": "={{ ($json.adPlatforms || []).join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "5f914c1a-f4cf-4a18-a90d-680c7554b832",
+              "name": "emailProvider",
+              "value": "={{ $json.emailProvider || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "5f143c5d-871b-48a0-91bf-d296d343d6aa",
+              "name": "dnsSaaS",
+              "value": "={{ ($json.verifiedDnsSaaS || []).slice(0, 8).join(', ') }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "3d5aa5ea-8da8-4c62-9820-d26de5b0b624",
+      "name": "Format Technographic Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#sales-signals"
+        },
+        "text": "={{ 'Qualified Account: ' + $json.domain + ' | Ads: ' + ($json.adPlatforms || 'None') + ' | Mail: ' + $json.emailProvider + ' | DNS SaaS: ' + $json.dnsSaaS }}"
+      },
+      "id": "965de3a9-5660-46fc-b0fd-2b22dba47d16",
+      "name": "Notify Sales Channel on Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Prospect Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prospect Domains": {
+      "main": [
+        [
+          {
+            "node": "Scan Tech Stack, Pixels & DNS SaaS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan Tech Stack, Pixels & DNS SaaS": {
+      "main": [
+        [
+          {
+            "node": "Split Out Scanned Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Scanned Domains": {
+      "main": [
+        [
+          {
+            "node": "Filter Qualified B2B Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Qualified B2B Prospects": {
+      "main": [
+        [
+          {
+            "node": "Format Technographic Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Format Technographic Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Sales Channel on Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "versionId": "5a5c1880-cb5e-44d2-ac66-4a771e000766",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "tags": [
+    {
+      "name": "Sales"
+    },
+    {
+      "name": "Lead Enrichment"
+    },
+    {
+      "name": "Technographics"
+    }
+  ]
+}
