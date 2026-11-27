@@ -1,0 +1,133 @@
+{
+  "name": "Decode Google News real publisher URLs and AI article digest with Apify",
+  "nodes": [
+    {
+      "name": "Setup & safety notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "id": "8c1f2a90-4f3c-4d8a-9b12-71c92a40e101",
+      "position": [
+        -520,
+        -60
+      ],
+      "parameters": {
+        "width": 470,
+        "height": 470,
+        "content": "## Decode Google News real publisher URLs & AI digest\n\nFetch bounded Google News search results, decode opaque `news.google.com/rss/articles/...` wrapper links into real publisher URLs, extract plain-text article bodies, and summarize tagged market signals (`funding_mna`, `product_launch`, `layoff_risk`, `partnership`, `controversy_legal`, `earnings_growth`).\n\n1. In **Run Google News Extractor**, add a **Header Auth** credential with Name `Authorization` and Value `Bearer <your Apify API token>`. Keep tokens only in n8n Credentials.\n\n2. Run **Try once manually** to test the 10-article sample. Edit `queries`, `language`, and `timeRange` in the JSON body for your own topics.\n\n3. Inspect **Summarize decoded articles & signals**. Enable **Daily schedule (off)** only after configuring your workflow timezone and optional downstream delivery.\n\nThe request caps Apify charges at US$0.25 per run with `LIMITED_PERMISSIONS`. [Actor and current pricing](https://apify.com/ttyan0111/google-news-ai-article-extractor). Published by `ttyan0111`, the template author."
+      }
+    },
+    {
+      "name": "Try once manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "id": "2a44c815-92e1-4c7a-a815-19b47d82f202",
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Daily schedule (off)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "id": "9f31d640-73b2-4e11-8a90-33d82c51a303",
+      "disabled": true,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "name": "Run Google News Extractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "5b72e914-14a8-4b22-9c63-88e14a70c404",
+      "position": [
+        280,
+        0
+      ],
+      "retryOnFail": false,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/ttyan0111~google-news-ai-article-extractor/run-sync-get-dataset-items?format=json&clean=true&limit=100&timeout=90&maxTotalChargeUsd=0.25&restartOnError=false&forcePermissionLevel=LIMITED_PERMISSIONS",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"queries\": [\n    \"artificial intelligence startups\"\n  ],\n  \"language\": \"en-US\",\n  \"timeRange\": \"7d\",\n  \"decodeSourceUrls\": true,\n  \"extractFullArticle\": true,\n  \"maxArticlesPerQuery\": 10\n}",
+        "options": {
+          "timeout": 110000
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "name": "Summarize decoded articles & signals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "7d93a102-66c4-4f19-b501-44f29c83d505",
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function buildDigest(items, generatedAt) {\n  const rows = items\n    .flatMap(({ json }) => (Array.isArray(json) ? json : [json]))\n    .filter((row) => row && typeof row === 'object' && (row.title || row.url || row.googleNewsUrl));\n\n  const signalCounts = {};\n  const decodedArticles = [];\n  const undecodedFallbacks = [];\n\n  for (const row of rows) {\n    const signals = Array.isArray(row.marketSignals) ? row.marketSignals.filter(Boolean) : [];\n    for (const sig of signals) {\n      signalCounts[sig] = (signalCounts[sig] || 0) + 1;\n    }\n    const normalized = {\n      title: row.title ?? null,\n      publisher: row.sourceName ?? null,\n      publishedAt: row.publishedAt ?? null,\n      url: row.url ?? row.googleNewsUrl ?? null,\n      urlDecoded: Boolean(row.urlDecoded),\n      fullArticleExtracted: Boolean(row.fullArticleExtracted),\n      wordCount: Number.isFinite(row.wordCount) ? row.wordCount : 0,\n      marketSignals: signals,\n      agentSummary: row.agentSummary ?? null,\n      articleExcerpt: typeof row.articleText === 'string' ? row.articleText.slice(0, 600) : null\n    };\n    if (normalized.urlDecoded) {\n      decodedArticles.push(normalized);\n    } else {\n      undecodedFallbacks.push(normalized);\n    }\n  }\n\n  return {\n    generatedAt,\n    state: !rows.length ? 'no-articles-returned' : 'ok',\n    totalArticles: rows.length,\n    decodedCount: decodedArticles.length,\n    fullTextCount: rows.filter((r) => Boolean(r.fullArticleExtracted)).length,\n    signalCounts,\n    articles: decodedArticles,\n    undecodedFallbacks\n  };\n}\n\nreturn [{ json: buildDigest($input.all(), new Date().toISOString()) }];"
+      }
+    }
+  ],
+  "connections": {
+    "Try once manually": {
+      "main": [
+        [
+          {
+            "node": "Run Google News Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily schedule (off)": {
+      "main": [
+        [
+          {
+            "node": "Run Google News Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Google News Extractor": {
+      "main": [
+        [
+          {
+            "node": "Summarize decoded articles & signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 120
+  },
+  "pinData": {},
+  "tags": []
+}
