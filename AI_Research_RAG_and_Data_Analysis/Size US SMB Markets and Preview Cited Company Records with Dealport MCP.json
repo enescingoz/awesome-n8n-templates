@@ -1,0 +1,170 @@
+{
+  "name": "Size US SMB Markets and Preview Cited Company Records with Dealport MCP",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Dealport MCP Market Sizing & SMB Sourcing\n\nCalls Dealport's public Streamable HTTP MCP endpoint (`https://app.dealport.com/api/mcp`) to size a US private-company buy-box (`preview_companies`) for $0.00 and extract sample company Records with filed headcount and revenue bands.\n\n- **Zero credentials required** for instant market sizing (`preview_companies`).\n- Add an `Authorization: Bearer <YOUR_DEALPORT_API_KEY>` header (or install `n8n-nodes-dealport`) to open full cited Records, score Projects, and resolve verified human owners.\n- Docs: https://dealport.com/docs\n- GitHub: https://github.com/Dealport-HQ/dealport",
+        "height": 260,
+        "width": 440,
+        "color": 5
+      },
+      "id": "dealport-note-0001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        -200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "dealport-manual-trigger-0001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dp-state",
+              "name": "state",
+              "value": "OH",
+              "type": "string"
+            },
+            {
+              "id": "dp-naics",
+              "name": "naics_code",
+              "value": "238220",
+              "type": "string"
+            },
+            {
+              "id": "dp-min-emp",
+              "name": "min_employees",
+              "value": 15,
+              "type": "number"
+            },
+            {
+              "id": "dp-independent",
+              "name": "independent",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dealport-set-buybox-0001",
+      "name": "Set Buy-Box Filters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.dealport.com/api/mcp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "accept",
+              "value": "application/json, text/event-stream"
+            },
+            {
+              "name": "mcp-protocol-version",
+              "value": "2025-11-25"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'preview_companies', arguments: { state: $json.state, naics: [$json.naics_code], min_employees: $json.min_employees, independent: $json.independent } } }) }}",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "dealport-mcp-preview-0001",
+      "name": "Dealport MCP: preview_companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -220,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nlet rpc = raw;\nif (typeof raw?.data === 'string') {\n  const dataLine = raw.data.split('\\n').find((line) => line.startsWith('data: '));\n  rpc = JSON.parse(dataLine ? dataLine.slice(6) : raw.data);\n}\nconst text = rpc?.result?.content?.[0]?.text;\nif (!text) {\n  throw new Error('Dealport MCP did not return preview_companies content.');\n}\nconst preview = JSON.parse(text);\nreturn [{\n  json: {\n    summary: `Found ${preview.matching_count} matching US private companies ($0.00 preview).`,\n    matching_count: preview.matching_count,\n    tam_gate_passed: preview.tam_gate_passed,\n    cost_usd: preview.cost_usd,\n    sample_companies: preview.sample,\n    docs: 'https://dealport.com/docs',\n    mcp_registry: 'https://registry.modelcontextprotocol.io/v0.1/servers/com.dealport%2Fdealport/versions/latest'\n  }\n}];"
+      },
+      "id": "dealport-parse-preview-0001",
+      "name": "Parse Market Size & Sample Companies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        140
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Buy-Box Filters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Buy-Box Filters": {
+      "main": [
+        [
+          {
+            "node": "Dealport MCP: preview_companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dealport MCP: preview_companies": {
+      "main": [
+        [
+          {
+            "node": "Parse Market Size & Sample Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
