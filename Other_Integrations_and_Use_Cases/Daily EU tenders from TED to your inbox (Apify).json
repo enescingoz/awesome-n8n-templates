@@ -1,0 +1,372 @@
+{
+  "name": "Daily EU tenders from TED to your inbox (Apify)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nThis workflow helps bid teams and sales teams that sell to the public sector. Every weekday morning it asks the TED Europa Scraper Actor on Apify for EU tenders published in the last day that match your keywords, countries and CPV codes, drops the ones it already sent, and emails you one digest with title, buyer, value, deadline and link.\n\n### Setup\n1. Create a Bearer Auth credential with your Apify API token and select it on the Apify node.\n2. Open 'Configuration' and set keywords, country codes (3 letters, e.g. DEU), CPV codes and the email addresses.\n3. Add SMTP credentials to the email node, or swap it for Slack.\n\n### Customization\nSet publishedWithinDays to 7 for a first run. Cost is $0.003 per notice returned (pay per event). Bid deadlines come from TED and may be missing.",
+        "height": 430,
+        "width": 520,
+        "color": 4
+      },
+      "id": "e1000000-0000-4000-8000-000000000001",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -540
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Settings\nEdit keywords, countries, CPV codes and emails here.",
+        "height": 100,
+        "width": 420
+      },
+      "id": "e1000000-0000-4000-8000-000000000002",
+      "name": "Section: settings",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Fetch tenders\nOne Actor run returns open notices from the last day.",
+        "height": 100,
+        "width": 420
+      },
+      "id": "e1000000-0000-4000-8000-000000000003",
+      "name": "Section: fetch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Digest\nRemoves tenders already sent, then emails the rest.",
+        "height": 100,
+        "width": 460
+      },
+      "id": "e1000000-0000-4000-8000-000000000004",
+      "name": "Section: digest",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "e1000000-0000-4000-8000-000000000010",
+      "name": "Weekdays 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e1000000-0000-4000-8000-000000000011",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "keywords",
+              "value": "software, cloud",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "buyerCountries",
+              "value": "DEU, FRA, NLD",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "cpvCodes",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c4",
+              "name": "publishedWithinDays",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "c5",
+              "name": "maxResults",
+              "value": 20,
+              "type": "number"
+            },
+            {
+              "id": "c6",
+              "name": "emailFrom",
+              "value": "alerts@your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "c7",
+              "name": "emailTo",
+              "value": "bids@your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1000000-0000-4000-8000-000000000012",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn the comma-separated settings into the Actor's input lists.\nconst c = $('Configuration').first().json;\nconst list = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);\nreturn [{ json: {\n  keywords: list(c.keywords),\n  buyerCountries: list(c.buyerCountries).map((x) => x.toUpperCase()),\n  cpvCodes: list(c.cpvCodes),\n  publishedWithinDays: Number(c.publishedWithinDays),\n  onlyOpenForBids: true,\n  maxResults: Number(c.maxResults),\n} }];\n"
+      },
+      "id": "e1000000-0000-4000-8000-000000000013",
+      "name": "Build Actor input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/kyb-api-toolkit~ted-europa-scraper/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "e1000000-0000-4000-8000-000000000014",
+      "name": "Get tenders from TED Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "",
+          "name": "Apify API token (Bearer Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only notices not sent before, then build one digest message.\nconst seen = $getWorkflowStaticData('global');\nseen.ids = seen.ids || {};\nconst fresh = [];\nfor (const item of $input.all()) {\n  const n = item.json;\n  if (!n.noticeId || seen.ids[n.noticeId]) continue;\n  seen.ids[n.noticeId] = Date.now();\n  fresh.push(n);\n}\n// forget notice IDs older than 60 days so the list stays small\nconst cutoff = Date.now() - 60 * 24 * 3600 * 1000;\nfor (const id of Object.keys(seen.ids)) if (seen.ids[id] < cutoff) delete seen.ids[id];\nif (!fresh.length) return [{ json: { count: 0, text: 'No new tenders.' } }];\nconst money = (n) => (typeof n.estimatedValue === 'number' ? `${n.estimatedValue.toLocaleString('en-US')} ${n.currency || ''}` : 'value not stated');\nconst lines = fresh.map((n) =>\n  `- ${n.title}\\n  Buyer: ${n.buyerName} (${n.country}). Value: ${money(n)}. Deadline: ${n.deadlineDate || 'not stated'}.\\n  ${n.noticeUrl}`);\nreturn [{ json: { count: fresh.length, text: `${fresh.length} new EU tender(s):\\n\\n${lines.join('\\n\\n')}` } }];\n"
+      },
+      "id": "e1000000-0000-4000-8000-000000000015",
+      "name": "Skip sent tenders and build digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e1000000-0000-4000-8000-000000000016",
+      "name": "Any new tenders?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Configuration').first().json.emailFrom }}",
+        "toEmail": "={{ $('Configuration').first().json.emailTo }}",
+        "subject": "=EU tenders: {{ $json.count }} new today",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "e1000000-0000-4000-8000-000000000017",
+      "name": "Email tender digest",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1320,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e1000000-0000-4000-8000-000000000018",
+      "name": "Nothing new, stop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Weekdays 07:00": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Build Actor input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Actor input": {
+      "main": [
+        [
+          {
+            "node": "Get tenders from TED Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get tenders from TED Actor": {
+      "main": [
+        [
+          {
+            "node": "Skip sent tenders and build digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip sent tenders and build digest": {
+      "main": [
+        [
+          {
+            "node": "Any new tenders?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any new tenders?": {
+      "main": [
+        [
+          {
+            "node": "Email tender digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing new, stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
