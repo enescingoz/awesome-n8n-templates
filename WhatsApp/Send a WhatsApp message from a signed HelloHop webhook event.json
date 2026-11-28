@@ -1,0 +1,401 @@
+{
+  "name": "Send a WhatsApp message from a signed HelloHop webhook event",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Send a WhatsApp message from a signed HelloHop webhook event\n\nReplies to inbound WhatsApp texts in direct chats on your HelloHop channel, after the webhook signature checks out. Tested on n8n 2.49.8.\n\n**HelloHop is an independent WhatsApp API. It is not affiliated with or endorsed by Meta or WhatsApp.**\n\n### Setup\n1. Create a **Crypto** credential and put your receiver secret (24+ characters, the same value you give HelloHop) in **Hmac Secret**. Select it in **Compute HMAC-SHA256 of raw body**.\n2. Open **Set HelloHop configuration** and fill in `channel_id` (the name on the channel's row in the HelloHop console). Keep `api_base` as `https://api.hellohop.app/v1`.\n3. Create a **Header Auth** credential: set **Name** to `Authorization` and **Value** to `Bearer <CHANNEL_TOKEN>` (your channel token from the HelloHop console). Select it in **Send WhatsApp reply**.\n4. Publish the workflow and copy the production URL of **Receive HelloHop webhook**. HelloHop only delivers to public addresses, so a localhost URL will not work.\n5. Register that URL as a receiver: `PUT /v1/sessions/<CHANNEL_ID>/webhooks` with the body `{\"receivers\":[{\"url\":\"<PRODUCTION_URL>\",\"events\":[\"message\"],\"secret\":\"<RECEIVER_SECRET>\"}]}`. PUT replaces the whole receiver list, so include any receivers you already use.\n6. Send `POST /v1/sessions/<CHANNEL_ID>/webhooks/test` with the body `{\"url\":\"<PRODUCTION_URL>\"}`. An answer with `\"status\": \"delivered\"` means the workflow accepted the signed test event. Nothing is sent to WhatsApp.\n\nBoth API calls take the header `Authorization: Bearer <CHANNEL_TOKEN>`.\n\nDocs: https://hellohop.app/docs/webhooks?utm_source=n8n&utm_medium=docs&utm_campaign=n8n-signed-webhook-template",
+        "height": 760,
+        "width": 520,
+        "color": 4
+      },
+      "id": "a0000000-0000-4000-8000-000000000001",
+      "name": "Sticky Note: Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Receive and verify\nThe Webhook keeps the **raw body** (option on) because the signature covers the exact bytes. The Crypto node computes HMAC-SHA256 (hex) of that raw body with the secret from your Crypto credential. The Code node then checks the length and compares every character without stopping early. The compare is plain JavaScript so the workflow runs without enabling any Node modules. It removes the early-exit timing leak of `===`, but it is not a guaranteed constant-time compare.\n\nThe same Code node skips event ids it has already handled. It remembers the last 500 ids in workflow static data, which is enough for a starter. For production, keep seen ids in a database.",
+        "height": 600,
+        "width": 700
+      },
+      "id": "a0000000-0000-4000-8000-000000000002",
+      "name": "Sticky Note: Receive and verify",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Answer HelloHop\nA bad or missing signature gets **401**. A valid event gets **200** right away, before the reply is sent, so HelloHop does not hit its delivery timeout (10 seconds by default) and retry. Duplicates and non-text events also get 200.",
+        "height": 600,
+        "width": 460
+      },
+      "id": "a0000000-0000-4000-8000-000000000003",
+      "name": "Sticky Note: Answer",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Reply on WhatsApp\nOnly inbound text messages in direct chats pass: `type` = `message`, `payload.type` = `text`, not `from_me`, not `is_group`. Remove the `is_group` condition if you also want replies in groups. A message you send from the paired phone (`from_me`) does not trigger a reply. The reply goes to the same chat through `POST /v1/sessions/<CHANNEL_ID>/messages/text`. Each text gets one reply at most: if the send fails it is not retried, because the event was already answered with 200 and marked as handled. There is no per-chat limit. Edit the text in **Send WhatsApp reply**.",
+        "height": 600,
+        "width": 520
+      },
+      "id": "a0000000-0000-4000-8000-000000000004",
+      "name": "Sticky Note: Reply",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hellohop-events",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "name": "Receive HelloHop webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "5d2f0c4e-1d7b-4c55-9a51-3f0b6b0c9e11"
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "include": "all",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "channel_id",
+              "value": "REPLACE_WITH_CHANNEL_ID",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "api_base",
+              "value": "https://api.hellohop.app/v1",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "stripBinary": false
+        }
+      },
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "name": "Set HelloHop configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "type": "SHA256",
+        "dataPropertyName": "expected_signature",
+        "encoding": "hex"
+      },
+      "id": "b0000000-0000-4000-8000-000000000009",
+      "name": "Compute HMAC-SHA256 of raw body",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        380,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compares X-HelloHop-Signature with the HMAC computed by \"Compute HMAC-SHA256 of raw body\".\n// Plain JavaScript on purpose, so the workflow runs without enabling any Node modules:\n// it checks the length first, then XORs EVERY character with no early exit. That removes\n// the early-exit timing leak of ===; it is not a guaranteed constant-time compare.\n// If your n8n lets the Code node use the crypto module, crypto.timingSafeEqual is the\n// stronger choice (keep the length check, because it throws on unequal lengths).\nconst expected = String($json.expected_signature || '');\nconst headers = $('Receive HelloHop webhook').first().json.headers || {};\nconst given = String(headers['x-hellohop-signature'] || '');\n\nlet valid = expected.length === 64 && given.length === expected.length;\nif (valid) {\n  let diff = 0;\n  for (let i = 0; i < expected.length; i++) {\n    diff |= expected.charCodeAt(i) ^ given.charCodeAt(i);\n  }\n  valid = diff === 0;\n}\n\n// The body was signed as raw bytes; the Webhook node also parsed it into json.body.\nconst event = valid ? $('Receive HelloHop webhook').first().json.body : null;\n\n// Skip repeats: HelloHop delivers at least once and a retry keeps the same body id.\n// Static data persists only for published (production) executions.\nlet duplicate = false;\nif (valid && event && event.id) {\n  const store = $getWorkflowStaticData('global');\n  store.seen = store.seen || [];\n  duplicate = store.seen.includes(event.id);\n  if (!duplicate) {\n    store.seen.push(event.id);\n    if (store.seen.length > 500) store.seen = store.seen.slice(-500);\n  }\n}\n\nreturn [{ json: { valid, duplicate, event } }];\n"
+      },
+      "id": "b0000000-0000-4000-8000-000000000003",
+      "name": "Compare signature and skip repeats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b0000000-0000-4000-8000-000000000004",
+      "name": "Signature valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        740,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "b0000000-0000-4000-8000-000000000005",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        940,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"invalid signature\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "b0000000-0000-4000-8000-000000000006",
+      "name": "Respond 401 invalid signature",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        940,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ $json.duplicate }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e2",
+              "leftValue": "={{ $json.event.type }}",
+              "rightValue": "message",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "e3",
+              "leftValue": "={{ $json.event.payload.type }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "e4",
+              "leftValue": "={{ $json.event.payload.from_me }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e5",
+              "leftValue": "={{ $json.event.payload.is_group }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b0000000-0000-4000-8000-000000000007",
+      "name": "Is new inbound text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Set HelloHop configuration').first().json.api_base }}/sessions/{{ encodeURIComponent($('Set HelloHop configuration').first().json.channel_id) }}/messages/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $json.event.payload.chat_jid, text: 'Thanks for your message. We will get back to you soon.' }) }}",
+        "options": {}
+      },
+      "id": "b0000000-0000-4000-8000-000000000008",
+      "name": "Send WhatsApp reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        -20
+      ]
+    }
+  ],
+  "connections": {
+    "Receive HelloHop webhook": {
+      "main": [
+        [
+          {
+            "node": "Set HelloHop configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set HelloHop configuration": {
+      "main": [
+        [
+          {
+            "node": "Compute HMAC-SHA256 of raw body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute HMAC-SHA256 of raw body": {
+      "main": [
+        [
+          {
+            "node": "Compare signature and skip repeats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare signature and skip repeats": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401 invalid signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond 200 OK": {
+      "main": [
+        [
+          {
+            "node": "Is new inbound text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is new inbound text?": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
