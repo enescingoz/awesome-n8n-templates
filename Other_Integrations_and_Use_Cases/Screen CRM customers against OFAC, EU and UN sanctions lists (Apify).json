@@ -1,0 +1,375 @@
+{
+  "name": "Screen CRM customers against OFAC, EU and UN sanctions lists (Apify)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### How it works\nThis workflow helps compliance and finance teams check customers against sanctions lists. Each Monday it reads your CRM contacts, screens every person and company name against the OFAC SDN, EU and UN lists with the Sanctions List Screening Actor on Apify, and emails you only the names that look like matches.\nA match is a lead for a person to review, not a legal decision. Common names give false positives.\n\n### Setup\n1. Create a Bearer Auth credential with your Apify API token and select it on the Apify node.\n2. Replace 'Sample CRM contacts' with your CRM node.\n3. Open 'Configuration' and set the minimum score and the email addresses.\n4. Add SMTP credentials to the email node, or swap it for Slack.\n\n### Customization\nLower the score to catch more spelling variants. Cost is $0.005 per name screened (pay per event).",
+        "height": 430,
+        "width": 520,
+        "color": 4
+      },
+      "id": "b1000000-0000-4000-8000-000000000001",
+      "name": "Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -600
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Get contacts\nReplace the sample data with your CRM.",
+        "height": 100,
+        "width": 420
+      },
+      "id": "b1000000-0000-4000-8000-000000000002",
+      "name": "Section: get contacts",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Screen names\nUnique names go to the Actor in one run.",
+        "height": 100,
+        "width": 420
+      },
+      "id": "b1000000-0000-4000-8000-000000000003",
+      "name": "Section: screen",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Alert\nOnly sends when at least one name matches.",
+        "height": 100,
+        "width": 460
+      },
+      "id": "b1000000-0000-4000-8000-000000000004",
+      "name": "Section: alert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "b1000000-0000-4000-8000-000000000010",
+      "name": "Every Monday 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b1000000-0000-4000-8000-000000000011",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "minScore",
+              "value": 85,
+              "type": "number"
+            },
+            {
+              "id": "c2",
+              "name": "emailFrom",
+              "value": "alerts@your-company.example",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "emailTo",
+              "value": "compliance@your-company.example",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1000000-0000-4000-8000-000000000012",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SAMPLE DATA. Replace this node with your CRM node (HubSpot, Salesforce, Pipedrive, Google Sheets...).\n// Output one item per contact with: firstname, lastname, company, email.\nreturn [\n  { json: { firstname: 'Usama', lastname: 'bin Laden', company: 'Example Trading LLC', email: 'sample1@example.com' } },\n  { json: { firstname: 'Jane', lastname: 'Doe', company: 'Banco Nacional de Cuba', email: 'sample2@example.com' } },\n  { json: { firstname: 'Maria', lastname: 'Garcia', company: 'Northwind Test Co', email: 'sample3@example.com' } },\n];\n"
+      },
+      "id": "b1000000-0000-4000-8000-000000000013",
+      "name": "Sample CRM contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn CRM contacts into a unique list of names to screen (person and company).\nconst cfg = $('Configuration').first().json;\nconst clean = (s) => (typeof s === 'string' ? s.trim().replace(/\\s+/g, ' ') : '');\nconst owners = {};\nconst names = [];\nfor (const item of $input.all()) {\n  const p = item.json;\n  const email = clean(p.email);\n  const person = clean(`${clean(p.firstname)} ${clean(p.lastname)}`);\n  for (const n of [person, clean(p.company)]) {\n    if (n.length < 3) continue;\n    const key = n.toLowerCase();\n    if (!owners[key]) { owners[key] = { name: n, contacts: [] }; names.push(n); }\n    owners[key].contacts.push(email);\n  }\n}\nif (!names.length) throw new Error('No names found. Check that your CRM node returns firstname, lastname or company.');\nreturn [{ json: { names: names.slice(0, 5000), owners, minScore: Number(cfg.minScore) } }];\n"
+      },
+      "id": "b1000000-0000-4000-8000-000000000014",
+      "name": "Build unique names list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/kyb-api-toolkit~sanctions-list-screening/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ names: $json.names, lists: ['OFAC_SDN','EU','UN'], minScore: $json.minScore, maxMatchesPerName: 3 }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "b1000000-0000-4000-8000-000000000015",
+      "name": "Screen names with Apify Actor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "",
+          "name": "Apify API token (Bearer Auth)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Join Actor results back to CRM contacts and build one alert message.\nconst owners = $('Build unique names list').first().json.owners;\nconst hits = [];\nconst screened = $input.all().length;\nfor (const item of $input.all()) {\n  const r = item.json;\n  if (r.status !== 'potential_match') continue;\n  const o = owners[String(r.name || '').toLowerCase()] || { contacts: [] };\n  const top = (r.matches || [])[0] || {};\n  hits.push({\n    name: r.name,\n    contacts: [...new Set(o.contacts)].join(', '),\n    topScore: r.topScore,\n    list: top.source || '',\n    matched: top.matchedName || '',\n    url: top.url || '',\n  });\n}\n\nconst lines = hits.map(h =>\n  `- ${h.name} (CRM: ${h.contacts}) matched \"${h.matched}\" on ${h.list}, score ${h.topScore}. ${h.url}`);\nconst text = hits.length === 0 ? `No possible matches. ${screened} names screened.` : `${hits.length} possible sanctions match(es) in your CRM. Review each one by hand before acting. Common names give false positives.\\n\\n${lines.join('\\n')}`;\nreturn [{ json: { count: hits.length, screened, text, hits } }];\n"
+      },
+      "id": "b1000000-0000-4000-8000-000000000016",
+      "name": "Join matches to CRM contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1000000-0000-4000-8000-000000000017",
+      "name": "Any matches?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Configuration').first().json.emailFrom }}",
+        "toEmail": "={{ $('Configuration').first().json.emailTo }}",
+        "subject": "=Sanctions screening: {{ $json.count }} possible match(es) in your CRM",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "b1000000-0000-4000-8000-000000000018",
+      "name": "Email compliance team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "b1000000-0000-4000-8000-000000000019",
+      "name": "No matches, nothing to send",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Every Monday 08:00": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Sample CRM contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample CRM contacts": {
+      "main": [
+        [
+          {
+            "node": "Build unique names list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build unique names list": {
+      "main": [
+        [
+          {
+            "node": "Screen names with Apify Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screen names with Apify Actor": {
+      "main": [
+        [
+          {
+            "node": "Join matches to CRM contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join matches to CRM contacts": {
+      "main": [
+        [
+          {
+            "node": "Any matches?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any matches?": {
+      "main": [
+        [
+          {
+            "node": "Email compliance team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No matches, nothing to send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
